@@ -15,10 +15,10 @@
 
 - César Omar Quijada Alvarenga
 - Jessica Nicole Martínez Chinchilla
-- Bryan Efraín Abrego Morales
+- Bryan Efrain Abrego Morales
 - Mónica Elizabeth Alvarado Canales
 - Steven Gabriel Hernández Monroy
-- Jorge Antonio Hernández Monroy
+- Jorge Antonio Hernández Lopéz
 - Franklyn Enmanuel Mancia Alvarado
 
 ---
