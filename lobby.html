@@ -3,10 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"">
     <title>Página Principal</title>
 </head>
 <body>
-    <h1>Hola mundo</h1>
+    <header class="header">
+        <h2>Panel principal</h2>
+        <ul class="list">
+            <i class="fa-solid fa-house"><a href="lobby.html"><li>Dashboard</li></a></i>
+            <i class="fa-solid fa-user"><li>Profesores</li></i>
+            <i class="fa-solid fa-children"><li>Estudiantes</li></i>
+            <i class="fa-solid fa-user-graduate"><li>Matrículas</li></i>
+            <i class="fa-solid fa-book-open"><li>Materias</li></i>
+            <i class="fa-solid fa-award"><li>Calificaciones</li></i>
+            <i class="fa-solid fa-school"><li>Secciones</li></i>
+            <i class="fa-solid fa-clock-rotate-left"><li>Historial académico</li></i>
+            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
+            <i class="fa-solid fa-clipboard-list"><li>Auditoria</li></i>
+            <i class="fa-solid fa-gear"><li>Configuración</li></i>
+        </ul>
+    </header>
+    <div class="Body">
+        <h2>Dashboard</h2>
+        <p>Vista general del sistema</p>
+        <i class="fa-solid fa-person-chalkboard">
+            <p>
+                Total Profesores <br>
+                n
+            </p>
+        </i>
+        <i class="fa-solid fa-book">
+            <p>
+                Total Materias <br>
+                n
+            </p>
+        </i>
+        <i class="fa-solid fa-graduation-cap">
+            <p>
+                Total estudiantes <br>
+                n
+            </p>
+        </i>
+        <i class="fa-solid fa-user-check">
+            <p>
+                Estudiantes activos <br>
+                n
+            </p>
+        </i>
+        <i class="fa-solid fa-ban">
+            <p>
+                Estudiantes inactivos <br>
+                n
+            </p>
+        </i>
+        <i class="fa-solid fa-school-flag">
+            <p>
+                Total de secciones <br>
+                n
+            </p>
+        </i>
+        <div class="Body_Grafics">
+            <h3>
+                Rendimiento académico por materia:
+            </h3>
+            <canvas id="Grafica_Barras1"></canvas>
+            <h3>
+                Porcentaje de arpobación general:
+            </h3>
+            <canvas id="Grafica_Pastel"></canvas>
+        </div>
+    </div>
 </body>
 </html>

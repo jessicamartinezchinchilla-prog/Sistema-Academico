@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<main class="historial-academico">
+
+    <!-- Encabezado -->
+    <section class="encabezado">
+
+        <div class="titulo-contenedor">
+            <h1>Historial Académico</h1>
+            <p>Registro completo del desempeño estudiantil</p>
+        </div>
+
+        <button id="btnExportarPDF">
+            <i class="fas fa-download"></i>
+            Exportar en PDF
+        </button>
+
+    </section>
+
+    <!-- Tarjetas estadísticas -->
+    <section class="estadisticas">
+
+        <div class="card">
+            <span>Total Registros</span>
+            <h2 id="totalRegistros"></h2>
+        </div>
+
+        <div class="card">
+            <span>Aprobados</span>
+            <h2 id="totalAprobados"></h2>
+        </div>
+
+        <div class="card">
+            <span>Reprobados</span>
+            <h2 id="totalReprobados"></h2>
+        </div>
+
+        <div class="card">
+            <span>Promedio General</span>
+            <h2 id="promedioGeneral"></h2>
+        </div>
+
+    </section>
+
+    <!-- Filtros -->
+    <section class="contenedor-filtros">
+
+        <div class="titulo-filtros">
+            <i class="fas fa-filter"></i>
+            <h3>Filtros de Búsqueda</h3>
+        </div>
+
+        <div class="filtros">
+
+            <input
+                type="text"
+                id="txtBuscar"
+                placeholder="Buscar por NIE o nombre">
+
+            <select id="cmbSeccion">
+                <option>Todas las secciones</option>
+            </select>
+
+            <select id="cmbAnio">
+                <option>2026</option>
+            </select>
+
+            <select id="cmbPeriodo">
+                <option>Todos los periodos</option>
+            </select>
+
+            <select id="cmbEstado">
+                <option>Todos los estados</option>
+            </select>
+
+        </div>
+
+    </section>
+
+    <!-- Tabla -->
+    <section class="contenedor-tabla">
+
+        <table id="tblHistorial">
+
+            <thead>
+
+                <tr>
+                    <th>NIE</th>
+                    <th>Nombre Completo</th>
+                    <th>Sección</th>
+                    <th>Año</th>
+                    <th>Periodo</th>
+                    <th>Promedio</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <!-- Registros cargados dinámicamente -->
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+</main>
+</html>
