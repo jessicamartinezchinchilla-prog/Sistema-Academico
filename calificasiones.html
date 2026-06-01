@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Calificaciones</title>
+</head>
+<body>
+
+    <!-- ENCABEZADO -->
+    <header>
+        <h1>Gestión de Calificaciones</h1>
+
+        <div>
+            <button>Generar PDF</button>
+            <button>+ Agregar Nota</button>
+        </div>
+    </header>
+
+    <hr>
+
+    <!-- RESUMEN -->
+    <section>
+        <div>
+            <h3>Aprobados</h3>
+            <p>0</p>
+        </div>
+
+        <div>
+            <h3>Reprobados</h3>
+            <p>0</p>
+        </div>
+
+        <div>
+            <h3>Promedio General</h3>
+            <p>0.0</p>
+        </div>
+    </section>
+
+    <hr>
+
+    <!-- FILTROS -->
+    <section>
+        <select>
+            <option>Todas las materias</option>
+        </select>
+
+        <select>
+            <option>Todas las secciones</option>
+        </select>
+
+        <select>
+            <option>Todos los estados</option>
+        </select>
+    </section>
+
+    <br>
+
+    <!-- TABLA -->
+    <section>
+        <table border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>NIE</th>
+                    <th>Nombre</th>
+                    <th>Act. 1</th>
+                    <th>Act. 2</th>
+                    <th>Examen</th>
+                    <th>Promedio</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>0</td>
+                    <td>---</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0.0</td>
+                    <td>Aprobado</td>
+                    <td>
+                        <button>Editar</button>
+                        <button>Eliminar</button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>0</td>
+                    <td>---</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0.0</td>
+                    <td>Reprobado</td>
+                    <td>
+                        <button>Editar</button>
+                        <button>Eliminar</button>
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </section>
+
+</body>
+</html>
