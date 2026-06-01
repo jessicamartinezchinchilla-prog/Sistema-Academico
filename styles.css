@@ -1,0 +1,118 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Fondo degradado */
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #1e3c72, #2a5bd7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Contenedor principal */
+.header {
+    text-align: center;
+    color: #333;
+    background: #f5f5f5;
+    padding: 30px 40px 10px;
+    border-radius: 12px 12px 0 0;
+    width: 350px;
+}
+
+/* Icono */
+.header img {
+    width: 60px;
+    margin-bottom: 10px;
+}
+
+/* Título */
+.header h1 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Subtítulo */
+.header h3 {
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Formulario */
+.Body {
+    width: 350px;
+    background: #f5f5f5;
+    padding: 20px 40px 30px;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Labels */
+.Body label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #333;
+}
+
+/* Inputs */
+.Body input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+}
+
+/* Efecto focus */
+.Body input:focus {
+    border-color: #2a5bd7;
+}
+
+/* Botón */
+.Button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #2a5bd7;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Hover */
+.Button:hover {
+    background: #1e3c72;
+}
+
+/* Footer */
+footer {
+    margin-top: 10px;
+    color: white;
+    font-size: 12px;
+}
+.logo {
+    width: 60px;
+    height: 60px;
+    background: #2a5bd7;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+}
+
+.logo img {
+    width: 30px;
+    filter: invert(1);
+}
