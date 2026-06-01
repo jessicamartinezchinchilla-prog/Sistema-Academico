@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<body>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="matriculas-container">
+
+        <!-- ENCABEZADO -->
+        <section class="header-matriculas">
+
+            <div class="titulo">
+                <h1>Matrículas</h1>
+                <p>Registro y gestión de estudiantes</p>
+            </div>
+
+            <div class="acciones-principales">
+                <button id="btnAgregarEstudiante">
+                    + Agregar Estudiante
+                </button>
+            </div>
+
+        </section>
+
+        <!-- TARJETAS DE ESTADÍSTICAS -->
+        <section class="estadisticas">
+
+            <article class="card-estadistica">
+                <h3>Total Matrículas</h3>
+                <span id="totalMatriculas">0</span>
+            </article>
+
+            <article class="card-estadistica">
+                <h3>Activas</h3>
+                <span id="matriculasActivas">0</span>
+            </article>
+
+            <article class="card-estadistica">
+                <h3>Inactivas</h3>
+                <span id="matriculasInactivas">0</span>
+            </article>
+
+            <article class="card-estadistica">
+                <h3>Este Año</h3>
+                <span id="matriculasAnio">0</span>
+            </article>
+
+        </section>
+
+        <!-- PANEL DE FILTROS -->
+        <section class="panel-filtros">
+
+            <div class="busqueda">
+                <input
+                    type="text"
+                    id="buscarEstudiante"
+                    placeholder="Buscar por NIE, nombre o responsable..."
+                >
+            </div>
+
+            <div class="filtros">
+
+                <select id="filtroGrado">
+                    <option value="">Todos los grados</option>
+                    <option value="7">7°</option>
+                    <option value="8">8°</option>
+                    <option value="9">9°</option>
+                </select>
+
+                <select id="filtroEstado">
+                    <option value="">Todos los estados</option>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+
+            </div>
+
+        </section>
+
+        <!-- TABLA DE MATRÍCULAS -->
+        <section class="tabla-matriculas">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>NIE</th>
+                        <th>Nombre Completo</th>
+                        <th>Grado</th>
+                        <th>Sección</th>
+                        <th>Responsable</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="listaEstudiantes">
+
+                    <tr>
+                        <td>2024001</td>
+                        <td>Juan Pérez García</td>
+                        <td>7°</td>
+                        <td>A</td>
+                        <td>María García</td>
+                        <td>7890-1234</td>
+                        <td>Activo</td>
+
+                        <td>
+
+                            <button class="btn-ver">
+                                Ver
+                            </button>
+
+                            <button class="btn-editar">
+                                Editar
+                            </button>
+
+                            <button class="btn-eliminar">
+                                Eliminar
+                            </button>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL AGREGAR ESTUDIANTE -->
+    <div id="modalAgregar" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Agregar Estudiante</h2>
+
+            <form id="formAgregar">
+
+                <input type="text" placeholder="NIE">
+
+                <input type="text" placeholder="Nombre Completo">
+
+                <select>
+                    <option>Seleccione Grado</option>
+                </select>
+
+                <select>
+                    <option>Seleccione Sección</option>
+                </select>
+
+                <input type="text" placeholder="Responsable">
+
+                <input type="tel" placeholder="Teléfono">
+
+                <select>
+                    <option>Activo</option>
+                    <option>Inactivo</option>
+                </select>
+
+                <button type="submit">
+                    Guardar
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL VER ESTUDIANTE -->
+    <div id="modalVer" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Información del Estudiante</h2>
+
+            <div id="detalleEstudiante">
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL EDITAR ESTUDIANTE -->
+    <div id="modalEditar" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Editar Estudiante</h2>
+
+            <form id="formEditar">
+
+            </form>
+
+        </div>
+
+    </div>
+
+</body>
