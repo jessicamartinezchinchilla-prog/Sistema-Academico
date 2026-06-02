@@ -1,0 +1,286 @@
+<body>
+
+<main class="gestion-profesores">
+
+    <!-- ENCABEZADO -->
+    <section class="header-profesores">
+
+        <div class="titulo">
+            <h1>Gestión de Profesores</h1>
+            <p>Administración del personal docente</p>
+        </div>
+
+        <button id="btnAgregarProfesor">
+            + Agregar Profesor
+        </button>
+
+    </section>
+
+    <!-- ESTADÍSTICAS -->
+    <section class="estadisticas">
+
+        <article class="card">
+            <h3>Total Profesores</h3>
+            <span id="totalProfesores"></span>
+        </article>
+
+        <article class="card">
+            <h3>Activos</h3>
+            <span id="profesoresActivos"></span>
+        </article>
+
+        <article class="card">
+            <h3>Inactivos</h3>
+            <span id="profesoresInactivos"></span>
+        </article>
+
+        <article class="card">
+            <h3>Materias Cubiertas</h3>
+            <span id="materiasCubiertas"></span>
+        </article>
+
+    </section>
+
+    <!-- FILTROS -->
+    <section class="filtros">
+
+        <div class="buscador">
+
+            <input
+                type="text"
+                id="buscarProfesor"
+                placeholder="Buscar por nombre, correo o materia..."
+            >
+
+        </div>
+
+        <div class="selects">
+
+            <select id="filtroMateria">
+
+                <option value="">
+                    Todas las materias
+                </option>
+
+                <option value="Matematicas">
+                    Matemáticas
+                </option>
+
+                <option value="Ingles">
+                    Inglés
+                </option>
+
+                <option value="Lenguaje">
+                    Lenguaje
+                </option>
+
+                <option value="Sociales">
+                    Sociales
+                </option>
+
+                <option value="Ciencias">
+                    Ciencias
+                </option>
+
+            </select>
+
+            <select id="filtroEstado">
+
+                <option value="">
+                    Todos los estados
+                </option>
+
+                <option value="Activo">
+                    Activo
+                </option>
+
+                <option value="Inactivo">
+                    Inactivo
+                </option>
+
+            </select>
+
+        </div>
+
+    </section>
+
+    <!-- TABLA DE PROFESORES -->
+    <section class="tabla-profesores">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Nombre Completo</th>
+                    <th>Correo Electrónico</th>
+                    <th>Materia Asignada</th>
+                    <th>Secciones</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="listaProfesores">
+
+                <!-- Los profesores se cargarán aquí -->
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+    <!-- TARJETAS DE PROFESORES -->
+    <section class="detalle-profesores" id="detalleProfesores">
+
+        <!-- Tarjetas generadas dinámicamente -->
+
+    </section>
+
+    <!-- DISTRIBUCIÓN POR MATERIA -->
+    <section class="distribucion-materias">
+
+        <h2>
+            Distribución de Profesores por Materia
+        </h2>
+
+        <div class="materias-grid">
+
+            <article class="materia-card">
+
+                <div class="icono">M</div>
+
+                <h3>Matemáticas</h3>
+
+                <p id="profesorMatematicas">
+                    Sin asignar
+                </p>
+
+                <span id="seccionesMatematicas">
+                    0 secciones
+                </span>
+
+            </article>
+
+            <article class="materia-card">
+
+                <div class="icono">L</div>
+
+                <h3>Lenguaje</h3>
+
+                <p id="profesorLenguaje">
+                    Sin asignar
+                </p>
+
+                <span id="seccionesLenguaje">
+                    0 secciones
+                </span>
+
+            </article>
+
+            <article class="materia-card">
+
+                <div class="icono">S</div>
+
+                <h3>Sociales</h3>
+
+                <p id="profesorSociales">
+                    Sin asignar
+                </p>
+
+                <span id="seccionesSociales">
+                    0 secciones
+                </span>
+
+            </article>
+
+            <article class="materia-card">
+
+                <div class="icono">I</div>
+
+                <h3>Inglés</h3>
+
+                <p id="profesorIngles">
+                    Sin asignar
+                </p>
+
+                <span id="seccionesIngles">
+                    0 secciones
+                </span>
+
+            </article>
+
+            <article class="materia-card">
+
+                <div class="icono">C</div>
+
+                <h3>Ciencias</h3>
+
+                <p id="profesorCiencias">
+                    Sin asignar
+                </p>
+
+                <span id="seccionesCiencias">
+                    0 secciones
+                </span>
+
+            </article>
+
+        </div>
+
+    </section>
+
+    <!-- MODAL AGREGAR PROFESOR -->
+    <div id="modalAgregarProfesor" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Agregar Profesor</h2>
+
+            <form id="formProfesor">
+
+                <!-- Campos del formulario -->
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL VER PROFESOR -->
+    <div id="modalVerProfesor" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Información del Profesor</h2>
+
+            <div id="informacionProfesor">
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL EDITAR PROFESOR -->
+    <div id="modalEditarProfesor" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Editar Profesor</h2>
+
+            <form id="formEditarProfesor">
+
+            </form>
+
+        </div>
+
+    </div>
+
+</main>
+
+</body>
