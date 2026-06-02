@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración del Sistema</title>
+</head>
+<body>
+
+    <header>
+        <h1>Configuración del Sistema</h1>
+        <p>Administración y personalización del sistema académico</p>
+    </header>
+
+    <main>
+
+        <!-- APARIENCIA -->
+        <section id="apariencia">
+
+            <h2>Apariencia</h2>
+
+            <div>
+                <label for="modoOscuro">
+                    Modo Oscuro
+                </label>
+
+                <input
+                    type="checkbox"
+                    id="modoOscuro"
+                    name="modoOscuro">
+            </div>
+
+            <div>
+                <label for="tamanoTexto">
+                    Tamaño de Texto
+                </label>
+
+                <select id="tamanoTexto" name="tamanoTexto">
+                    <option value="pequeno">Pequeño</option>
+                    <option value="medio">Mediano</option>
+                    <option value="grande">Grande</option>
+                </select>
+            </div>
+
+        </section>
+
+        <!-- NOTIFICACIONES -->
+        <section id="notificaciones">
+
+            <h2>Notificaciones</h2>
+
+            <div>
+                <label for="push">
+                    Notificaciones Push
+                </label>
+
+                <input
+                    type="checkbox"
+                    id="push"
+                    checked>
+            </div>
+
+            <div>
+                <label for="correoAuto">
+                    Correos Automáticos
+                </label>
+
+                <input
+                    type="checkbox"
+                    id="correoAuto"
+                    checked>
+            </div>
+
+        </section>
+
+        <!-- SEGURIDAD -->
+        <section id="seguridad">
+
+            
+
+            <form id="formPassword">
+
+                <div>
+                    <label></label>
+
+                   
+                </div>
+
+                <div>
+                    <label></label>
+
+                    
+                </div>
+
+                <div>
+                    <label></label>
+
+                   
+                </div>
+
+                <div>
+                    <h3></h3>
+                </div>
+                    
+                </button>
+
+            </form>
+
+        
+
+        </section>
+
+        <!-- USUARIO -->
+        <section id="usuario">
+
+            <h2>Información de Usuario</h2>
+
+            <div>
+
+                <div>
+                    <h3></h3>
+                </div>
+
+                <div>
+                    <h3></h3>
+                    <p></p>
+                    <span></span>
+                </div>
+
+            </div>
+
+            <div>
+                <p><strong>Rol:</strong></p>
+                <p><strong>Nombre:</strong></p>
+                <p><strong>Email:</strong></p>
+                <p><strong>Contraseña:</strong></p>
+                <p>Cambiar contraseña</p>
+            </div>
+
+            
+            <div>
+                Última sesión:
+                <span>26 Mayo 2026 - 10:30 AM</span>
+            </div>
+
+        </section>
+
+        <!-- SISTEMA ACADEMICO -->
+        <section id="sistemaAcademico">
+
+            <h2>Sistema Académico</h2>
+
+            <div>
+                <label for="anioLectivo">
+                    Año Lectivo
+                </label>
+
+                <select id="anioLectivo">
+                    <option>2026</option>
+                    <option>2027</option>
+                    <option>2028</option>
+                </select>
+            </div>
+
+            <div>
+
+                <h3>Periodos Académicos</h3>
+
+                <ul>
+                    <li>Periodo 1 - Ene / Mar</li>
+                    <li>Periodo 2 - Abr / Jun</li>
+                    <li>Periodo 3 - Jul / Sep</li>
+                    <li>Periodo 4 - Oct / Dic</li>
+                </ul>
+
+            </div>
+
+            <div>
+
+                <h3>Escala de Calificaciones</h3>
+
+                <p>Nota mínima: 7.0</p>
+                <p>Escala: 0.0 - 10.0</p>
+
+            </div>
+
+        </section>
+
+        <!-- AJUSTES GENERALES -->
+        <section id="ajustes">
+
+            <h2>Ajustes Generales</h2>
+
+            <div>
+
+                <h3>Datos del Sistema</h3>
+
+                <p>Total Estudiantes: </p>
+                <p>Total Profesores: </p>
+                <p>Total Secciones: </p>
+                <p>Total Materias: </p>
+
+            </div>
+
+            <div>
+
+                <label for="idioma">
+                    Idioma del Sistema
+                </label>
+
+                <select id="idioma">
+                    <option>Español</option>
+                    <option>English</option>
+                </select>
+
+            </div>
+
+            <div>
+
+                <label for="zonaHoraria">
+                    Zona Horaria
+                </label>
+
+                <select id="zonaHoraria">
+                    <option>América/El Salvador (GMT-6)</option>
+                    <option>América/México (GMT-6)</option>
+                    <option>UTC</option>
+                </select>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</body>
+</html>
