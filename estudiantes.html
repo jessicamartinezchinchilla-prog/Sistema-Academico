@@ -1,81 +1,67 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Estudiantes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Estudiantes</title>
 </head>
 <body>
-
-    <section id="gestionEstudiantes">
-
-        <h1>Gestión de Estudiantes</h1>
-        <p>Vista general de todos los estudiantes del sistema</p>
-
-        <hr>
-
-        <!-- Estadísticas -->
-        <table>
-            <tr>
-
-                <td>
-                    <h3>Total Estudiantes</h3>
-                    <h2></h2>
-                </td>
-
-                <td>
-                    <h3>Activos</h3>
-                    <h2></h2>
-                </td>
-
-                <td>
-                    <h3>Inactivos</h3>
-                    <h2></h2>
-                </td>
-
-                <td>
-                    <h3>Secciones</h3>
-                    <h2></h2>
-                </td>
-
-            </tr>
-        </table>
-
-        <br>
-
-        <!-- Filtros -->
-        <input type="text" placeholder="Buscar por NIE, nombre o apellido...">
-
-        <select>
-            <option>Todas las secciones</option>
-        </select>
-
-        <select>
-            <option>Todos los estados</option>
-        </select>
-
-        <br><br>
-
-        <!-- Botón agregar -->
-        <button>Agregar Estudiante</button>
-
-        <br><br>
-
-        <!-- Tabla -->
-        <table border="1">
-
-            <thead>
+    <header class="header">
+        <h2>Panel principal</h2>
+        <ul class="list">
+            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
+            <i class="fa-solid fa-user"><li>Profesores</li></i>
+            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
+            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
+            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
+            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
+            <i class="fa-solid fa-school"><a href="secciones.html"><li>Secciones</li></a></i>
+            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
+            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
+            <i class="fa-solid fa-clipboard-list"><a href="Auditoria.html"><li>Auditoria</li></a></i>
+            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
+        </ul>
+    </header>
+    <div class="body">
+        <h2>Gestión de Estudiantes</h2>
+        <p>
+            Vista general de todos los estudiantes del sistema
+        </p>
+        <p>
+            Total estudiantes: <br>
+            0
+        </p>
+        <p>
+            Activos: <br>
+            0
+        </p>
+        <p>
+            Inactivos: <br>
+            0
+        </p>
+        <p>
+            Secciones: <br>
+            0
+        </p>
+        <input type="search" name="bar" placeholder="Buscar por NIE, nombre o apellido...">
+        <details class="sections">
+            <summary>Todas las secciones</summary>
+            <p></p>
+        </details>
+        <details class="states">
+            <summary>Todos los estados</summary>
+            <p></p>
+        </details>
+        <div class="table">
+            <table>
                 <tr>
                     <th>NIE</th>
-                    <th>Nombre</th>
-                    <th>Apellido</th>
+                    <th>Nombres</th>
+                    <th>Apellidos</th>
                     <th>Sección</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
-            </thead>
-
-            <tbody>
-
                 <tr>
                     <td></td>
                     <td></td>
@@ -83,16 +69,13 @@
                     <td></td>
                     <td></td>
                     <td>
-                        <button>Editar</button>
-                        <button>Eliminar</button>
+                        <button class="edit">Editar</button>
+                        <button class="delete">Elminar</button>
                     </td>
                 </tr>
-
-            </tbody>
-
-        </table>
-
-    </section>
-
+            </table>
+        </div>
+        <h2>Estudiantes por Sección:</h2>
+    </div>
 </body>
 </html>
