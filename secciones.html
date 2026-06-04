@@ -1,76 +1,77 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema Académico - Gestión de Secciones</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de secciones</title>
 </head>
 <body>
-
-    <!-- ENCABEZADO -->
-    <header>
-        <h1>Gestión de Secciones</h1>
-        <p>Vista general de todas las secciones del sistema</p>
-        <div>
-            <span><!-- Aquí irá el conteo total de secciones --> Secciones</span>
-        </div>
+    <header class="header">
+        <h2>Panel principal</h2>
+        <ul class="list">
+            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
+            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
+            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
+            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
+            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
+            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
+            <i class="fa-solid fa-school"><li>Secciones</li></i>
+            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
+            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
+            <i class="fa-solid fa-clipboard-list"><a href="Auditoria.html"><li>Auditoria</li></a></i>
+            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
+        </ul>
     </header>
-
-    <!-- CONTENEDOR DE TARJETAS (MOCKUP) -->
-    <section>
-        <h2>Vista de Tarjetas</h2>
-        
-        <!-- Estructura de tarjeta individual para replicar con DB -->
-        <article>
-            <div><!-- ID o Número de Sección --></div>
-            <h3><!-- Nombre de la Sección --></h3>
-            <p><!-- Especialidad --></p>
-            
-            <ul>
-                <li>Estudiantes: <!-- Cantidad --></li>
-                <li>Año: <!-- Nivel --></li>
-            </ul>
-
-            <div>
-                <p>Profesores asignados:</p>
-                <p><!-- Conteo de docentes --></p>
-            </div>
-
-            <button type="button">Ver Detalles</button>
-        </article>
-    </section>
-
-    <hr>
-
-    <!-- ESTRUCTURA DE TABLA (LISTA COMPLETA) -->
-    <section>
-        <h2>Lista Completa de Secciones</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Sección</th>
-                    <th>Especialidad</th>
-                    <th>Año</th>
-                    <th>Estudiantes</th>
-                    <th>Materias</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Fila de ejemplo vacía para llenado dinámico -->
-                <tr>
-                    <td><button type="button"><!-- Nombre Sección --></button></td>
-                    <td><!-- Info Especialidad --></td>
-                    <td><!-- Info Año --></td>
-                    <td><!-- Info Estudiantes --></td>
-                    <td><!-- Lista de Materias --></td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- NOTA PIE DE PÁGINA -->
-    <footer>
-        <p><strong>Nota:</strong> <!-- Texto informativo sobre asignación de profesores y materias --></p>
-    </footer>
-
+    <div class="body">
+        <h2>Gestión de secciones</h2>
+        <p>
+            Vista general de de todas las secciones del sistema
+        </p>
+        <p>
+            0 Secciones
+        </p>
+        <p>
+            Desarrollo de Software 1ro <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+        <p>
+            Desarrollo de Software 2do <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+        <p>
+            Servicios Turísticos 1ro <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+        <p>
+            Servicios Turísticos 2do <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+        <p>
+            General 1ro <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+        <p>
+            General 2do <br>
+            Estudiantes
+            0 <br>
+            Profesores asignados: 0 docentes
+        </p>
+        <button class="button">Ver detalles</button>
+    </div>
 </body>
 </html>
