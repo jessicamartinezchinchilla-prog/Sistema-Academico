@@ -3,95 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Panel de Historial Académico</title>
 </head>
-<main class="historial-academico">
-
-    <!-- Encabezado -->
-    <section class="encabezado">
-
-        <div class="titulo-contenedor">
-            <h1>Historial Académico</h1>
-            <p>Registro completo del desempeño estudiantil</p>
-        </div>
-
-        <button id="btnExportarPDF">
-            <i class="fas fa-download"></i>
-            Exportar en PDF
-        </button>
-
-    </section>
-
-    <!-- Tarjetas estadísticas -->
-    <section class="estadisticas">
-
-        <div class="card">
-            <span>Total Registros</span>
-            <h2 id="totalRegistros"></h2>
-        </div>
-
-        <div class="card">
-            <span>Aprobados</span>
-            <h2 id="totalAprobados"></h2>
-        </div>
-
-        <div class="card">
-            <span>Reprobados</span>
-            <h2 id="totalReprobados"></h2>
-        </div>
-
-        <div class="card">
-            <span>Promedio General</span>
-            <h2 id="promedioGeneral"></h2>
-        </div>
-
-    </section>
-
-    <!-- Filtros -->
-    <section class="contenedor-filtros">
-
-        <div class="titulo-filtros">
-            <i class="fas fa-filter"></i>
-            <h3>Filtros de Búsqueda</h3>
-        </div>
-
-        <div class="filtros">
-
-            <input
-                type="text"
-                id="txtBuscar"
-                placeholder="Buscar por NIE o nombre">
-
-            <select id="cmbSeccion">
-                <option>Todas las secciones</option>
-            </select>
-
-            <select id="cmbAnio">
-                <option>2026</option>
-            </select>
-
-            <select id="cmbPeriodo">
-                <option>Todos los periodos</option>
-            </select>
-
-            <select id="cmbEstado">
-                <option>Todos los estados</option>
-            </select>
-
-        </div>
-
-    </section>
-
-    <!-- Tabla -->
-    <section class="contenedor-tabla">
-
-        <table id="tblHistorial">
-
-            <thead>
-
+<body>
+    <header class="header">
+        <h2>Panel principal</h2>
+        <ul class="list">
+            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
+            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
+            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
+            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
+            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
+            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
+            <i class="fa-solid fa-school"><li>Secciones</li></i>
+            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
+            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
+            <i class="fa-solid fa-clipboard-list"><a href="Auditoria.html"><li>Auditoria</li></a></i>
+            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
+        </ul>
+    </header>
+    <div class="body">
+        <h2>Historial académico</h2>
+        <p>
+            Registro completo del desempeño estudiantel
+        </p>
+        <button class="button">Exportar en PDF</button>
+        <p>
+            Total registros
+            0
+        </p>
+        <p>
+            Aprobados
+            0
+        </p>
+        <p>
+            Reprobados
+            0
+        </p>
+        <p>
+            Promedio general
+            0
+        </p>
+        <h3>Filtros de búsqueda</h3>
+        <input type="search" name="bar" placeholder="Buscar por NIE o nombre...">
+        <details class="sections">
+            <summary>Todas las secciones</summary>
+            <p></p>
+        </details>
+        <details class="year">
+            <summary>2026</summary>
+            <p></p>
+        </details>
+        <details class="periods">
+            <summary>Todas los períodos</summary>
+            <p></p>
+        </details>
+        <details class="states">
+            <summary>Todas los estados</summary>
+            <p></p>
+        </details>
+        <div class="table">
+            <table>
                 <tr>
                     <th>NIE</th>
-                    <th>Nombre Completo</th>
+                    <th>Nombre completo</th>
                     <th>Sección</th>
                     <th>Año</th>
                     <th>Periodo</th>
@@ -99,18 +74,20 @@
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
-
-            </thead>
-
-            <tbody>
-
-                <!-- Registros cargados dinámicamente -->
-
-            </tbody>
-
-        </table>
-
-    </section>
-
-</main>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <button class="details">Ver detalles</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
 </html>
