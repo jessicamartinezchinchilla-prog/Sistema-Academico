@@ -1,74 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de configuración</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Configuración - Sistema Académico</title>
 </head>
 <body>
     <header class="header">
-        <h2>Panel principal</h2>
-        <ul class="list">
-            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
-            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
-            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
-            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
-            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
-            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
-            <i class="fa-solid fa-school"><a href="secciones.html"><li>Secciones</li></a></i>
-            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
-            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
-            <i class="fa-solid fa-clipboard-list"><a href="auditoria.html"><li>Auditoria</li></a></i>
-            <i class="fa-solid fa-gear"><li>Configuración</li></i>
-        </ul>
+        <h1>Sistema Académico</h1>
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="configuracion.html" class="active"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
     </header>
-    <div class="body">
-        <h2>Configuración del sistema</h2>
-        <p>
-            Administración de todo el sistema académico
-        </p>
-        <p>
-            Sistema Académico
-        </p>
-        <p>
-            Año lectivo:
-        </p>
-        <details>
-            <summary>2026</summary>
-            <p></p>
-        </details>
-        <p>
-            Períodos académicos
-        </p>
-        <p>
-            Período 1
-        </p>
-        <p>
-            Período 2
-        </p>
-        <p>
-            Período 3
-        </p>
-        <p>
-            Período 4
-        </p>
-        <p>
-            Escala de calificaciones: <br>
-            Nota mínima: 6.0 <br>
-            Escala: 0.0 - 10.0
-        </p>
-        <p>
-            Datos del sistema: <br>
-            Total de estudiantes: 0
-            Total de profesores: 0
-            Total de Secciones: 0
-            Total de Materias: 0
-        </p>
-        <h2>Cerrar Sesión</h2>
-        <p>
-            Cierre de sesión seguro:
-        </p>
-        <button class="red_button">Cerrar Sesión</button>
-    </div>
+
+    <main class="main-content">
+        <h2>Configuración del Sistema</h2>
+        <p>Administración general y parámetros del sistema académico</p>
+
+        <!-- INFORMACIÓN DEL SISTEMA -->
+        <section class="config-section">
+            <h3>Información General</h3>
+            <form action="actualizar_configuracion.php" method="POST" class="config-form">
+                <label for="conf_nombre_sistema">Nombre del Sistema:</label>
+                <input type="text" id="conf_nombre_sistema" name="nombre_sistema" value="Sistema Académico" required>
+
+                <label for="conf_anio_lectivo">Año Lectivo:</label>
+                <select id="conf_anio_lectivo" name="anio_lectivo" required>
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                </select>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Guardar Cambios</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- PERÍODOS ACADÉMICOS -->
+        <section class="config-section">
+            <h3>Períodos Académicos</h3>
+            <div class="periods-list">
+                <div class="period-item">
+                    <span>Período 1</span>
+                    <button type="button" class="btn-action edit" title="Editar período">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="sr-only">Editar</span>
+                    </button>
+                </div>
+                <div class="period-item">
+                    <span>Período 2</span>
+                    <button type="button" class="btn-action edit" title="Editar período">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="sr-only">Editar</span>
+                    </button>
+                </div>
+                <div class="period-item">
+                    <span>Período 3</span>
+                    <button type="button" class="btn-action edit" title="Editar período">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="sr-only">Editar</span>
+                    </button>
+                </div>
+                <div class="period-item">
+                    <span>Período 4</span>
+                    <button type="button" class="btn-action edit" title="Editar período">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="sr-only">Editar</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ESCALA DE CALIFICACIONES -->
+        <section class="config-section">
+            <h3>Escala de Calificaciones</h3>
+            <form action="actualizar_escala.php" method="POST" class="config-form">
+                <label for="conf_nota_minima">Nota Mínima Aprobatoria:</label>
+                <input type="number" id="conf_nota_minima" name="nota_minima" value="6.0" min="0" max="10" step="0.1" required>
+
+                <label for="conf_escala_maxima">Escala Máxima:</label>
+                <input type="number" id="conf_escala_maxima" name="escala_maxima" value="10.0" min="0" max="100" step="0.1" required>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Guardar Cambios</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ESTADÍSTICAS DEL SISTEMA -->
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number" id="totalEstudiantesConf">0</span>
+                <span class="stat-label">Total estudiantes</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalProfesoresConf">0</span>
+                <span class="stat-label">Total profesores</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalSeccionesConf">0</span>
+                <span class="stat-label">Total secciones</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalMateriasConf">0</span>
+                <span class="stat-label">Total materias</span>
+            </article>
+        </section>
+
+        <!-- ZONA PELIGROSA -->
+        <section class="config-section danger-zone">
+            <h3>Cerrar Sesión</h3>
+            <p>Cierre de sesión seguro del sistema</p>
+            <form action="cerrar_sesion.php" method="POST">
+                <button type="submit" class="button btn-danger">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
 </body>
 </html>

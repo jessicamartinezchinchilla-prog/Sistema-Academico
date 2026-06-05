@@ -1,64 +1,146 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de materias</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Gestión de Materias - Sistema Académico</title>
 </head>
 <body>
     <header class="header">
-        <h2>Panel principal</h2>
-        <ul class="list">
-            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
-            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
-            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
-            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
-            <i class="fa-solid fa-book-open"><li>Materias</li></i>
-            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
-            <i class="fa-solid fa-school"><a href="secciones.html"><li>Secciones</li></a></i>
-            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
-            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
-            <i class="fa-solid fa-clipboard-list"><a href="auditoria.html"><li>Auditoria</li></a></i>
-            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
-        </ul>
+        <h1>Sistema Académico</h1>
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="materias.html" class="active"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
     </header>
-    <div class="body">
-        <h2>Panel de materias</h2>
-        <p>
-            Gestión de materias académicas del sistema
-        </p>
-        <button class="button">Ver promedios</button>
-        <button class="button">+ Añadir materia</button>
-        <p>
-            Matemáticas
-            0
-            0 estudiantes
-            docente:
-        </p>
-        <p>
-            Lenguaje
-            0
-            0 estudiantes
-            docente:
-        </p>
-        <p>
-            Sociales
-            0
-            0 estudiantes
-            docente:
-        </p>
-        <p>
-            Ciencia
-            0
-            0 estudiantes
-            docente:
-        </p>
-        <p>
-            Inglés
-            0
-            0 estudiantes
-            docente:
-        </p>
-    </div>
+
+    <main class="main-content">
+        <h2>Gestión de Materias</h2>
+        <p>Administración del plan de estudios y asignación docente</p>
+
+        <!-- BARRA DE ACCIONES -->
+        <section class="actions-bar">
+            <button type="button" class="button btn-secondary" onclick="document.getElementById('modalPromedios').showModal()">
+                <i class="fa-solid fa-chart-line"></i> Ver promedios
+            </button>
+            
+            <button type="button" class="button btn-primary" onclick="document.getElementById('modalMateria').showModal()">
+                <i class="fa-solid fa-plus"></i> Añadir materia
+            </button>
+        </section>
+
+        <!-- ESTADÍSTICAS RÁPIDAS -->
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number" id="totalMaterias">0</span>
+                <span class="stat-label">Total materias</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalDocentes">0</span>
+                <span class="stat-label">Docentes asignados</span>
+            </article>
+        </section>
+
+        <!-- GRID DE MATERIAS -->
+        <section class="subjects-grid" id="listaMaterias">
+            <!-- Las tarjetas de materias se generarán dinámicamente con JavaScript/PHP -->
+        </section>
+
+        <!-- Mensaje cuando no hay materias -->
+        <p class="empty-state" id="mensajeVacio">No hay materias registradas en el sistema aún.</p>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALES DE MATERIAS -->
+    <!-- ========================================== -->
+
+    <!-- MODAL: VER PROMEDIOS -->
+    <dialog id="modalPromedios" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Promedios por Materia</h3>
+        <div class="modal-body">
+            <p>Contenido del modal de promedios...</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" onclick="document.getElementById('modalPromedios').close()">Cerrar</button>
+        </div>
+    </dialog>
+
+    <!-- MODAL: AÑADIR MATERIA -->
+    <dialog id="modalMateria" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Añadir Nueva Materia</h3>
+        <form action="procesar_materia.php" method="POST" class="modal-form">
+            <label for="mat_codigo">Código de Materia:</label>
+            <input type="text" id="mat_codigo" name="codigo" placeholder="Ej: MAT001" required>
+
+            <label for="mat_nombre">Nombre de la Materia:</label>
+            <input type="text" id="mat_nombre" name="nombre" required>
+
+            <label for="mat_descripcion">Descripción:</label>
+            <textarea id="mat_descripcion" name="descripcion" rows="3"></textarea>
+
+            <label for="mat_docente">Docente Asignado:</label>
+            <select id="mat_docente" name="docente_id">
+                <option value="">Seleccione Docente</option>
+                <!-- PHP inyectará las opciones -->
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalMateria').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Guardar Materia</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- MODAL: EDITAR MATERIA -->
+    <dialog id="modalEditar" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Editar Materia</h3>
+        <form action="actualizar_materia.php" method="POST" class="modal-form">
+            <input type="hidden" name="materia_id" id="edit_materia_id">
+            
+            <label for="edit_codigo">Código de Materia:</label>
+            <input type="text" id="edit_codigo" name="codigo" required>
+
+            <label for="edit_nombre">Nombre de la Materia:</label>
+            <input type="text" id="edit_nombre" name="nombre" required>
+
+            <label for="edit_descripcion">Descripción:</label>
+            <textarea id="edit_descripcion" name="descripcion" rows="3"></textarea>
+
+            <label for="edit_docente">Docente Asignado:</label>
+            <select id="edit_docente" name="docente_id">
+                <option value="">Seleccione Docente</option>
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Actualizar Cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
 </body>
 </html>

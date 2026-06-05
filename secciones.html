@@ -1,77 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de secciones</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Gestión de Secciones - Sistema Académico</title>
 </head>
 <body>
     <header class="header">
-        <h2>Panel principal</h2>
-        <ul class="list">
-            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
-            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
-            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
-            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
-            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
-            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
-            <i class="fa-solid fa-school"><li>Secciones</li></i>
-            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
-            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
-            <i class="fa-solid fa-clipboard-list"><a href="auditoria.html"><li>Auditoria</li></a></i>
-            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
-        </ul>
+        <h1>Sistema Académico</h1>
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="secciones.html" class="active"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
     </header>
-    <div class="body">
-        <h2>Gestión de secciones</h2>
-        <p>
-            Vista general de de todas las secciones del sistema
-        </p>
-        <p>
-            0 Secciones
-        </p>
-        <p>
-            Desarrollo de Software 1ro <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-        <p>
-            Desarrollo de Software 2do <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-        <p>
-            Servicios Turísticos 1ro <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-        <p>
-            Servicios Turísticos 2do <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-        <p>
-            General 1ro <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-        <p>
-            General 2do <br>
-            Estudiantes
-            0 <br>
-            Profesores asignados: 0 docentes
-        </p>
-        <button class="button">Ver detalles</button>
-    </div>
+
+    <main class="main-content">
+        <h2>Gestión de Secciones</h2>
+        <p>Vista general de todas las secciones del sistema</p>
+
+        <!-- BARRA DE ACCIONES -->
+        <section class="actions-bar">
+            <button type="button" class="button btn-primary" onclick="document.getElementById('modalSeccion').showModal()">
+                <i class="fa-solid fa-plus"></i> Añadir sección
+            </button>
+        </section>
+
+        <!-- ESTADÍSTICAS RÁPIDAS -->
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number" id="totalSecciones">0</span>
+                <span class="stat-label">Total secciones</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalEstudiantesSeccion">0</span>
+                <span class="stat-label">Estudiantes asignados</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalDocentesSeccion">0</span>
+                <span class="stat-label">Docentes asignados</span>
+            </article>
+        </section>
+
+        <!-- GRID DE SECCIONES -->
+        <section class="subjects-grid" id="listaSecciones">
+            <!-- Las tarjetas de secciones se generarán dinámicamente con JavaScript/PHP -->
+        </section>
+
+        <!-- Mensaje cuando no hay secciones -->
+        <p class="empty-state" id="mensajeVacio">No hay secciones registradas en el sistema aún.</p>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALES DE SECCIONES -->
+    <!-- ========================================== -->
+
+    <!-- MODAL: AÑADIR SECCIÓN -->
+    <dialog id="modalSeccion" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Añadir Nueva Sección</h3>
+        <form action="procesar_seccion.php" method="POST" class="modal-form">
+            <label for="sec_nombre">Nombre de la Sección:</label>
+            <input type="text" id="sec_nombre" name="nombre" placeholder="Ej: Desarrollo de Software 1ro" required>
+
+            <label for="sec_anio">Año:</label>
+            <select id="sec_anio" name="anio_id" required>
+                <option value="">Seleccione Año</option>
+                <option value="1">Primer año</option>
+                <option value="2">Segundo año</option>
+            </select>
+
+            <label for="sec_capacidad">Capacidad Máxima:</label>
+            <input type="number" id="sec_capacidad" name="capacidad" min="1" max="100" required>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalSeccion').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Guardar Sección</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- MODAL: VER DETALLES -->
+    <dialog id="modalVer" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Detalles de la Sección</h3>
+        <div class="modal-body" id="detalleSeccion">
+            <p>Cargando información...</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" onclick="document.getElementById('modalVer').close()">Cerrar</button>
+        </div>
+    </dialog>
+
+    <!-- MODAL: EDITAR SECCIÓN -->
+    <dialog id="modalEditar" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Editar Sección</h3>
+        <form action="actualizar_seccion.php" method="POST" class="modal-form">
+            <input type="hidden" name="seccion_id" id="edit_seccion_id">
+            
+            <label for="edit_nombre">Nombre de la Sección:</label>
+            <input type="text" id="edit_nombre" name="nombre" required>
+
+            <label for="edit_anio">Año:</label>
+            <select id="edit_anio" name="anio_id" required>
+                <option value="1">Primer año</option>
+                <option value="2">Segundo año</option>
+            </select>
+
+            <label for="edit_capacidad">Capacidad Máxima:</label>
+            <input type="number" id="edit_capacidad" name="capacidad" min="1" max="100" required>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Actualizar Cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
 </body>
 </html>

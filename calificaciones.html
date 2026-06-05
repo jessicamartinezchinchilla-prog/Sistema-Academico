@@ -1,77 +1,252 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de calificaciones</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Gestión de Calificaciones - Sistema Académico</title>
 </head>
 <body>
     <header class="header">
-        <h2>Panel principal</h2>
-        <ul class="list">
-            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
-            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
-            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
-            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
-            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
-            <i class="fa-solid fa-award"><li>Calificaciones</li></i>
-            <i class="fa-solid fa-school"><a href="secciones.html"><li>Secciones</li></a></i>
-            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
-            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
-            <i class="fa-solid fa-clipboard-list"><a href="auditoria.html"><li>Auditoria</li></a></i>
-            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
-        </ul>
+        <h1>Sistema Académico</h1>
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="calificaciones.html" class="active"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
     </header>
-    <div class="body">
-        <h2>Gestón de Calificaciones</h2>
-        <button class="button">Generar PDF</button>
-        <button class="button">+ Agregar nota</button>
-        <p>
-            Aprobados: <br>
-            0
-        </p>
-        <p>
-            Reprobados: <br>
-            0
-        </p>
-        <p>
-            Promedio general: <br>
-            0
-        </p>
-        <input type="search" name="bar" placeholder="Buscar por NIE, nombre o apellido...">
-        <details class="classes">
-            <summary>Todas las materias</summary>
-            <p></p>
-        </details>
-        <details class="sections">
-            <summary>Todas las secciones</summary>
-            <p></p>
-        </details>
-        <details class="states">
-            <summary>Todos los estados</summary>
-            <p></p>
-        </details>
-        <div class="table">
-            <table>
-                <tr>
-                    <th>NIE</th>
-                    <th>Nombre</th>
-                    <th>Promedio</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>
-                        <button class="edit">Editar</button>
-                        <button class="delete">Eliminar</button>
-                    </td>
-                </tr>
+
+    <main class="main-content">
+        <h2>Gestión de Calificaciones</h2>
+        <p>Registro, consulta y control del rendimiento académico de los estudiantes</p>
+
+        <!-- BARRA DE ACCIONES -->
+        <section class="actions-bar">
+            <button type="button" class="button btn-secondary" onclick="document.getElementById('modalPDF').showModal()">
+                <i class="fa-solid fa-file-pdf"></i> Generar PDF
+            </button>
+            
+            <button type="button" class="button btn-primary" onclick="document.getElementById('modalNota').showModal()">
+                <i class="fa-solid fa-plus"></i> Agregar nota
+            </button>
+        </section>
+
+        <!-- ESTADÍSTICAS RÁPIDAS -->
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number" id="totalAprobados">0</span>
+                <span class="stat-label">Aprobados</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalReprobados">0</span>
+                <span class="stat-label">Reprobados</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="promedioGeneral">0</span>
+                <span class="stat-label">Promedio general</span>
+            </article>
+        </section>
+
+        <!-- PANEL DE FILTROS Y BÚSQUEDA -->
+        <section class="filters-bar">
+            <div class="busqueda">
+                <label for="buscarCalificacion" class="sr-only">Buscar calificación</label>
+                <input type="search" id="buscarCalificacion" name="busqueda" placeholder="Buscar por NIE, nombre o apellido...">
+            </div>
+
+            <div class="filtros">
+                <label for="filtroMateria" class="sr-only">Filtrar por materia</label>
+                <select id="filtroMateria" name="filtro_materia">
+                    <option value="">Todas las materias</option>
+                    <!-- PHP inyectará las opciones -->
+                </select>
+
+                <label for="filtroSeccion" class="sr-only">Filtrar por sección</label>
+                <select id="filtroSeccion" name="filtro_seccion">
+                    <option value="">Todas las secciones</option>
+                    <!-- PHP inyectará las opciones -->
+                </select>
+
+                <label for="filtroEstado" class="sr-only">Filtrar por estado</label>
+                <select id="filtroEstado" name="filtro_estado">
+                    <option value="">Todos los estados</option>
+                    <option value="Aprobado">Aprobado</option>
+                    <option value="Reprobado">Reprobado</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- TABLA DE CALIFICACIONES -->
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">NIE</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Promedio</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="listaCalificaciones">
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="actions-cell">
+                            <button type="button" class="btn-action edit" title="Editar calificación" onclick="document.getElementById('modalEditar').showModal()">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span class="sr-only">Editar</span>
+                            </button>
+                            <button type="button" class="btn-action delete" title="Eliminar calificación">
+                                <i class="fa-solid fa-trash"></i>
+                                <span class="sr-only">Eliminar</span>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
-        </div>
-    </div>   
+        </section>
+
+        <!-- Mensaje cuando no hay calificaciones -->
+        <p class="empty-state" id="mensajeVacio">No hay calificaciones registradas en el sistema aún.</p>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALES DE CALIFICACIONES -->
+    <!-- ========================================== -->
+
+    <!-- MODAL: GENERAR PDF -->
+    <dialog id="modalPDF" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Generar Reporte PDF</h3>
+        <form action="generar_pdf.php" method="POST" class="modal-form">
+            <label for="pdf_tipo">Tipo de Reporte:</label>
+            <select id="pdf_tipo" name="tipo_reporte" required>
+                <option value="">Seleccione tipo de reporte</option>
+                <option value="general">Reporte General (todas las calificaciones)</option>
+                <option value="estudiante">Por Estudiante</option>
+                <option value="materia">Por Materia</option>
+                <option value="seccion">Por Sección</option>
+                <option value="periodo">Por Período</option>
+            </select>
+
+            <label for="pdf_estudiante">Estudiante (si aplica):</label>
+            <input type="text" id="pdf_estudiante" name="estudiante" placeholder="NIE o nombre del estudiante">
+
+            <label for="pdf_materia">Materia (si aplica):</label>
+            <select id="pdf_materia" name="materia_id">
+                <option value="">Todas las materias</option>
+                <!-- PHP inyectará las opciones -->
+            </select>
+
+            <label for="pdf_seccion">Sección (si aplica):</label>
+            <select id="pdf_seccion" name="seccion_id">
+                <option value="">Todas las secciones</option>
+                <!-- PHP inyectará las opciones -->
+            </select>
+
+            <label for="pdf_periodo">Período (si aplica):</label>
+            <select id="pdf_periodo" name="periodo">
+                <option value="">Todos los períodos</option>
+                <option value="1">Primer Período</option>
+                <option value="2">Segundo Período</option>
+                <option value="3">Tercer Período</option>
+                <option value="4">Cuarto Período</option>
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalPDF').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Generar PDF</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- MODAL: AGREGAR NOTA -->
+    <dialog id="modalNota" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Agregar Nueva Calificación</h3>
+        <form action="procesar_calificacion.php" method="POST" class="modal-form">
+            <label for="nota_nie">NIE del Estudiante:</label>
+            <input type="text" id="nota_nie" name="nie" inputmode="numeric" placeholder="Ej: 123456789" required>
+
+            <label for="nota_materia">Materia:</label>
+            <select id="nota_materia" name="materia_id" required>
+                <option value="">Seleccione Materia</option>
+                <!-- PHP inyectará las opciones -->
+            </select>
+
+            <label for="nota_valor">Calificación:</label>
+            <input type="number" id="nota_valor" name="calificacion" min="0" max="100" step="0.01" required>
+
+            <label for="nota_periodo">Período:</label>
+            <select id="nota_periodo" name="periodo" required>
+                <option value="">Seleccione Período</option>
+                <option value="1">Primer Período</option>
+                <option value="2">Segundo Período</option>
+                <option value="3">Tercer Período</option>
+                <option value="4">Cuarto Período</option>
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalNota').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Guardar Calificación</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- MODAL: EDITAR CALIFICACIÓN -->
+    <dialog id="modalEditar" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Editar Calificación</h3>
+        <form action="actualizar_calificacion.php" method="POST" class="modal-form">
+            <input type="hidden" name="calificacion_id" id="edit_calificacion_id">
+            
+            <label for="edit_nie">NIE del Estudiante:</label>
+            <input type="text" id="edit_nie" name="nie" required readonly>
+
+            <label for="edit_materia">Materia:</label>
+            <select id="edit_materia" name="materia_id" required>
+                <option value="">Seleccione Materia</option>
+            </select>
+
+            <label for="edit_valor">Calificación:</label>
+            <input type="number" id="edit_valor" name="calificacion" min="0" max="100" step="0.01" required>
+
+            <label for="edit_periodo">Período:</label>
+            <select id="edit_periodo" name="periodo" required>
+                <option value="1">Primer Período</option>
+                <option value="2">Segundo Período</option>
+                <option value="3">Tercer Período</option>
+                <option value="4">Cuarto Período</option>
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Actualizar Cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
 </body>
 </html>

@@ -1,81 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de auditoria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Auditoría - Sistema Académico</title>
 </head>
 <body>
     <header class="header">
-        <h2>Panel principal</h2>
-        <ul class="list">
-            <i class="fa-solid fa-house"><a href="panel_principal.html"><li>Panel principal</li></a></i>
-            <i class="fa-solid fa-user"><a href="profesores.html"><li>Profesores</li></a></i>
-            <i class="fa-solid fa-children"><a href="estudiantes.html"><li>Estudiantes</li></a></i>
-            <i class="fa-solid fa-user-graduate"><a href="matricula.html"><li>Matrículas</li></a></i>
-            <i class="fa-solid fa-book-open"><a href="materias.html"><li>Materias</li></a></i>
-            <i class="fa-solid fa-award"><a href="calificaciones.html"><li>Calificaciones</li></a></i>
-            <i class="fa-solid fa-school"><a href="secciones.html"><li>Secciones</li></a></i>
-            <i class="fa-solid fa-clock-rotate-left"><a href="historial_academico.html"><li>Historial académico</li></a></i>
-            <i class="fa-solid fa-chart-column"><a href="estadisticas.html"><li>Estadísticas</li></a></i>
-            <i class="fa-solid fa-clipboard-list"><li>Auditoria</li></i>
-            <i class="fa-solid fa-gear"><a href="configuracion.html"><li>Configuración</li></a></i>
-        </ul>
+        <h1>Sistema Académico</h1>
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="auditoria.html" class="active"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
     </header>
-    <div class="body">
-        <h2>Auditoria del Sistema</h2>
-        <button class="export">Exportar Registro</button>
-        <p>
-            Total registros: <br>
-            0
-        </p>
-        <p>
-            Inicios de sesión: <br>
-            0
-        </p>
-        <p>
-            Agregados: <br>
-            0
-        </p>
-        <p>
-            Modificaciones: <br>
-            0
-        </p>
-        <p>
-            Eliminaciones: <br>
-            0
-        </p>
-        <input type="search" name="bar" placeholder="Buscar por usuario, acción o detalles...">
-        <details>
-            <summary>Todos los profesores</summary>
-            <p></p>
-        </details>
-        <details>
-            <summary>Todos las acciones</summary>
-            <p></p>
-        </details>
-        <details>
-            <summary>Todos los módulos</summary>
-            <p></p>
-        </details>
-        <div class="table">
-            <tr>
-                <th>Fecha y hora</th>
-                <th>Usuario</th>
-                <th>Acción</th>
-                <th>Detalles</th>
-                <th>Módulo</th>
-                <th>Tipo</th>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </div>
-    </div>
+
+    <main class="main-content">
+        <h2>Auditoría del Sistema</h2>
+        <p>Registro de todas las acciones realizadas por los usuarios en el sistema</p>
+
+        <!-- BARRA DE ACCIONES -->
+        <section class="actions-bar">
+            <button type="button" class="button btn-secondary" onclick="document.getElementById('modalExportar').showModal()">
+                <i class="fa-solid fa-file-export"></i> Exportar Registro
+            </button>
+        </section>
+
+        <!-- ESTADÍSTICAS RÁPIDAS -->
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number" id="totalRegistrosAud">0</span>
+                <span class="stat-label">Total registros</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalIniciosSesion">0</span>
+                <span class="stat-label">Inicios de sesión</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalAgregados">0</span>
+                <span class="stat-label">Agregados</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalModificaciones">0</span>
+                <span class="stat-label">Modificaciones</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number" id="totalEliminaciones">0</span>
+                <span class="stat-label">Eliminaciones</span>
+            </article>
+        </section>
+
+        <!-- PANEL DE FILTROS Y BÚSQUEDA -->
+        <section class="filters-bar">
+            <div class="busqueda">
+                <label for="buscarAuditoria" class="sr-only">Buscar auditoría</label>
+                <input type="search" id="buscarAuditoria" name="busqueda" placeholder="Buscar por usuario, acción o detalles...">
+            </div>
+
+            <div class="filtros">
+                <label for="filtroUsuario" class="sr-only">Filtrar por usuario</label>
+                <select id="filtroUsuario" name="filtro_usuario">
+                    <option value="">Todos los usuarios</option>
+                    <!-- PHP inyectará las opciones -->
+                </select>
+
+                <label for="filtroAccion" class="sr-only">Filtrar por acción</label>
+                <select id="filtroAccion" name="filtro_accion">
+                    <option value="">Todas las acciones</option>
+                    <option value="inicio_sesion">Inicio de sesión</option>
+                    <option value="creacion">Creación</option>
+                    <option value="modificacion">Modificación</option>
+                    <option value="eliminacion">Eliminación</option>
+                </select>
+
+                <label for="filtroModulo" class="sr-only">Filtrar por módulo</label>
+                <select id="filtroModulo" name="filtro_modulo">
+                    <option value="">Todos los módulos</option>
+                    <option value="matriculas">Matrículas</option>
+                    <option value="estudiantes">Estudiantes</option>
+                    <option value="profesores">Profesores</option>
+                    <option value="materias">Materias</option>
+                    <option value="calificaciones">Calificaciones</option>
+                    <option value="secciones">Secciones</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- TABLA DE AUDITORÍA -->
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Fecha y hora</th>
+                        <th scope="col">Usuario</th>
+                        <th scope="col">Acción</th>
+                        <th scope="col">Detalles</th>
+                        <th scope="col">Módulo</th>
+                        <th scope="col">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody id="listaAuditoria">
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Mensaje cuando no hay registros -->
+        <p class="empty-state" id="mensajeVacio">No hay registros de auditoría en el sistema aún.</p>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALES DE AUDITORÍA -->
+    <!-- ========================================== -->
+
+    <!-- MODAL: EXPORTAR REGISTRO -->
+    <dialog id="modalExportar" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Exportar Registro de Auditoría</h3>
+        <form action="exportar_auditoria.php" method="POST" class="modal-form">
+            <label for="exp_formato">Formato de Exportación:</label>
+            <select id="exp_formato" name="formato" required>
+                <option value="">Seleccione formato</option>
+                <option value="pdf">PDF</option>
+                <option value="csv">CSV</option>
+                <option value="excel">Excel</option>
+            </select>
+
+            <label for="exp_fecha_inicio">Fecha de inicio:</label>
+            <input type="date" id="exp_fecha_inicio" name="fecha_inicio">
+
+            <label for="exp_fecha_fin">Fecha de fin:</label>
+            <input type="date" id="exp_fecha_fin" name="fecha_fin">
+
+            <label for="exp_usuario">Usuario (opcional):</label>
+            <select id="exp_usuario" name="usuario_id">
+                <option value="">Todos los usuarios</option>
+                <!-- PHP inyectará las opciones -->
+            </select>
+
+            <label for="exp_accion">Acción (opcional):</label>
+            <select id="exp_accion" name="accion">
+                <option value="">Todas las acciones</option>
+                <option value="inicio_sesion">Inicio de sesión</option>
+                <option value="creacion">Creación</option>
+                <option value="modificacion">Modificación</option>
+                <option value="eliminacion">Eliminación</option>
+            </select>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalExportar').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Exportar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
 </body>
 </html>
