@@ -212,12 +212,31 @@ body{
     color:#dc2626;
 }
 
-/* MODALES */
+/* =========================
+   MODALES
+========================= */
+
 .modal{
-    border:none;
-    border-radius:12px;
-    padding:20px;
-    width:400px;
+    width: 550px;
+    max-width: 95%;
+    padding: 30px;
+    border: none;
+    border-radius: 18px;
+    background: #ffffff;
+    margin: auto;
+    box-shadow: 0 15px 40px rgba(0,0,0,.15);
+}
+
+.modal::backdrop{
+    background: rgba(30,58,138,.25);
+    backdrop-filter: blur(3px);
+}
+
+.modal h3{
+    text-align:center;
+    color:#1e3a8a;
+    margin-bottom:20px;
+    font-size:24px;
 }
 
 .modal-header{
@@ -228,43 +247,68 @@ body{
 .btn-close{
     background:none;
     border:none;
-    font-size:18px;
+    font-size:24px;
+    color:#1e3a8a;
     cursor:pointer;
 }
 
 .modal-form{
     display:flex;
     flex-direction:column;
-    gap:10px;
+    gap:14px;
+}
+
+.modal-form label{
+    font-weight:600;
+    color:#374151;
 }
 
 .modal-form input,
 .modal-form select{
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ddd;
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    background:#f9fafb;
+    transition:.3s;
+}
+
+.modal-form input:focus,
+.modal-form select:focus{
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 0 4px rgba(37,99,235,.15);
 }
 
 .modal-actions{
     display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    margin-top:10px;
+    justify-content:center;
+    gap:15px;
+    margin-top:20px;
 }
 
 .btn-cancel{
     background:#e5e7eb;
+    color:#374151;
     border:none;
-    padding:8px 12px;
-    border-radius:8px;
+    padding:12px 22px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
 }
 
 .btn-save{
     background:#2563eb;
     color:white;
     border:none;
-    padding:8px 12px;
-    border-radius:8px;
+    padding:12px 22px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.btn-save:hover{
+    background:#1d4ed8;
 }
 
 /* FOOTER */
