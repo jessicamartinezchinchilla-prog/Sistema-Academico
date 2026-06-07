@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <link rel="stylesheet" href="matriculas.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="matricula.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <title>Gestión de Matrículas - Sistema Académico</title>
+  </head>
+  <body>
+    <header class="header">
+      <h1>Sistema Académico</h1>
+      <nav>
+        <ul class="list">
+          <li>
+            <a href="panel_principal.html"
+              ><i class="fa-solid fa-house"></i> Panel principal</a
+            >
+          </li>
+          <li>
+            <a href="profesores.html"
+              ><i class="fa-solid fa-user"></i> Profesores</a
+            >
+          </li>
+          <li>
+            <a href="estudiantes.html"
+              ><i class="fa-solid fa-children"></i> Estudiantes</a
+            >
+          </li>
+          <li>
+            <a href="matricula.html" class="active"
+              ><i class="fa-solid fa-user-graduate"></i> Matrículas</a
+            >
+          </li>
+          <li>
+            <a href="materias.html"
+              ><i class="fa-solid fa-book-open"></i> Materias</a
+            >
+          </li>
+          <li>
+            <a href="calificaciones.html"
+              ><i class="fa-solid fa-award"></i> Calificaciones</a
+            >
+          </li>
+          <li>
+            <a href="secciones.html"
+              ><i class="fa-solid fa-school"></i> Secciones</a
+            >
+          </li>
+          <li>
+            <a href="historial_academico.html"
+              ><i class="fa-solid fa-clock-rotate-left"></i> Historial
+              académico</a
+            >
+          </li>
+          <li>
+            <a href="estadisticas.html"
+              ><i class="fa-solid fa-chart-column"></i> Estadísticas</a
+            >
+          </li>
+          <li>
+            <a href="auditoria.html"
+              ><i class="fa-solid fa-clipboard-list"></i> Auditoría</a
+            >
+          </li>
+          <li>
+            <a href="configuracion.html"
+              ><i class="fa-solid fa-gear"></i> Configuración</a
+            >
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <h2>Gestión de Matrículas</h2>
+      <p>
+        Registro, inscripción y gestión del vínculo académico de los estudiantes
+      </p>
+
+      <!-- ESTADÍSTICAS -->
+      <section class="stats-summary">
+        <article class="stat-item">
+          <span class="stat-number" id="totalMatriculas">0</span>
+          <span class="stat-label">Total Matrículas</span>
+        </article>
+        <article class="stat-item">
+          <span class="stat-number" id="matriculasActivas">0</span>
+          <span class="stat-label">Activas</span>
+        </article>
+        <article class="stat-item">
+          <span class="stat-number" id="matriculasInactivas">0</span>
+          <span class="stat-label">Inactivas</span>
+        </article>
+        <article class="stat-item">
+          <span class="stat-number" id="matriculasAnio">0</span>
+          <span class="stat-label">Este Año</span>
+        </article>
+      </section>
+
+      <!-- PANEL DE FILTROS Y BÚSQUEDA -->
+      <section class="filters-bar">
+        <div class="busqueda">
+          <label for="buscarEstudiante" class="sr-only">Buscar matrícula</label>
+          <input
+            type="search"
+            id="buscarEstudiante"
+            name="busqueda"
+            placeholder="Buscar por NIE, nombre o responsable..."
+          />
+        </div>
+
+        <div class="filtros">
+          <label for="filtroGrado" class="sr-only">Filtrar por grado</label>
+          <select id="filtroGrado" name="filtro_grado">
+            <option value="">Todos los grados</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
+          </select>
+
+          <label for="filtroEstado" class="sr-only">Filtrar por estado</label>
+          <select id="filtroEstado" name="filtro_estado">
+            <option value="">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </div>
+
+        <!-- BOTÓN QUE ABRE EL FORMULARIO DE CREACIÓN -->
+        <button
+          type="button"
+          class="button btn-primary"
+          onclick="document.getElementById('modalMatricula').showModal()"
+        >
+          <i class="fa-solid fa-plus"></i> Nueva Matrícula
+        </button>
+      </section>
+
+      <!-- TABLA DE MATRÍCULAS -->
+      <section class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">NIE</th>
+              <th scope="col">Nombre Completo</th>
+              <th scope="col">Grado</th>
+              <th scope="col">Sección</th>
+              <th scope="col">Responsable</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="listaEstudiantes">
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td><span class="badge active"></span></td>
+              <td class="actions-cell">
+                <button
+                  type="button"
+                  class="btn-action see"
+                  title="Ver detalles"
+                  onclick="document.getElementById('modalVer').showModal()"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action edit"
+                  title="Editar"
+                  onclick="document.getElementById('modalEditar').showModal()"
+                >
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action delete"
+                  title="Eliminar"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALES DE MATRÍCULA -->
+    <!-- ========================================== -->
+
+    <!-- MODAL: NUEVA MATRÍCULA (Creación completa) -->
+    <dialog id="modalMatricula" class="modal">
+      <form method="dialog" class="modal-header">
+        <button type="submit" class="btn-close" title="Cerrar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </form>
+      <h3>Registrar Nueva Matrícula</h3>
+      <form action="procesar_matricula.php" method="POST" class="modal-form">
+        <label for="mat_nie">NIE del Estudiante:</label>
+        <input
+          type="text"
+          id="mat_nie"
+          name="nie"
+          inputmode="numeric"
+          placeholder="Ej: 123456789"
+          required
+        />
+
+        <label for="mat_nombre">Nombre Completo:</label>
+        <input type="text" id="mat_nombre" name="nombre_completo" required />
+
+        <label for="mat_grado">Grado:</label>
+        <select id="mat_grado" name="grado_id" required>
+          <option value="">Seleccione Grado</option>
+          <!-- PHP inyectará las opciones -->
+        </select>
+
+        <label for="mat_seccion">Sección:</label>
+        <select id="mat_seccion" name="seccion_id" required>
+          <option value="">Seleccione Sección</option>
+          <!-- PHP inyectará las opciones -->
+        </select>
+
+        <label for="mat_responsable">Nombre del Responsable:</label>
+        <input type="text" id="mat_responsable" name="responsable" required />
+
+        <label for="mat_telefono">Teléfono del Responsable:</label>
+        <input
+          type="tel"
+          id="mat_telefono"
+          name="telefono"
+          inputmode="numeric"
+          placeholder="Ej: 78901234"
+          required
+        />
+
+        <label for="mat_estado">Estado de la Matrícula:</label>
+        <select id="mat_estado" name="estado" required>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-cancel"
+            onclick="document.getElementById('modalMatricula').close()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn-save">Guardar Matrícula</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL: VER DETALLES -->
+    <dialog id="modalVer" class="modal">
+      <form method="dialog" class="modal-header">
+        <button type="submit" class="btn-close" title="Cerrar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </form>
+      <h3>Información de la Matrícula</h3>
+      <div id="detalleEstudiante" class="modal-body">
+        <p>Cargando información...</p>
+      </div>
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="btn-cancel"
+          onclick="document.getElementById('modalVer').close()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </dialog>
+
+    <!-- MODAL: EDITAR MATRÍCULA -->
+    <dialog id="modalEditar" class="modal">
+      <form method="dialog" class="modal-header">
+        <button type="submit" class="btn-close" title="Cerrar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </form>
+      <h3>Editar Matrícula</h3>
+      <form
+        action="actualizar_matricula.php"
+        method="POST"
+        class="modal-form"
+        id="formEditar"
+      >
+        <!-- Campo oculto OBLIGATORIO para saber qué registro actualizar en PHP -->
+        <input type="hidden" name="matricula_id" id="edit_matricula_id" />
+
+        <label for="edit_nombre">Nombre Completo:</label>
+        <input type="text" id="edit_nombre" name="nombre_completo" required />
+
+        <!-- (Aquí irían los demás campos: grado, sección, responsable, etc., con sus respectivos 'name') -->
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-cancel"
+            onclick="document.getElementById('modalEditar').close()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn-save">Actualizar Cambios</button>
+        </div>
+      </form>
+    </dialog>
+
+    <footer class="footer">
+      <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
+  </body>
+</html>
