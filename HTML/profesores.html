@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="../CSS/profesores.css">
+    <script src="../JS/profesores.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Gestión de Profesores - Sistema Académico</title>
+</head>
+<body>
+    <header class="header">
+        <h1>Sistema Académico</h1> 
+        <nav>
+            <ul class="list">
+                <li><a href="../HTML/panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
+                <li><a href="../HTML/profesores.html" class="active"><i class="fa-solid fa-user"></i> Profesores</a></li> <!-- Añadí clase active para saber en qué página estamos -->
+                <li><a href="../HTML/estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <li><a href="../HTML/matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <li><a href="../HTML/materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <li><a href="../HTML/calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <li><a href="../HTML/secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="../HTML/historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <li><a href="../HTML/estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <li><a href="../HTML/auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <li><a href="../HTML/configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <h2>Gestión de Profesores</h2>
+        <p>Administración de personal docente</p>
+
+        <button type="button" class="button btn-primary" onclick="document.getElementById('modalProfesor').showModal()">
+            <i class="fa-solid fa-plus"></i> Agregar Profesor
+        </button>
+
+        <section class="stats-summary">
+            <article class="stat-item">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Total profesores</span>
+            </article>
+            <article class="stat-item">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Materias cubiertas</span>
+            </article>
+        </section>
+
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Nombre completo</th>
+                        <th scope="col">Correo electrónico</th>
+                <th scope="col">Materia asignada</th>
+                        <th scope="col">Secciones</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td></td> <!-- Datos de ejemplo para que veas la estructura -->
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="actions-cell">
+                            <button type="button" class="btn-action see" title="Ver detalles"><i class="fa-solid fa-eye"></i></button>
+                            <button type="button" class="btn-action edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button type="button" class="btn-action delete" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <dialog id="modalProfesor" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3>Agregar Nuevo Profesor</h3>
+        <form action="procesar_profesor.php" method="POST" class="modal-form">
+            <label for="prof_nombre">Nombre completo:</label>
+            <input type="text" id="prof_nombre" name="nombre" required>
+            
+            <label for="prof_email">Correo electrónico:</label>
+            <input type="email" id="prof_email" name="email" required>
+
+            <label for="prof_materia">Materia:</label>
+            <input type="text" id="prof_materia" name="materia" required>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalProfesor').close()">Cancelar</button>
+                <button type="submit" class="btn-save">Guardar Profesor</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>

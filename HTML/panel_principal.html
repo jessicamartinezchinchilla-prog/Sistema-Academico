@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es"> <!-- 1. Cambiado a español -->
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../CSS/panel_principal.css"> 
+    <script src="../JS/panel_principal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Dashboard - Sistema Académico</title>
+</head>
+
+<body>
+    <header class="header">
+        <h1>Panel principal</h1>       
+        <nav>
+            <ul class="list">
+                <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i>Panel principal</a></li>
+                <li><a href="profesores.html"><i class="fa-solid fa-user"></i>Profesores</a></li>
+                <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i>Estudiantes</a></li>
+                <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i>Matrículas</a></li>
+                <li><a href="materias.html"><i class="fa-solid fa-book-open"></i>Materias</a></li>
+                <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i>Calificaciones</a></li>
+                <li><a href="secciones.html"><i class="fa-solid fa-school"></i>Secciones</a></li>
+                <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i>Historial académico</a></li>
+                <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i>Estadísticas</a></li>
+                <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i>Auditoría</a></li>
+                <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i>Configuración</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <h2>Dashboard</h2>
+        <p>Vista general del sistema</p>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <i class="fa-solid fa-person-chalkboard"></i>
+                <div class="stat-info">
+                    <p>Total Profesores</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <i class="fa-solid fa-book"></i>
+                <div class="stat-info">
+                    <p>Total Materias</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <div class="stat-info">
+                    <p>Total Estudiantes</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <i class="fa-solid fa-user-check"></i>
+                <div class="stat-info">
+                    <p>Estudiantes Activos</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <i class="fa-solid fa-ban"></i>
+                <div class="stat-info">
+                    <p>Estudiantes Inactivos</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <i class="fa-solid fa-school-flag"></i>
+                <div class="stat-info">
+                    <p>Total de Secciones</p>
+                    <span class="stat-number">0</span>
+                </div>
+            </article>
+        </section>
+
+        <section class="charts-section">
+            <h3>Rendimiento académico por materia:</h3>
+            <canvas id="grafica_barras1"></canvas>
+            
+            <h3>Porcentaje de aprobación general:</h3>
+            <canvas id="grafica_pastel"></canvas>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>

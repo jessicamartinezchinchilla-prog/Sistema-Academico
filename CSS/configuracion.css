@@ -1,0 +1,255 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* BODY */
+body {
+    display: flex;
+    background: #f4f6f9;
+    color: #333;
+}
+
+/* SIDEBAR */
+.header {
+    width: 260px;
+    height: 100vh;
+    background: #2d4bb3;
+    color: white;
+    padding: 20px;
+    position: fixed;
+}
+
+.header h1 {
+    font-size: 20px;
+    margin-bottom: 25px;
+}
+
+/* MENÚ */
+.list {
+    list-style: none;
+}
+
+.list li {
+    margin-bottom: 8px;
+}
+
+.list a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    text-decoration: none;
+    padding: 12px;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.list a:hover,
+.list a.active {
+    background: #1f36a0;
+}
+
+/* CONTENIDO */
+.main-content {
+    margin-left: 260px;
+    padding: 30px;
+    width: 100%;
+}
+
+.main-content h2 {
+    font-size: 28px;
+}
+
+.main-content p {
+    color: #777;
+    margin-bottom: 20px;
+}
+
+/* SECCIONES */
+.config-section {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.config-section h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #2d4bb3;
+    padding-bottom: 8px;
+}
+
+/* FORMULARIOS */
+.config-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.config-form label {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.config-form input,
+.config-form select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+    transition: 0.2s;
+}
+
+.config-form input:focus,
+.config-form select:focus {
+    border-color: #2d4bb3;
+    outline: none;
+}
+
+/* BOTÓN */
+.btn-save {
+    background: #2d4bb3;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-save:hover {
+    background: #1f36a0;
+}
+
+/* PERIODOS */
+.periods-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.period-item {
+    background: #f9fafc;
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* BOTONES ACCIÓN */
+.btn-action {
+    border: none;
+    background: #e8ecff;
+    color: #2d4bb3;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-action:hover {
+    background: #dbe2ff;
+}
+
+/* ESTADÍSTICAS */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.stat-number {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2d4bb3;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #777;
+}
+
+/* ZONA PELIGRO */
+.danger-zone {
+    border-left: 5px solid red;
+}
+
+.btn-danger {
+    background: #e53935;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-danger:hover {
+    background: #c62828;
+}
+
+/* FOOTER */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 260px;
+    width: calc(100% - 260px);
+    background: white;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #777;
+    border-top: 1px solid #ddd;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .header {
+        width: 200px;
+    }
+
+    .main-content {
+        margin-left: 200px;
+    }
+
+    .footer {
+        left: 200px;
+        width: calc(100% - 200px);
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        flex-direction: column;
+    }
+
+    .header {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .footer {
+        left: 0;
+        width: 100%;
+    }
+}
