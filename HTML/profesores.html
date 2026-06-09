@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,40 +6,46 @@
     
     <link rel="stylesheet" href="../CSS/profesores.css">
     <script src="../JS/profesores.js" defer></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Gestión de Profesores - Sistema Académico</title>
 </head>
-<body>
-    <header class="header">
-        <h1>Sistema Académico</h1> 
-        <nav>
-            <ul class="list">
-                <li><a href="../HTML/panel_principal.html"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="../HTML/profesores.html" class="active"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="../HTML/estudiantes.html"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="../HTML/matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="../HTML/materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="../HTML/calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="../HTML/secciones.html"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="../HTML/historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="../HTML/estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="../HTML/auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="../HTML/configuracion.html"><i class="fa-solid fa-gear"></i> Configuración</a></li>
-            </ul>
-        </nav>
-    </header>
 
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <h1>Panel Administrador</h1>       
+
+        <ul class="nav">
+            <li><a href="panel_principal.html"><i class="fa-solid fa-house"></i>Dashboard</a></li>
+            <li><a href="profesores.html" class="active"><i class="fa-solid fa-user"></i>Profesores</a></li>
+            <li><a href="estudiantes.html"><i class="fa-solid fa-children"></i>Estudiantes</a></li>
+            <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i>Matrículas</a></li>
+            <li><a href="materias.html"><i class="fa-solid fa-book-open"></i>Materias</a></li>
+            <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i>Calificaciones</a></li>
+            <li><a href="secciones.html"><i class="fa-solid fa-school"></i>Secciones</a></li>
+            <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i>Historial académico</a></li>
+            <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i>Estadísticas</a></li>
+            <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i>Auditoría</a></li>
+            <li><a href="configuracion.html"><i class="fa-solid fa-gear"></i>Configuración</a></li>
+        </ul>
+    </aside>
+
+    <!-- CONTENIDO -->
     <main class="main-content">
+
         <h2>Gestión de Profesores</h2>
         <p>Administración de personal docente</p>
 
-        <!-- BARRA DE ACCIONES -->
+        <!-- BOTÓN -->
         <section class="actions-bar">
-            <button type="button" class="button btn-primary" onclick="document.getElementById('modalProfesor').showModal()">
+            <button type="button" class="btn-primary" onclick="document.getElementById('modalProfesor').showModal()">
                 <i class="fa-solid fa-plus"></i> Agregar Profesor
             </button>
         </section>
 
+        <!-- STATS -->
         <section class="stats-summary">
             <article class="stat-item">
                 <span class="stat-number" id="totalProfesores">0</span>
@@ -52,129 +57,112 @@
             </article>
         </section>
 
-        <!-- PANEL DE FILTROS Y BÚSQUEDA -->
+        <!-- FILTROS -->
         <section class="filters-bar">
             <div class="busqueda">
-                <label for="buscarProfesor" class="sr-only">Buscar profesor</label>
-                <input type="search" id="buscarProfesor" name="busqueda" placeholder="Buscar por nombre, NIE o apellido...">
+                <input type="search" id="buscarProfesor" placeholder="Buscar por nombre, NIE o apellido...">
             </div>
 
             <div class="filtros">
-                <label for="filtroMateria" class="sr-only">Filtrar por materia</label>
-                <select id="filtroMateria" name="filtro_materia">
+                <select id="filtroMateria">
                     <option value="">Todas las materias</option>
-                    <!-- PHP inyectará las opciones -->
                 </select>
 
-                <label for="filtroSeccion" class="sr-only">Filtrar por sección</label>
-                <select id="filtroSeccion" name="filtro_seccion">
+                <select id="filtroSeccion">
                     <option value="">Todas las secciones</option>
-                    <!-- PHP inyectará las opciones -->
                 </select>
             </div>
         </section>
 
+        <!-- TABLA -->
         <section class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th scope="col">Nombre completo</th>
-                        <th scope="col">Correo electrónico</th>
-                        <th scope="col">Materia asignada</th>
-                        <th scope="col">Secciones</th>
-                        <th scope="col">Acciones</th>
+                        <th>Nombre completo</th>
+                        <th>Correo electrónico</th>
+                        <th>Materia asignada</th>
+                        <th>Secciones</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="listaProfesores">
                     <tr>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>Ejemplo Profesor</td>
+                        <td>correo@ejemplo.com</td>
+                        <td>Matemática</td>
+                        <td>Sección A</td>
                         <td class="actions-cell">
-                            <button type="button" class="btn-action see" title="Ver detalles">
-                                <i class="fa-solid fa-eye"></i>
-                                <span class="sr-only">Ver detalles</span>
-                            </button>
-                            <button type="button" class="btn-action edit" title="Editar">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                                <span class="sr-only">Editar</span>
-                            </button>
-                            <button type="button" class="btn-action delete" title="Eliminar">
-                                <i class="fa-solid fa-trash"></i>
-                                <span class="sr-only">Eliminar</span>
-                            </button>
+                            <button class="btn-action see"><i class="fa-solid fa-eye"></i></button>
+                            <button class="btn-action edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="btn-action delete"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </section>
 
-        <!-- Mensaje cuando no hay profesores -->
-        <p class="empty-state" id="mensajeVacio">No hay profesores registrados en el sistema aún.</p>
+        <p class="empty-state" id="mensajeVacio">
+            No hay profesores registrados en el sistema aún.
+        </p>
+
     </main>
 
-    <!-- ========================================== -->
-    <!-- MODAL: AGREGAR PROFESOR -->
-    <!-- ========================================== -->
+    <!-- MODAL -->
     <dialog id="modalProfesor" class="modal">
         <form method="dialog" class="modal-header">
-            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button type="submit" class="btn-close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </form>
+
         <h3>Agregar Nuevo Profesor</h3>
-        <form action="procesar_profesor.php" method="POST" class="modal-form">
-            
-            <!-- Datos personales -->
-            <h4><i class="fa-solid fa-user"></i> Datos personales</h4>
+
+        <form class="modal-form">
+
+            <h4>Datos personales</h4>
 
             <div class="form-row">
                 <div class="form-col">
-                    <label for="prof_nombres">Nombres:</label>
-                    <input type="text" id="prof_nombres" name="nombres" required>
+                    <label>Nombres:</label>
+                    <input type="text" required>
                 </div>
                 <div class="form-col">
-                    <label for="prof_apellidos">Apellidos:</label>
-                    <input type="text" id="prof_apellidos" name="apellidos" required>
+                    <label>Apellidos:</label>
+                    <input type="text" required>
                 </div>
             </div>
 
-            <label for="prof_nip">NIP (Número de Identificación Profesional):</label>
-            <input type="text" id="prof_nip" name="nip" placeholder="Ej: NIP-001234" required>
+            <label>NIP:</label>
+            <input type="text" required>
 
-            <hr class="divider">
+            <h4>Contacto</h4>
 
-            <!-- Datos de contacto -->
-            <h4><i class="fa-solid fa-address-book"></i> Datos de contacto</h4>
+            <label>Correo:</label>
+            <input type="email" required>
 
-            <label for="prof_email">Correo electrónico:</label>
-            <input type="email" id="prof_email" name="email" placeholder="Ej: profesor@ejemplo.com" required>
+            <label>Teléfono:</label>
+            <input type="tel" required>
 
-            <label for="prof_email_institucional">Correo institucional:</label>
-            <input type="email" id="prof_email_institucional" name="email_institucional" placeholder="Ej: profesor@instituto.edu">
+            <h4>Asignación</h4>
 
-            <label for="prof_telefono">Número de teléfono:</label>
-            <input type="tel" id="prof_telefono" name="telefono" inputmode="numeric" placeholder="Ej: 78901234" required>
-
-            <hr class="divider">
-
-            <!-- Datos académicos -->
-            <h4><i class="fa-solid fa-chalkboard-user"></i> Asignación académica</h4>
-
-            <label for="prof_materia">Materia a asignar:</label>
-            <select id="prof_materia" name="materia_id" required>
-                <option value="">Seleccione una materia</option>
-                <!-- PHP inyectará las opciones dinámicamente desde la BD -->
+            <label>Materia:</label>
+            <select required>
+                <option>Seleccione</option>
             </select>
 
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="document.getElementById('modalProfesor').close()">Cancelar</button>
-                <button type="submit" class="btn-save">Guardar Profesor</button>
+                <button type="submit" class="btn-save">Guardar</button>
             </div>
+
         </form>
     </dialog>
 
+    <!-- FOOTER -->
     <footer class="footer">
         <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
     </footer>
+
 </body>
 </html>
