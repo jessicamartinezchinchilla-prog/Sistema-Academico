@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="../CSS/configuracion.css">
     <meta charset="UTF-8">
-    <script src="../JS/configuracion.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Configuración - Sistema Académico</title>
 </head>
-
 <body>
     <header class="header">
         <h1>Sistema Académico</h1>
@@ -33,9 +30,41 @@
         <h2>Configuración del Sistema</h2>
         <p>Administración general y parámetros del sistema académico</p>
 
+        <!-- ========================================== -->
+        <!-- DATOS DEL USUARIO (Solo visualización) -->
+        <!-- ========================================== -->
+        <section class="config-section">
+            <h3><i class="fa-solid fa-user-circle"></i> Datos del Usuario</h3>
+            <p>Información de tu cuenta</p>
+            
+            <div class="user-info-display">
+                <div class="info-item">
+                    <label><i class="fa-solid fa-user"></i> Nombre Completo:</label>
+                    <span id="user_nombre">Nombre del usuario</span>
+                </div>
+
+                <div class="info-item">
+                    <label><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label>
+                    <span id="user_email">correo@ejemplo.com</span>
+                </div>
+
+                <div class="info-item">
+                    <label><i class="fa-solid fa-phone"></i> Número de Teléfono:</label>
+                    <span id="user_telefono">78901234</span>
+                </div>
+            </div>
+
+            <!-- Botón para cambiar contraseña -->
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="button btn-secondary" onclick="document.getElementById('modalVerificarPassword').showModal()">
+                    <i class="fa-solid fa-key"></i> Cambiar Contraseña
+                </button>
+            </div>
+        </section>
+
         <!-- INFORMACIÓN DEL SISTEMA -->
         <section class="config-section">
-            <h3>Información General</h3>
+            <h3><i class="fa-solid fa-info-circle"></i> Información General</h3>
             <form action="actualizar_configuracion.php" method="POST" class="config-form">
                 <label for="conf_nombre_sistema">Nombre del Sistema:</label>
                 <input type="text" id="conf_nombre_sistema" name="nombre_sistema" value="Sistema Académico" required>
@@ -55,7 +84,7 @@
 
         <!-- PERÍODOS ACADÉMICOS -->
         <section class="config-section">
-            <h3>Períodos Académicos</h3>
+            <h3><i class="fa-solid fa-calendar-alt"></i> Períodos Académicos</h3>
             <div class="periods-list">
                 <div class="period-item">
                     <span>Período 1</span>
@@ -90,7 +119,7 @@
 
         <!-- ESCALA DE CALIFICACIONES -->
         <section class="config-section">
-            <h3>Escala de Calificaciones</h3>
+            <h3><i class="fa-solid fa-chart-line"></i> Escala de Calificaciones</h3>
             <form action="actualizar_escala.php" method="POST" class="config-form">
                 <label for="conf_nota_minima">Nota Mínima Aprobatoria:</label>
                 <input type="number" id="conf_nota_minima" name="nota_minima" value="6.0" min="0" max="10" step="0.1" required>
@@ -126,15 +155,111 @@
 
         <!-- ZONA PELIGROSA -->
         <section class="config-section danger-zone">
-            <h3>Cerrar Sesión</h3>
+            <h3><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</h3>
             <p>Cierre de sesión seguro del sistema</p>
-            <form action="cerrar_sesion.php" method="POST">
-                <button type="submit" class="button btn-danger">
-                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-                </button>
-            </form>
+            <a href="index.html" class="button btn-danger">
+                <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+            </a>
         </section>
     </main>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: VERIFICAR CONTRASEÑA ACTUAL -->
+    <!-- ========================================== -->
+    <dialog id="modalVerificarPassword" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3><i class="fa-solid fa-lock"></i> Verificar Identidad</h3>
+        <p>Ingresa tu contraseña actual para continuar</p>
+        
+        <form action="verificar_password.php" method="POST" class="modal-form" id="formVerificarPassword">
+            <label for="password_actual">Contraseña Actual:</label>
+            <input type="password" id="password_actual" name="password_actual" placeholder="Ingresa tu contraseña actual" required>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalVerificarPassword').close()">Cancelar</button>
+                <button type="button" class="btn-primary" onclick="verificarPassword()">
+                    Verificar <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- Enlace para recuperar contraseña -->
+        <div class="forgot-password-link">
+            <a href="#" onclick="abrirRecuperarPassword(event)">¿Olvidaste la contraseña?</a>
+        </div>
+    </dialog>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: RECUPERAR CONTRASEÑA (Código de verificación) -->
+    <!-- ========================================== -->
+    <dialog id="modalRecuperarPassword" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3><i class="fa-solid fa-envelope-circle-check"></i> Recuperar Contraseña</h3>
+        
+        <!-- PASO 1: Enviar código al correo -->
+        <div id="pasoEnviarCodigo">
+            <p>Ingresa tu correo electrónico para recibir un código de verificación</p>
+            <form action="enviar_codigo.php" method="POST" class="modal-form" id="formEnviarCodigo">
+                <label for="email_recuperar">Correo Electrónico:</label>
+                <input type="email" id="email_recuperar" name="email" placeholder="Ej: usuario@ejemplo.com" required>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="document.getElementById('modalRecuperarPassword').close()">Cancelar</button>
+                    <button type="button" class="btn-primary" onclick="enviarCodigo()">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar Código
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- PASO 2: Ingresar código de verificación -->
+        <div id="pasoVerificarCodigo" style="display: none;">
+            <p>Se ha enviado un código de verificación a tu correo. Ingresa el código a continuación:</p>
+            <form action="verificar_codigo.php" method="POST" class="modal-form" id="formVerificarCodigo">
+                <label for="codigo_verificacion">Código de Verificación:</label>
+                <input type="text" id="codigo_verificacion" name="codigo" placeholder="Ej: 123456" required maxlength="6" pattern="[0-9]{6}">
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="volverAEnviarCodigo()">
+                        <i class="fa-solid fa-arrow-left"></i> Volver
+                    </button>
+                    <button type="button" class="btn-primary" onclick="verificarCodigo()">
+                        Verificar Código <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: CAMBIAR CONTRASEÑA -->
+    <!-- ========================================== -->
+    <dialog id="modalCambiarPassword" class="modal">
+        <form method="dialog" class="modal-header">
+            <button type="submit" class="btn-close" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+        <h3><i class="fa-solid fa-key"></i> Cambiar Contraseña</h3>
+        <p>Ingresa tu nueva contraseña</p>
+        
+        <form action="cambiar_password.php" method="POST" class="modal-form" id="formCambiarPassword">
+            <label for="nueva_password">Nueva Contraseña:</label>
+            <input type="password" id="nueva_password" name="nueva_password" placeholder="Ingresa tu nueva contraseña" required minlength="8">
+            
+            <label for="confirmar_password">Confirmar Contraseña:</label>
+            <input type="password" id="confirmar_password" name="confirmar_password" placeholder="Confirma tu nueva contraseña" required minlength="8">
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalCambiarPassword').close()">Cancelar</button>
+                <button type="submit" class="btn-save">
+                    <i class="fa-solid fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </dialog>
 
     <footer class="footer">
         <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
