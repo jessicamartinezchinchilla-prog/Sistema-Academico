@@ -1,46 +1,62 @@
-document.addEventListener("DOMContentLoaded", () => {
-
-    // ==============================
-    // 📊 DATOS (puedes cambiarlos)
-    // ==============================
-    const datos = {
+// ==============================
+// 📊 ESTADO (como en React 😏)
+// ==============================
+const state = {
+    stats: {
         profesores: 12,
         materias: 8,
         estudiantes: 120,
         activos: 95,
         inactivos: 25,
         secciones: 6
-    };
+    },
 
-    // ==============================
-    // 🔢 LLENAR TARJETAS
-    // ==============================
-    const numeros = document.querySelectorAll(".stat-number");
+    rendimiento: [8, 7, 9, 6, 8],
+    aprobacion: [80, 20]
+};
 
-    numeros[0].textContent = datos.profesores;
-    numeros[1].textContent = datos.materias;
-    numeros[2].textContent = datos.estudiantes;
-    numeros[3].textContent = datos.activos;
-    numeros[4].textContent = datos.inactivos;
-    numeros[5].textContent = datos.secciones;
+// ==============================
+// 🔢 RENDER TARJETAS
+// ==============================
+function renderStats() {
+    const cards = document.querySelectorAll(".card-info h3");
 
-    // ==============================
-    // 📈 GRÁFICA DE BARRAS
-    // ==============================
-    const ctxBarras = document.getElementById("grafica_barras1");
+    if (!cards.length) return;
 
-    new Chart(ctxBarras, {
+    cards[0].textContent = state.stats.profesores;
+    cards[1].textContent = state.stats.materias;
+    cards[2].textContent = state.stats.estudiantes;
+    cards[3].textContent = state.stats.activos;
+    cards[4].textContent = state.stats.inactivos;
+    cards[5].textContent = state.stats.secciones;
+}
+
+// ==============================
+// 📈 GRÁFICA DE BARRAS
+// ==============================
+function renderBarChart() {
+    const ctx = document.getElementById("grafica_barras1");
+
+    if (!ctx) return;
+
+    new Chart(ctx, {
         type: "bar",
         data: {
             labels: ["Matemática", "Lenguaje", "Ciencias", "Historia", "Inglés"],
             datasets: [{
                 label: "Promedio",
-                data: [8, 7, 9, 6, 8],
-                borderWidth: 1
+                data: state.rendimiento,
+                backgroundColor: "#2563eb",
+                borderRadius: 6
             }]
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -49,24 +65,47 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+}
 
-    // ==============================
-    // 🥧 GRÁFICA DE PASTEL
-    // ==============================
-    const ctxPastel = document.getElementById("grafica_pastel");
+// ==============================
+// 🥧 GRÁFICA DE PASTEL
+// ==============================
+function renderPieChart() {
+    const ctx = document.getElementById("grafica_pastel");
 
-    new Chart(ctxPastel, {
-        type: "pie",
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: "doughnut", // más moderno que pie 😏
         data: {
             labels: ["Aprobados", "Reprobados"],
             datasets: [{
-                data: [80, 20],
-                borderWidth: 1
+                data: state.aprobacion,
+                backgroundColor: ["#22c55e", "#ef4444"],
+                borderWidth: 0
             }]
         },
         options: {
-            responsive: true
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
         }
     });
+}
 
-});
+// ==============================
+// 🚀 INIT (como useEffect 😎)
+// ==============================
+function initDashboard() {
+    renderStats();
+    renderBarChart();
+    renderPieChart();
+}
+
+// ==============================
+// 🔥 START
+// ==============================
+document.addEventListener("DOMContentLoaded", initDashboard);
