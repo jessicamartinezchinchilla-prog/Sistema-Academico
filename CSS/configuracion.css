@@ -314,7 +314,13 @@ body{
     border:none;
     border-radius:15px;
     width:500px;
+    max-width:90vw;
     padding:25px;
+
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
 }
 
 .modal::backdrop{
