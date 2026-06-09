@@ -33,8 +33,9 @@ body{
 }
 
 .header h1{
-    padding:28px 20px;
+     padding:28px 20px;
     font-size:20px;
+    color:white;
     border-bottom:1px solid rgba(255,255,255,.15);
 }
 
