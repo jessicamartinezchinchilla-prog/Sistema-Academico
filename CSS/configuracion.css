@@ -1,0 +1,413 @@
+/* =====================================
+   RESET
+===================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Segoe UI",sans-serif;
+}
+
+body{
+    background:#F5F6FA;
+    display:flex;
+    min-height:100vh;
+}
+
+/* =====================================
+   SIDEBAR
+===================================== */
+
+.header{
+    width:250px;
+    background:#2647B8;
+    position:fixed;
+    left:0;
+    top:0;
+    height:100vh;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    scrollbar-width:thin;
+}
+
+.header h1{
+    padding:28px 20px;
+    font-size:20px;
+    border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.list{
+    list-style:none;
+    padding:15px 10px;
+}
+
+.list li{
+    margin-bottom:8px;
+}
+
+.list a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    text-decoration:none;
+    color:white;
+    padding:14px 16px;
+    border-radius:12px;
+    transition:.3s;
+    font-size:15px;
+}
+
+.list a:hover{
+    background:#2952E3;
+}
+
+.list a.active{
+    background:#2952E3;
+}
+
+/* =====================================
+   CONTENIDO
+===================================== */
+
+.main-content{
+    margin-left:250px;
+    width:calc(100% - 250px);
+    padding:35px;
+}
+
+.main-content h2{
+    font-size:24px;
+    color:#333;
+}
+
+.main-content > p{
+    color:#666;
+    font-size:14px;
+    margin-bottom:25px;
+}
+
+/* =====================================
+   GRID GENERAL
+===================================== */
+
+.main-content{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+.main-content h2,
+.main-content > p{
+    grid-column:1 / -1;
+}
+
+/* =====================================
+   TARJETAS
+===================================== */
+
+.config-section{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.config-section h3{
+    font-size:16px;
+    color:#333;
+    padding-bottom:10px;
+    margin-bottom:15px;
+    border-bottom:2px solid #2F6FED;
+}
+
+.config-section h3 i{
+    color:#2F6FED;
+    margin-right:8px;
+}
+
+/* =====================================
+   DATOS USUARIO
+===================================== */
+
+.user-info-display{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.info-item{
+    background:#F8FAFC;
+    border-radius:8px;
+    padding:12px;
+}
+
+.info-item label{
+    display:block;
+    color:#666;
+    font-size:13px;
+    margin-bottom:5px;
+}
+
+.info-item span{
+    color:#333;
+    font-weight:600;
+}
+
+/* =====================================
+   FORMULARIOS
+===================================== */
+
+.config-form{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.config-form label{
+    color:#555;
+    font-size:14px;
+}
+
+.config-form input,
+.config-form select{
+    height:45px;
+    border:1px solid #D8DCE5;
+    border-radius:8px;
+    padding:0 12px;
+}
+
+.config-form input:focus,
+.config-form select:focus{
+    outline:none;
+    border-color:#2F6FED;
+}
+
+/* =====================================
+   BOTONES
+===================================== */
+
+.button,
+.btn-save,
+.btn-primary{
+    background:#2F6FED;
+    color:white;
+    border:none;
+    border-radius:8px;
+    padding:12px 18px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.btn-secondary{
+    background:white;
+    border:2px solid #2F6FED;
+    color:#2F6FED;
+    border-radius:8px;
+    padding:12px 18px;
+    cursor:pointer;
+}
+
+.btn-secondary:hover{
+    background:#2F6FED;
+    color:white;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:15px;
+}
+
+/* =====================================
+   PERIODOS
+===================================== */
+
+.periods-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.period-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#F8FAFC;
+    padding:12px;
+    border-radius:8px;
+}
+
+.btn-action{
+    border:none;
+    background:none;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.btn-action.edit{
+    color:#2F6FED;
+}
+
+/* =====================================
+   ESTADISTICAS
+===================================== */
+
+.stats-summary{
+    grid-column:1 / -1;
+
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+}
+
+.stat-item{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.stat-number{
+    display:block;
+    font-size:36px;
+    font-weight:700;
+    color:#2F6FED;
+}
+
+.stat-label{
+    color:#666;
+    margin-top:8px;
+}
+
+/* =====================================
+   ZONA PELIGROSA
+===================================== */
+
+.danger-zone{
+    grid-column:1 / -1;
+    border-top:4px solid #DC2626;
+}
+
+.btn-danger{
+    background:#DC2626;
+    color:white;
+    text-decoration:none;
+    display:inline-block;
+    margin-top:15px;
+}
+
+.btn-danger:hover{
+    background:#B91C1C;
+}
+
+/* =====================================
+   MODALES
+===================================== */
+
+.modal{
+    border:none;
+    border-radius:15px;
+    width:500px;
+    padding:25px;
+}
+
+.modal::backdrop{
+    background:rgba(0,0,0,.45);
+}
+
+.modal h3{
+    margin-bottom:15px;
+}
+
+.modal-form{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.modal-form input{
+    height:45px;
+    border:1px solid #D8DCE5;
+    border-radius:8px;
+    padding:0 12px;
+}
+
+.btn-cancel{
+    background:#E5E7EB;
+    border:none;
+    padding:10px 16px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.btn-close{
+    border:none;
+    background:none;
+    cursor:pointer;
+    font-size:20px;
+    float:right;
+}
+
+/* =====================================
+   RECUPERAR PASSWORD
+===================================== */
+
+.forgot-password-link{
+    text-align:center;
+    margin-top:15px;
+}
+
+.forgot-password-link a{
+    color:#2F6FED;
+    text-decoration:none;
+}
+
+/* =====================================
+   FOOTER
+===================================== */
+
+.footer{
+    display:none;
+}
+
+/* =====================================
+   RESPONSIVE
+===================================== */
+
+@media(max-width:1100px){
+
+.main-content{
+    display:block;
+}
+
+.config-section{
+    margin-bottom:20px;
+}
+
+.stats-summary{
+    grid-template-columns:repeat(2,1fr);
+}
+}
+
+@media(max-width:768px){
+
+.header{
+    position:relative;
+    width:100%;
+    height:auto;
+}
+
+.main-content{
+    margin-left:0;
+    width:100%;
+}
+
+.stats-summary{
+    grid-template-columns:1fr;
+}
+}
