@@ -174,34 +174,81 @@ body{
 }
 
 /* ===================================
-   FILTROS
+   FILTROS MODERNOS
 =================================== */
 
 .filters-bar{
+    background:#F8FAFC;
+    border:1px solid #E5E7EB;
+    border-radius:14px;
+    padding:18px;
+
     display:flex;
     align-items:center;
     gap:15px;
+
+    margin-bottom:20px;
 }
 
 .busqueda{
-    margin-bottom:0;
-    flex:0 0 320px;
+    flex:0 0 280px;
 }
 
 .busqueda input{
     width:100%;
     height:46px;
+
+    border:1px solid #D8DCE5;
+    border-radius:10px;
+
+    padding:0 15px;
+
+    background:white;
+
+    transition:all .3s ease;
+}
+
+.busqueda input:hover{
+    border-color:#B8C2D6;
+}
+
+.busqueda input:focus{
+    outline:none;
+    border-color:#2F6FED;
+    box-shadow:0 0 0 4px rgba(47,111,237,.12);
 }
 
 .filtros{
     display:flex;
-    gap:15px;
     flex:1;
+    gap:12px;
 }
 
 .filtros select{
     flex:1;
-    min-width:160px;
+
+    height:46px;
+
+    border:1px solid #D8DCE5;
+    border-radius:10px;
+
+    padding:0 12px;
+
+    background:white;
+
+    color:#444;
+
+    transition:all .3s ease;
+}
+
+.filtros select:hover{
+    border-color:#B8C2D6;
+}
+
+.filtros select:focus{
+    outline:none;
+    border-color:#2F6FED;
+    box-shadow:0 0 0 4px rgba(47,111,237,.12);
 }
 
 /* ===================================
