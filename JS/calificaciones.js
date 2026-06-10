@@ -1,363 +1,272 @@
-// =====================================
-// DATOS DE PRUEBA
-// =====================================
-
-let calificaciones = [
-    {
-        id: 1,
-        nie: "2025001",
-        nombre: "Juan Pérez",
-        promedio: 8.5,
-        estado: "Aprobado",
-        materia: "Matemática",
-        seccion: "A"
-    },
-    {
-        id: 2,
-        nie: "2025002",
-        nombre: "María López",
-        promedio: 5.8,
-        estado: "Reprobado",
-        materia: "Ciencias",
-        seccion: "B"
-    },
-    {
-        id: 3,
-        nie: "2025003",
-        nombre: "Carlos Ramírez",
-        promedio: 9.2,
-        estado: "Aprobado",
-        materia: "Lenguaje",
-        seccion: "A"
-    }
-];
-
-// =====================================
-// INICIO
-// =====================================
+// calificaciones.js
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    cargarFiltros();
-
-    mostrarCalificaciones(calificaciones);
-
-    actualizarEstadisticas();
-
-    document.getElementById("buscarCalificacion")
-        .addEventListener("input", filtrarCalificaciones);
-
-    document.getElementById("filtroMateria")
-        .addEventListener("change", filtrarCalificaciones);
-
-    document.getElementById("filtroSeccion")
-        .addEventListener("change", filtrarCalificaciones);
-
-    document.getElementById("filtroEstado")
-        .addEventListener("change", filtrarCalificaciones);
-
-    document.querySelector("#modalNota form.modal-form")
-        .addEventListener("submit", agregarCalificacion);
-
-    document.querySelector("#modalEditar form.modal-form")
-        .addEventListener("submit", actualizarCalificacion);
-});
-
-// =====================================
-// MOSTRAR TABLA
-// =====================================
-
-function mostrarCalificaciones(datos) {
-
     const tabla = document.getElementById("listaCalificaciones");
+    const filas = tabla.getElementsByTagName("tr");
 
-    const mensaje = document.getElementById("mensajeVacio");
+    const buscar = document.getElementById("buscarCalificacion");
+    const filtroMateria = document.getElementById("filtroMateria");
+    const filtroSeccion = document.getElementById("filtroSeccion");
+    const filtroEstado = document.getElementById("filtroEstado");
 
-    tabla.innerHTML = "";
+    const mensajeVacio = document.getElementById("mensajeVacio");
 
-    if (datos.length === 0) {
+    const totalAprobados = document.getElementById("totalAprobados");
+    const totalReprobados = document.getElementById("totalReprobados");
+    const promedioGeneral = document.getElementById("promedioGeneral");
 
-        mensaje.style.display = "block";
 
-        tabla.innerHTML = `
-        <tr>
-            <td colspan="5">No se encontraron registros.</td>
-        </tr>
-        `;
+    /* ==================================
+       FILTRAR TABLA
+    ================================== */
 
-        return;
+    function filtrarTabla() {
+
+        const textoBusqueda = buscar.value.toLowerCase();
+        const materia = filtroMateria.value.toLowerCase();
+        const seccion = filtroSeccion.value.toLowerCase();
+        const estado = filtroEstado.value.toLowerCase();
+
+        let visibles = 0;
+
+        Array.from(filas).forEach(fila => {
+
+            const textoFila = fila.textContent.toLowerCase();
+
+            const coincideBusqueda =
+                textoFila.includes(textoBusqueda);
+
+            const coincideMateria =
+                materia === "" ||
+                textoFila.includes(materia);
+
+            const coincideSeccion =
+                seccion === "" ||
+                textoFila.includes(seccion);
+
+            const coincideEstado =
+                estado === "" ||
+                textoFila.includes(estado);
+
+            const mostrar =
+                coincideBusqueda &&
+                coincideMateria &&
+                coincideSeccion &&
+                coincideEstado;
+
+            fila.style.display = mostrar ? "" : "none";
+
+            if (mostrar) visibles++;
+        });
+
+        mensajeVacio.style.display =
+            visibles === 0 ? "block" : "none";
+
+        actualizarEstadisticas();
     }
 
-    mensaje.style.display = "none";
+    buscar.addEventListener("input", filtrarTabla);
+    filtroMateria.addEventListener("change", filtrarTabla);
+    filtroSeccion.addEventListener("change", filtrarTabla);
+    filtroEstado.addEventListener("change", filtrarTabla);
 
-    datos.forEach(calificacion => {
 
-        tabla.innerHTML += `
-        <tr>
-            <td>${calificacion.nie}</td>
-            <td>${calificacion.nombre}</td>
-            <td>${calificacion.promedio}</td>
-            <td>${calificacion.estado}</td>
-            <td class="actions-cell">
+    /* ==================================
+       ESTADÍSTICAS
+    ================================== */
 
-                <button
-                    class="btn-action edit"
-                    onclick="editarRegistro(${calificacion.id})">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                </button>
+    function actualizarEstadisticas() {
 
-                <button
-                    class="btn-action delete"
-                    onclick="eliminarRegistro(${calificacion.id})">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+        let aprobados = 0;
+        let reprobados = 0;
 
-            </td>
-        </tr>
-        `;
-    });
-}
+        let sumaPromedios = 0;
+        let cantidadPromedios = 0;
 
-// =====================================
-// ESTADÍSTICAS
-// =====================================
+        Array.from(filas).forEach(fila => {
 
-function actualizarEstadisticas() {
+            if (fila.style.display === "none") return;
 
-    const aprobados = calificaciones.filter(
-        c => c.estado === "Aprobado"
-    ).length;
+            const celdas = fila.querySelectorAll("td");
 
-    const reprobados = calificaciones.filter(
-        c => c.estado === "Reprobado"
-    ).length;
+            if (celdas.length < 4) return;
 
-    let suma = 0;
+            const promedioTexto = celdas[2].textContent.trim();
+            const estadoTexto = celdas[3].textContent.trim().toLowerCase();
 
-    calificaciones.forEach(c => {
-        suma += parseFloat(c.promedio);
-    });
+            const promedio = parseFloat(promedioTexto);
 
-    let promedioGeneral = 0;
+            if (!isNaN(promedio)) {
 
-    if (calificaciones.length > 0) {
-        promedioGeneral =
-            (suma / calificaciones.length).toFixed(2);
+                sumaPromedios += promedio;
+                cantidadPromedios++;
+            }
+
+            if (estadoTexto.includes("aprobado")) {
+                aprobados++;
+            }
+
+            if (estadoTexto.includes("reprobado")) {
+                reprobados++;
+            }
+        });
+
+        totalAprobados.textContent = aprobados;
+        totalReprobados.textContent = reprobados;
+
+        promedioGeneral.textContent =
+            cantidadPromedios > 0
+                ? (sumaPromedios / cantidadPromedios).toFixed(1)
+                : "0";
     }
-
-    document.getElementById("totalAprobados")
-        .textContent = aprobados;
-
-    document.getElementById("totalReprobados")
-        .textContent = reprobados;
-
-    document.getElementById("promedioGeneral")
-        .textContent = promedioGeneral;
-}
-
-// =====================================
-// FILTROS
-// =====================================
-
-function filtrarCalificaciones() {
-
-    const texto =
-        document.getElementById("buscarCalificacion")
-        .value.toLowerCase();
-
-    const materia =
-        document.getElementById("filtroMateria")
-        .value;
-
-    const seccion =
-        document.getElementById("filtroSeccion")
-        .value;
-
-    const estado =
-        document.getElementById("filtroEstado")
-        .value;
-
-    const resultado = calificaciones.filter(c => {
-
-        const coincideTexto =
-            c.nie.toLowerCase().includes(texto) ||
-            c.nombre.toLowerCase().includes(texto);
-
-        const coincideMateria =
-            materia === "" ||
-            c.materia === materia;
-
-        const coincideSeccion =
-            seccion === "" ||
-            c.seccion === seccion;
-
-        const coincideEstado =
-            estado === "" ||
-            c.estado === estado;
-
-        return coincideTexto &&
-               coincideMateria &&
-               coincideSeccion &&
-               coincideEstado;
-    });
-
-    mostrarCalificaciones(resultado);
-}
-
-// =====================================
-// CARGAR FILTROS
-// =====================================
-
-function cargarFiltros() {
-
-    const materias = [...new Set(
-        calificaciones.map(c => c.materia)
-    )];
-
-    const secciones = [...new Set(
-        calificaciones.map(c => c.seccion)
-    )];
-
-    const filtroMateria =
-        document.getElementById("filtroMateria");
-
-    const filtroSeccion =
-        document.getElementById("filtroSeccion");
-
-    materias.forEach(materia => {
-
-        filtroMateria.innerHTML += `
-        <option value="${materia}">
-            ${materia}
-        </option>`;
-    });
-
-    secciones.forEach(seccion => {
-
-        filtroSeccion.innerHTML += `
-        <option value="${seccion}">
-            ${seccion}
-        </option>`;
-    });
-}
-
-// =====================================
-// AGREGAR
-// =====================================
-
-function agregarCalificacion(e) {
-
-    e.preventDefault();
-
-    const nie =
-        document.getElementById("nota_nie").value;
-
-    const nota =
-        parseFloat(
-            document.getElementById("nota_valor").value
-        );
-
-    const nuevo = {
-        id: Date.now(),
-        nie: nie,
-        nombre: "Nuevo Estudiante",
-        promedio: nota,
-        estado: nota >= 6 ? "Aprobado" : "Reprobado",
-        materia: "Pendiente",
-        seccion: "Pendiente"
-    };
-
-    calificaciones.push(nuevo);
-
-    mostrarCalificaciones(calificaciones);
 
     actualizarEstadisticas();
 
-    document.getElementById("modalNota").close();
 
-    e.target.reset();
-}
+    /* ==================================
+       VALIDACIÓN AGREGAR NOTA
+    ================================== */
 
-// =====================================
-// ELIMINAR
-// =====================================
+    const formNota =
+        document.querySelector("#modalNota .modal-form");
 
-function eliminarRegistro(id) {
+    formNota.addEventListener("submit", function(e){
 
-    if (!confirm("¿Desea eliminar esta calificación?")) {
-        return;
-    }
+        const nie =
+            document.getElementById("nota_nie");
 
-    calificaciones =
-        calificaciones.filter(c => c.id !== id);
+        const nota =
+            document.getElementById("nota_valor");
 
-    mostrarCalificaciones(calificaciones);
+        const periodo =
+            document.getElementById("nota_periodo");
 
-    actualizarEstadisticas();
-}
+        if(nie.value.trim() === ""){
 
-// =====================================
-// EDITAR
-// =====================================
+            e.preventDefault();
+            alert("Ingrese el NIE del estudiante.");
+            nie.focus();
+            return;
+        }
 
-function editarRegistro(id) {
+        if(nota.value === ""){
 
-    const registro =
-        calificaciones.find(c => c.id === id);
+            e.preventDefault();
+            alert("Ingrese una calificación.");
+            nota.focus();
+            return;
+        }
 
-    if (!registro) return;
+        const valorNota = parseFloat(nota.value);
 
-    document.getElementById("edit_calificacion_id").value =
-        registro.id;
+        if(valorNota < 0 || valorNota > 100){
 
-    document.getElementById("edit_nie").value =
-        registro.nie;
+            e.preventDefault();
+            alert("La calificación debe estar entre 0 y 100.");
+            nota.focus();
+            return;
+        }
 
-    document.getElementById("edit_valor").value =
-        registro.promedio;
+        if(periodo.value === ""){
 
-    document.getElementById("modalEditar")
-        .showModal();
-}
+            e.preventDefault();
+            alert("Seleccione un período.");
+            periodo.focus();
+        }
+    });
 
-// =====================================
-// ACTUALIZAR
-// =====================================
 
-function actualizarCalificacion(e) {
+    /* ==================================
+       VALIDACIÓN EDITAR NOTA
+    ================================== */
 
-    e.preventDefault();
+    const formEditar =
+        document.querySelector("#modalEditar .modal-form");
 
-    const id =
-        Number(
-            document.getElementById(
-                "edit_calificacion_id"
-            ).value
+    formEditar.addEventListener("submit", function(e){
+
+        const nota =
+            document.getElementById("edit_valor");
+
+        const valorNota = parseFloat(nota.value);
+
+        if(valorNota < 0 || valorNota > 100){
+
+            e.preventDefault();
+
+            alert(
+                "La calificación debe estar entre 0 y 100."
+            );
+
+            nota.focus();
+        }
+    });
+
+
+    /* ==================================
+       VALIDACIÓN PDF
+    ================================== */
+
+    const formPDF =
+        document.querySelector("#modalPDF .modal-form");
+
+    formPDF.addEventListener("submit", function(e){
+
+        const tipo =
+            document.getElementById("pdf_tipo");
+
+        if(tipo.value === ""){
+
+            e.preventDefault();
+
+            alert(
+                "Seleccione un tipo de reporte."
+            );
+
+            tipo.focus();
+        }
+    });
+
+
+    /* ==================================
+       CONFIRMAR ELIMINACIÓN
+    ================================== */
+
+    document.addEventListener("click", function(e){
+
+        const botonEliminar =
+            e.target.closest(".btn-action.delete");
+
+        if(!botonEliminar) return;
+
+        const confirmar = confirm(
+            "¿Está seguro que desea eliminar esta calificación?"
         );
 
-    const nota =
-        parseFloat(
-            document.getElementById(
-                "edit_valor"
-            ).value
-        );
+        if(!confirmar){
 
-    const registro =
-        calificaciones.find(c => c.id === id);
+            e.preventDefault();
+        }
+    });
 
-    if (!registro) return;
 
-    registro.promedio = nota;
+    /* ==================================
+       CERRAR MODALES CON ESC
+    ================================== */
 
-    registro.estado =
-        nota >= 6
-            ? "Aprobado"
-            : "Reprobado";
+    document.addEventListener("keydown", function(e){
 
-    mostrarCalificaciones(calificaciones);
+        if(e.key === "Escape"){
 
-    actualizarEstadisticas();
+            document.querySelectorAll("dialog")
+                .forEach(modal => {
 
-    document.getElementById("modalEditar")
-        .close();
-}
+                    if(modal.open){
+                        modal.close();
+                    }
+                });
+        }
+    });
+
+});
