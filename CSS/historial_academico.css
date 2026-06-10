@@ -360,16 +360,19 @@ body {
 }
 
 /* Modals */
+/* Modals */
 .modal {
+    margin: auto;
     border: none;
     border-radius: 12px;
     padding: 0;
     max-width: 600px;
     width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     animation: modalFadeIn 0.3s ease;
 }
-
 .modal::backdrop {
     background: rgba(0, 0, 0, 0.5);
 }
