@@ -11,7 +11,6 @@ body {
     background-color: #f5f7fa;
     min-height:100vh;
 }
-
 /* ========================================
    SIDEBAR
 ======================================== */
@@ -693,4 +692,21 @@ body {
 .stat-item:nth-child(3) { animation-delay: 0.3s; }
 .stat-item:nth-child(4) { animation-delay: 0.4s; }
 
+.footer{
+    position:fixed;
+    bottom:0;
 
+    width:calc(100% - 250px);
+
+    text-align:center;
+    padding:12px;
+
+    color:#666666;
+    font-size:14px;
+
+    border-top:1px solid #E5E7EB;
+    background:#FFFFFF;
+
+    z-index:100;
+    text-align: center;
+}

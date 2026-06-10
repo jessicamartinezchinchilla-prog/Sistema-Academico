@@ -9,8 +9,7 @@
 
 body {
     background-color: #f5f7fa;
-    color: #333;
-    min-height: 100vh;
+    min-height:100vh;
 }
 
 /* SIDEBAR */
@@ -18,7 +17,7 @@ body {
     width:250px;
     background:#2647B8;
     position:fixed;
-    left:0;g
+    left:0;
     top:0;
     height:100vh;
 
