@@ -175,7 +175,7 @@ body {
 @media (max-width: 900px) {
     .panel {
         grid-template-columns: 1fr;
-
+    }
 /* =========================
    RESET GENERAL
 ========================= */
@@ -496,4 +496,5 @@ body{
     .container {
         margin-left: 0;
     }
+}
 }

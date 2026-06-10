@@ -394,10 +394,28 @@ body{
    FOOTER
 ======================================== */
 
-.footer{
-    display:none;
-}
+/* ===================================
+   FOOTER
+=================================== */
 
+.footer{
+    position:fixed;
+    bottom:0;
+    left:250px; /* mismo ancho que la barra lateral */
+
+    width:calc(100% - 250px);
+
+    text-align:center;
+    padding:12px;
+
+    color:#666666;
+    font-size:14px;
+
+    border-top:1px solid #E5E7EB;
+    background:#FFFFFF;
+
+    z-index:100;
+}
 /* ========================================
    RESPONSIVE
 ======================================== */
