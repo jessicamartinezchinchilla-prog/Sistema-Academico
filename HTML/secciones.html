@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <link rel="stylesheet" href="../CSS/secciones.css">
-    
     <script src="../JS/secciones.js" defer></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Gestión de Secciones</title>
 </head>
@@ -23,7 +21,7 @@
                 <li><a href="matricula.html"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
                 <li><a href="materias.html"><i class="fa-solid fa-book-open"></i> Materias</a></li>
                 <li><a href="calificaciones.html"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <a href="secciones.html" class="active"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <li><a href="secciones.html" class="active"><i class="fa-solid fa-school"></i> Secciones</a></li>
                 <li><a href="historial_academico.html"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
                 <li><a href="estadisticas.html"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
                 <li><a href="auditoria.html"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
@@ -46,33 +44,12 @@
             </button>
         </div>
 
-        <!-- TARJETAS -->
+        <!-- TARJETAS - VACÍAS (PHP las llenará) -->
         <section class="subjects-grid">
-            <div class="subject-card">
-                <div class="circle">10</div>
-                <h3>Desarrollo de Software 1</h3>
-                <p class="subtitle">Desarrollo de Software</p>
-
-                <div class="info">
-                    <span>Estudiantes</span>
-                    <span>10</span>
-                </div>
-
-                <div class="info">
-                    <span>Año</span>
-                    <span>1°</span>
-                </div>
-
-                <div class="info highlight">
-                    <span>Profesores asignados</span>
-                    <span>5 docentes</span>
-                </div>
-
-                <button>Ver Detalles</button>
-            </div>
+            <!-- Sin tarjetas - PHP las generará -->
         </section>
 
-        <!-- TABLA -->
+        <!-- TABLA - VACÍA (PHP la llenará) -->
         <section class="table-section">
             <h3>Lista Completa de Secciones</h3>
 
@@ -88,13 +65,7 @@
                 </thead>
 
                 <tbody>
-                    <tr>
-                        <td><span class="badge">Desarrollo de Software 1</span></td>
-                        <td>Desarrollo de Software</td>
-                        <td>1°</td>
-                        <td class="number">10</td>
-                        <td>Matemáticas, Lenguaje, Sociales, Inglés, Ciencia</td>
-                    </tr>
+                    <!-- Sin filas - PHP las generará -->
                 </tbody>
             </table>
 
@@ -104,6 +75,44 @@
         </section>
 
     </main>
+
+    <!-- MODAL AÑADIR SECCIÓN -->
+    <dialog id="modalSeccion" class="modal">
+        <div class="modal-content">
+            <h2>Añadir Nueva Sección</h2>
+            <form method="dialog">
+                <div class="form-group">
+                    <label for="nombre">Nombre de la Sección</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="especialidad">Especialidad</label>
+                    <select id="especialidad" name="especialidad" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Desarrollo de Software">Desarrollo de Software</option>
+                        <option value="Servicios Turísticos">Servicios Turísticos</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="año">Año</label>
+                    <select id="año" name="año" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="1°">1°</option>
+                        <option value="2°">2°</option>
+                        <option value="3°">3°</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" onclick="modalSeccion.close()" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 
 </body>
 </html>
