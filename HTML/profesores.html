@@ -1,14 +1,84 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <link rel="stylesheet" href="../CSS/profesores.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="../CSS/profesores.css" />
     <script src="../JS/profesores.js" defer></script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
     <title>Gestión de Profesores - Sistema Académico</title>
+<<<<<<< HEAD
+  </head>
+
+  <body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <h1>Panel Administrador</h1>
+
+      <ul class="nav">
+        <li>
+          <a href="panel_principal.html"
+            ><i class="fa-solid fa-house"></i>Dashboard</a
+          >
+        </li>
+        <li>
+          <a href="profesores.html" class="active"
+            ><i class="fa-solid fa-user"></i>Profesores</a
+          >
+        </li>
+        <li>
+          <a href="estudiantes.html"
+            ><i class="fa-solid fa-children"></i>Estudiantes</a
+          >
+        </li>
+        <li>
+          <a href="matricula.html"
+            ><i class="fa-solid fa-user-graduate"></i>Matrículas</a
+          >
+        </li>
+        <li>
+          <a href="materias.html"
+            ><i class="fa-solid fa-book-open"></i>Materias</a
+          >
+        </li>
+        <li>
+          <a href="calificaciones.html"
+            ><i class="fa-solid fa-award"></i>Calificaciones</a
+          >
+        </li>
+        <li>
+          <a href="secciones.html"
+            ><i class="fa-solid fa-school"></i>Secciones</a
+          >
+        </li>
+        <li>
+          <a href="historial_academico.html"
+            ><i class="fa-solid fa-clock-rotate-left"></i>Historial académico</a
+          >
+        </li>
+        <li>
+          <a href="estadisticas.html"
+            ><i class="fa-solid fa-chart-column"></i>Estadísticas</a
+          >
+        </li>
+        <li>
+          <a href="auditoria.html"
+            ><i class="fa-solid fa-clipboard-list"></i>Auditoría</a
+          >
+        </li>
+        <li>
+          <a href="configuracion.html"
+            ><i class="fa-solid fa-gear"></i>Configuración</a
+          >
+        </li>
+      </ul>
+    </aside>
+=======
 </head>
 
 <body>
@@ -30,138 +100,154 @@
             </ul>
         </nav>
     </header>
+>>>>>>> a386dcc0bd6dba183b0932f122c9634746347df7
 
     <!-- CONTENIDO -->
     <main class="main-content">
+      <h2>Gestión de Profesores</h2>
+      <p>Administración de personal docente</p>
 
-        <h2>Gestión de Profesores</h2>
-        <p>Administración de personal docente</p>
+      <!-- BOTÓN -->
+      <section class="actions-bar">
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="document.getElementById('modalProfesor').showModal()"
+        >
+          <i class="fa-solid fa-plus"></i> Agregar Profesor
+        </button>
+      </section>
 
-        <!-- BOTÓN -->
-        <section class="actions-bar">
-            <button type="button" class="btn-primary" onclick="document.getElementById('modalProfesor').showModal()">
-                <i class="fa-solid fa-plus"></i> Agregar Profesor
-            </button>
-        </section>
+      <!-- STATS -->
+      <section class="stats-summary">
+        <article class="stat-item">
+          <span class="stat-number" id="totalProfesores">0</span>
+          <span class="stat-label">Total profesores</span>
+        </article>
+        <article class="stat-item">
+          <span class="stat-number" id="totalMateriasCubiertas">0</span>
+          <span class="stat-label">Materias cubiertas</span>
+        </article>
+      </section>
 
-        <!-- STATS -->
-        <section class="stats-summary">
-            <article class="stat-item">
-                <span class="stat-number" id="totalProfesores">0</span>
-                <span class="stat-label">Total profesores</span>
-            </article>
-            <article class="stat-item">
-                <span class="stat-number" id="totalMateriasCubiertas">0</span>
-                <span class="stat-label">Materias cubiertas</span>
-            </article>
-        </section>
+      <!-- FILTROS -->
+      <section class="filters-bar">
+        <div class="busqueda">
+          <input
+            type="search"
+            id="buscarProfesor"
+            placeholder="Buscar por nombre, NIE o apellido..."
+          />
+        </div>
 
-        <!-- FILTROS -->
-        <section class="filters-bar">
-            <div class="busqueda">
-                <input type="search" id="buscarProfesor" placeholder="Buscar por nombre, NIE o apellido...">
-            </div>
+        <div class="filtros">
+          <select id="filtroMateria">
+            <option value="">Todas las materias</option>
+          </select>
 
-            <div class="filtros">
-                <select id="filtroMateria">
-                    <option value="">Todas las materias</option>
-                </select>
+          <select id="filtroSeccion">
+            <option value="">Todas las secciones</option>
+          </select>
+        </div>
+      </section>
 
-                <select id="filtroSeccion">
-                    <option value="">Todas las secciones</option>
-                </select>
-            </div>
-        </section>
+      <!-- TABLA -->
+      <section class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre completo</th>
+              <th>Correo electrónico</th>
+              <th>Materia asignada</th>
+              <th>Secciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="listaProfesores">
+            <tr>
+              <td>Ejemplo Profesor</td>
+              <td>correo@ejemplo.com</td>
+              <td>Matemática</td>
+              <td>Sección A</td>
+              <td class="actions-cell">
+                <button class="btn-action see">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+                <button class="btn-action edit">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn-action delete">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-        <!-- TABLA -->
-        <section class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nombre completo</th>
-                        <th>Correo electrónico</th>
-                        <th>Materia asignada</th>
-                        <th>Secciones</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="listaProfesores">
-                    <tr>
-                        <td>Ejemplo Profesor</td>
-                        <td>correo@ejemplo.com</td>
-                        <td>Matemática</td>
-                        <td>Sección A</td>
-                        <td class="actions-cell">
-                            <button class="btn-action see"><i class="fa-solid fa-eye"></i></button>
-                            <button class="btn-action edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button class="btn-action delete"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-        <p class="empty-state" id="mensajeVacio">
-            No hay profesores registrados en el sistema aún.
-        </p>
-
+      <p class="empty-state" id="mensajeVacio">
+        No hay profesores registrados en el sistema aún.
+      </p>
     </main>
 
     <!-- MODAL -->
     <dialog id="modalProfesor" class="modal">
-        <form method="dialog" class="modal-header">
-            <button type="submit" class="btn-close">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </form>
+      <form method="dialog" class="modal-header">
+        <button type="submit" class="btn-close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </form>
 
-        <h3>Agregar Nuevo Profesor</h3>
+      <h3>Agregar Nuevo Profesor</h3>
 
-        <form class="modal-form">
+      <form class="modal-form">
+        <h4>Datos personales</h4>
 
-            <h4>Datos personales</h4>
+        <div class="form-row">
+          <div class="form-col">
+            <label>Nombres:</label>
+            <input type="text" required />
+          </div>
+          <div class="form-col">
+            <label>Apellidos:</label>
+            <input type="text" required />
+          </div>
+        </div>
 
-            <div class="form-row">
-                <div class="form-col">
-                    <label>Nombres:</label>
-                    <input type="text" required>
-                </div>
-                <div class="form-col">
-                    <label>Apellidos:</label>
-                    <input type="text" required>
-                </div>
-            </div>
+        <label>NIP:</label>
+        <input type="text" required />
 
-            <label>NIP:</label>
-            <input type="text" required>
+        <h4>Contacto</h4>
 
-            <h4>Contacto</h4>
+        <label>Correo:</label>
+        <input type="email" required />
 
-            <label>Correo:</label>
-            <input type="email" required>
+        <label>Teléfono:</label>
+        <input type="tel" required />
 
-            <label>Teléfono:</label>
-            <input type="tel" required>
+        <h4>Asignación</h4>
 
-            <h4>Asignación</h4>
+        <label>Materia:</label>
+        <select required>
+          <option>Seleccione</option>
+        </select>
 
-            <label>Materia:</label>
-            <select required>
-                <option>Seleccione</option>
-            </select>
-
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="document.getElementById('modalProfesor').close()">Cancelar</button>
-                <button type="submit" class="btn-save">Guardar</button>
-            </div>
-
-        </form>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-cancel"
+            onclick="document.getElementById('modalProfesor').close()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn-save">Guardar</button>
+        </div>
+      </form>
     </dialog>
 
     <!-- FOOTER -->
     <footer class="footer">
-        <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
+      <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
     </footer>
-
-</body>
+  </body>
 </html>

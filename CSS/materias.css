@@ -69,7 +69,6 @@ body{
     background:#2952E3;
 }
 
-
 /* ==========================
    CONTENIDO
 ========================== */
@@ -78,6 +77,7 @@ body{
     flex:1;
     margin-left:250px;
     padding:35px;
+    position:relative;
 }
 
 /* ==========================
@@ -89,6 +89,7 @@ body{
     color:#333;
     font-weight:700;
     margin-bottom:5px;
+    display:inline-block;
 }
 
 .main-content > p{
@@ -98,14 +99,16 @@ body{
 }
 
 /* ==========================
-   BOTONES
+   BOTONES - ALINEADOS CON EL TÍTULO
 ========================== */
 
 .actions-bar{
+    position:absolute;
+    top:35px;
+    right:35px;
     display:flex;
-    justify-content:flex-end;
     gap:15px;
-    margin-bottom:25px;
+    margin-bottom:0;
 }
 
 .button{
@@ -302,10 +305,46 @@ body{
    FOOTER
 ========================== */
 
-.footer{
-    display:none;
+/* ==========================
+   FOOTER
+========================== */
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    background: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
 }
 
+/* RESPONSIVE */
+@media (max-width: 900px) {
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+    }
+
+    .container {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .footer {
+        left: 0;
+        width: 100%;
+    }
+
+    .panel {
+        grid-template-columns: 1fr;
+    }
+}
 /* ==========================
    RESPONSIVE
 ========================== */
@@ -347,7 +386,9 @@ body{
     }
 
     .actions-bar{
+        position:static;
         flex-direction:column;
+        margin-bottom:20px;
     }
 
 }
