@@ -1,203 +1,417 @@
-// ====================================
-// CONFIGURACIÓN DEL SISTEMA
-// ====================================
-
 document.addEventListener("DOMContentLoaded", () => {
 
-    cargarConfiguracion();
+    /* ==================================
+       ESTADÍSTICAS VISUALES
+    ================================== */
 
-    cargarEstadisticas();
+    const totalEstudiantes =
+        document.getElementById("totalEstudiantesConf");
 
-    activarFormularios();
+    const totalProfesores =
+        document.getElementById("totalProfesoresConf");
 
-    activarPeriodos();
+    const totalSecciones =
+        document.getElementById("totalSeccionesConf");
 
-    activarCerrarSesion();
+    const totalMaterias =
+        document.getElementById("totalMateriasConf");
 
-});
+    // Valores temporales mientras PHP no los carga
+    totalEstudiantes.textContent ||= "0";
+    totalProfesores.textContent ||= "0";
+    totalSecciones.textContent ||= "0";
+    totalMaterias.textContent ||= "0";
 
-// ====================================
-// CARGAR CONFIGURACIÓN
-// ====================================
 
-function cargarConfiguracion() {
+    /* ==================================
+       VALIDAR CONFIGURACIÓN GENERAL
+    ================================== */
 
-    const nombreSistema =
-        localStorage.getItem("nombreSistema");
+    const formConfiguracion =
+        document.querySelector(
+            'form[action="actualizar_configuracion.php"]'
+        );
 
-    const anioLectivo =
-        localStorage.getItem("anioLectivo");
+    if(formConfiguracion){
 
-    const notaMinima =
-        localStorage.getItem("notaMinima");
+        formConfiguracion.addEventListener("submit", function(e){
 
-    const escalaMaxima =
-        localStorage.getItem("escalaMaxima");
+            const nombreSistema =
+                document.getElementById("conf_nombre_sistema");
 
-    if (nombreSistema) {
-        document.getElementById(
-            "conf_nombre_sistema"
-        ).value = nombreSistema;
-    }
+            const anio =
+                document.getElementById("conf_anio_lectivo");
 
-    if (anioLectivo) {
-        document.getElementById(
-            "conf_anio_lectivo"
-        ).value = anioLectivo;
-    }
-
-    if (notaMinima) {
-        document.getElementById(
-            "conf_nota_minima"
-        ).value = notaMinima;
-    }
-
-    if (escalaMaxima) {
-        document.getElementById(
-            "conf_escala_maxima"
-        ).value = escalaMaxima;
-    }
-}
-
-// ====================================
-// ESTADÍSTICAS
-// ====================================
-
-function cargarEstadisticas() {
-
-    document.getElementById(
-        "totalEstudiantesConf"
-    ).textContent = 150;
-
-    document.getElementById(
-        "totalProfesoresConf"
-    ).textContent = 18;
-
-    document.getElementById(
-        "totalSeccionesConf"
-    ).textContent = 12;
-
-    document.getElementById(
-        "totalMateriasConf"
-    ).textContent = 25;
-}
-
-// ====================================
-// FORMULARIOS
-// ====================================
-
-function activarFormularios() {
-
-    const formularios =
-        document.querySelectorAll(".config-form");
-
-    formularios.forEach(formulario => {
-
-        formulario.addEventListener(
-            "submit",
-            function(e) {
+            if(nombreSistema.value.trim() === ""){
 
                 e.preventDefault();
 
-                guardarConfiguracion();
+                alert(
+                    "Ingrese el nombre del sistema."
+                );
 
+                nombreSistema.focus();
+                return;
             }
+
+            if(anio.value === ""){
+
+                e.preventDefault();
+
+                alert(
+                    "Seleccione un año lectivo."
+                );
+
+                anio.focus();
+            }
+
+        });
+
+    }
+
+
+    /* ==================================
+       VALIDAR ESCALA DE NOTAS
+    ================================== */
+
+    const formEscala =
+        document.querySelector(
+            'form[action="actualizar_escala.php"]'
         );
-    });
-}
 
-// ====================================
-// GUARDAR CONFIGURACIÓN
-// ====================================
+    if(formEscala){
 
-function guardarConfiguracion() {
+        formEscala.addEventListener("submit", function(e){
 
-    localStorage.setItem(
-        "nombreSistema",
-        document.getElementById(
-            "conf_nombre_sistema"
-        ).value
-    );
+            const notaMinima =
+                parseFloat(
+                    document.getElementById(
+                        "conf_nota_minima"
+                    ).value
+                );
 
-    localStorage.setItem(
-        "anioLectivo",
-        document.getElementById(
-            "conf_anio_lectivo"
-        ).value
-    );
+            const escalaMaxima =
+                parseFloat(
+                    document.getElementById(
+                        "conf_escala_maxima"
+                    ).value
+                );
 
-    localStorage.setItem(
-        "notaMinima",
-        document.getElementById(
-            "conf_nota_minima"
-        ).value
-    );
+            if(notaMinima < 0 || notaMinima > escalaMaxima){
 
-    localStorage.setItem(
-        "escalaMaxima",
-        document.getElementById(
-            "conf_escala_maxima"
-        ).value
-    );
+                e.preventDefault();
 
-    alert("Configuración guardada correctamente.");
-}
+                alert(
+                    "La nota mínima no puede ser mayor que la escala máxima."
+                );
 
-// ====================================
-// PERÍODOS ACADÉMICOS
-// ====================================
+                return;
+            }
 
-function activarPeriodos() {
+        });
 
-    const botonesEditar =
+    }
+
+
+    /* ==================================
+       EDITAR PERÍODOS
+    ================================== */
+
+    const botonesPeriodo =
         document.querySelectorAll(
-            ".period-item .edit"
+            ".btn-action.edit"
         );
 
-    botonesEditar.forEach((boton, indice) => {
+    botonesPeriodo.forEach(boton => {
 
         boton.addEventListener("click", () => {
 
-            const nuevoNombre = prompt(
-                "Editar nombre del período:",
-                `Período ${indice + 1}`
+            const periodo =
+                boton.closest(".period-item")
+                .querySelector("span")
+                .textContent;
+
+            alert(
+                "Editar " + periodo +
+                "\n\nEsta función será conectada con PHP."
             );
 
-            if (
-                nuevoNombre &&
-                nuevoNombre.trim() !== ""
-            ) {
-
-                boton.parentElement.querySelector(
-                    "span"
-                ).textContent = nuevoNombre;
-            }
         });
+
     });
-}
 
-// ====================================
-// CERRAR SESIÓN
-// ====================================
 
-function activarCerrarSesion() {
+    /* ==================================
+       CONFIRMAR CIERRE DE SESIÓN
+    ================================== */
 
-    const formularioCerrar =
-        document.querySelector(
-            '.danger-zone form'
-        );
+    const cerrarSesion =
+        document.querySelector(".btn-danger");
 
-    formularioCerrar.addEventListener(
-        "submit",
-        function(e) {
+    if(cerrarSesion){
+
+        cerrarSesion.addEventListener("click", function(e){
 
             const confirmar = confirm(
                 "¿Desea cerrar sesión?"
             );
 
-            if (!confirmar) {
+            if(!confirmar){
+
                 e.preventDefault();
             }
+
+        });
+
+    }
+
+
+    /* ==================================
+       VALIDAR NUEVA CONTRASEÑA
+    ================================== */
+
+    const formCambiarPassword =
+        document.getElementById(
+            "formCambiarPassword"
+        );
+
+    if(formCambiarPassword){
+
+        formCambiarPassword.addEventListener(
+            "submit",
+            function(e){
+
+                const nueva =
+                    document.getElementById(
+                        "nueva_password"
+                    );
+
+                const confirmar =
+                    document.getElementById(
+                        "confirmar_password"
+                    );
+
+                if(
+                    nueva.value.length < 8
+                ){
+
+                    e.preventDefault();
+
+                    alert(
+                        "La contraseña debe tener al menos 8 caracteres."
+                    );
+
+                    nueva.focus();
+
+                    return;
+                }
+
+                if(
+                    nueva.value !==
+                    confirmar.value
+                ){
+
+                    e.preventDefault();
+
+                    alert(
+                        "Las contraseñas no coinciden."
+                    );
+
+                    confirmar.focus();
+
+                    return;
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ==================================
+       VALIDAR CORREO RECUPERACIÓN
+    ================================== */
+
+    const emailRecuperar =
+        document.getElementById(
+            "email_recuperar"
+        );
+
+    if(emailRecuperar){
+
+        emailRecuperar.addEventListener(
+            "blur",
+            function(){
+
+                const patron =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if(
+                    this.value !== "" &&
+                    !patron.test(this.value)
+                ){
+
+                    alert(
+                        "Ingrese un correo válido."
+                    );
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ==================================
+       CERRAR MODALES CON ESC
+    ================================== */
+
+    document.addEventListener(
+        "keydown",
+        function(e){
+
+            if(e.key === "Escape"){
+
+                document
+                    .querySelectorAll("dialog")
+                    .forEach(modal => {
+
+                        if(modal.open){
+
+                            modal.close();
+                        }
+
+                    });
+
+            }
+
         }
     );
+
+});
+
+
+/* ==================================
+   FLUJO RECUPERAR CONTRASEÑA
+================================== */
+
+function abrirRecuperarPassword(event){
+
+    event.preventDefault();
+
+    document
+        .getElementById(
+            "modalVerificarPassword"
+        )
+        .close();
+
+    document
+        .getElementById(
+            "modalRecuperarPassword"
+        )
+        .showModal();
+}
+
+
+function enviarCodigo(){
+
+    const email =
+        document.getElementById(
+            "email_recuperar"
+        );
+
+    if(email.value.trim() === ""){
+
+        alert(
+            "Ingrese un correo electrónico."
+        );
+
+        email.focus();
+
+        return;
+    }
+
+    document.getElementById(
+        "pasoEnviarCodigo"
+    ).style.display = "none";
+
+    document.getElementById(
+        "pasoVerificarCodigo"
+    ).style.display = "block";
+}
+
+
+function volverAEnviarCodigo(){
+
+    document.getElementById(
+        "pasoVerificarCodigo"
+    ).style.display = "none";
+
+    document.getElementById(
+        "pasoEnviarCodigo"
+    ).style.display = "block";
+}
+
+
+function verificarCodigo(){
+
+    const codigo =
+        document.getElementById(
+            "codigo_verificacion"
+        );
+
+    if(codigo.value.length !== 6){
+
+        alert(
+            "Ingrese un código válido de 6 dígitos."
+        );
+
+        codigo.focus();
+
+        return;
+    }
+
+    document
+        .getElementById(
+            "modalRecuperarPassword"
+        )
+        .close();
+
+    document
+        .getElementById(
+            "modalCambiarPassword"
+        )
+        .showModal();
+}
+
+
+function verificarPassword(){
+
+    const password =
+        document.getElementById(
+            "password_actual"
+        );
+
+    if(password.value.trim() === ""){
+
+        alert(
+            "Ingrese su contraseña actual."
+        );
+
+        password.focus();
+
+        return;
+    }
+
+    document
+        .getElementById(
+            "modalVerificarPassword"
+        )
+        .close();
+
+    document
+        .getElementById(
+            "modalCambiarPassword"
+        )
+        .showModal();
 }

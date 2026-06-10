@@ -1,15 +1,14 @@
 
 /* Reset y estilos base */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:"Segoe UI", sans-serif;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body{
-    background:#F5F6FA;
-    display:flex;
+body {
+    background-color: #f5f7fa;
     min-height:100vh;
 }
 
