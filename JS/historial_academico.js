@@ -1,320 +1,204 @@
-// ============================================
-// HISTORIAL ACADÉMICO - INTERACTIVIDAD
-// ============================================
-
-// Datos del historial (PHP inyectará estos datos dinámicamente)
-let datosHistorial = [];
-
-// Elementos del DOM
-const listaHistorial = document.getElementById('listaHistorial');
-const mensajeVacio = document.getElementById('mensajeVacio');
-const buscador = document.getElementById('buscarHistorial');
-const filtroSeccion = document.getElementById('filtroSeccionHist');
-const filtroAnio = document.getElementById('filtroAnioHist');
-const filtroPeriodo = document.getElementById('filtroPeriodoHist');
-const filtroEstado = document.getElementById('filtroEstadoHist');
-
-// Elementos de estadísticas
-const totalRegistros = document.getElementById('totalRegistros');
-const totalAprobados = document.getElementById('totalAprobadosHist');
-const totalReprobados = document.getElementById('totalReprobadosHist');
-const promedioGeneral = document.getElementById('promedioGeneralHist');
-
-// Modal de detalles
-const modalVerDetalles = document.getElementById('modalVerDetalles');
-const detalleHistorial = document.getElementById('detalleHistorial');
-
-// ============================================
-// INICIALIZACIÓN
-// ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cargar datos (PHP los inyectará aquí)
-    cargarDatosHistorial();
+    // ==========================================
+    // 1. REFERENCIAS A ELEMENTOS DEL DOM
+    // ==========================================
+    const listaHistorial = document.getElementById('listaHistorial');
+    const mensajeVacio = document.getElementById('mensajeVacio');
     
-    // Event listeners para filtros y búsqueda
-    buscador.addEventListener('input', aplicarFiltros);
-    filtroSeccion.addEventListener('change', aplicarFiltros);
-    filtroAnio.addEventListener('change', aplicarFiltros);
-    filtroPeriodo.addEventListener('change', aplicarFiltros);
-    filtroEstado.addEventListener('change', aplicarFiltros);
-});
+    // Filtros
+    const buscarHistorial = document.getElementById('buscarHistorial');
+    const filtroSeccion = document.getElementById('filtroSeccionHist');
+    const filtroAnio = document.getElementById('filtroAnioHist');
+    const filtroPeriodo = document.getElementById('filtroPeriodoHist');
+    const filtroEstado = document.getElementById('filtroEstadoHist');
+    
+    // Estadísticas
+    const statTotal = document.getElementById('totalRegistros');
+    const statAprobados = document.getElementById('totalAprobadosHist');
+    const statReprobados = document.getElementById('totalReprobadosHist');
+    const statPromedio = document.getElementById('promedioGeneralHist');
 
-// ============================================
-// CARGAR DATOS (PHP inyectará los datos reales)
-// ============================================
-function cargarDatosHistorial() {
-    // Aquí PHP inyectará los datos. Por ahora usamos datos de ejemplo
-    datosHistorial = [
-        {
-            nie: '12345678',
-            nombre: 'Juan Pérez García',
-            seccion: '1° A',
-            anio: '2026',
-            periodo: '1',
-            promedio: 8.5,
-            estado: 'Aprobado',
-            materias: [
-                { nombre: 'Matemáticas', nota: 9.0 },
-                { nombre: 'Lenguaje', nota: 8.0 },
-                { nombre: 'Ciencias', nota: 8.5 }
-            ],
-            observaciones: 'Excelente desempeño académico'
-        },
-        {
-            nie: '87654321',
-            nombre: 'María López Hernández',
-            seccion: '2° B',
-            anio: '2026',
-            periodo: '1',
-            promedio: 6.2,
-            estado: 'Reprobado',
-            materias: [
-                { nombre: 'Matemáticas', nota: 5.5 },
-                { nombre: 'Lenguaje', nota: 7.0 },
-                { nombre: 'Ciencias', nota: 6.0 }
-            ],
-            observaciones: 'Necesita refuerzo en matemáticas'
-        }
-        // PHP agregará más registros aquí
-    ];
-    
-    renderizarTabla(datosHistorial);
-    actualizarEstadisticas(datosHistorial);
-    verificarEstadoVacio();
-}
+    // Modales
+    const modalPDF = document.getElementById('modalPDF');
+    const modalVerDetalles = document.getElementById('modalVerDetalles');
+    const pdfTipoReporte = document.getElementById('pdf_tipo_hist');
+    // Nota: Hay un typo en tu HTML ('detalestudiantesleHistorial'). Lo uso tal cual está.
+    const detallesHistorial = document.getElementById('detalestudiantesleHistorial'); 
 
-// ============================================
-// RENDERIZAR TABLA
-// ============================================
-function renderizarTabla(datos) {
-    listaHistorial.innerHTML = '';
-    
-    if (datos.length === 0) {
-        mensajeVacio.style.display = 'block';
-        listaHistorial.style.display = 'none';
-        return;
-    }
-    
-    mensajeVacio.style.display = 'none';
-    listaHistorial.style.display = 'table-row-group';
-    
-    datos.forEach((registro, index) => {
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td>${registro.nie}</td>
-            <td>${registro.nombre}</td>
-            <td><span class="section-badge">${registro.seccion}</span></td>
-            <td>${registro.anio}</td>
-            <td>${obtenerNombrePeriodo(registro.periodo)}</td>
-            <td><span class="average">${registro.promedio.toFixed(1)}</span></td>
-            <td><span class="badge ${registro.estado.toLowerCase()}">${registro.estado}</span></td>
-            <td class="actions-cell">
-                <button type="button" class="btn-action see" title="Ver detalles" onclick="verDetalles(${index})">
-                    <i class="fa-solid fa-eye"></i>
-                    <span class="sr-only">Ver detalles</span>
-                </button>
-            </td>
-        `;
-        listaHistorial.appendChild(fila);
-    });
-}
+    // ==========================================
+    // 2. FUNCIÓN PRINCIPAL DE FILTRADO
+    // ==========================================
+    const aplicarFiltros = () => {
+        const textoBusqueda = buscarHistorial.value.toLowerCase().trim();
+        const seccion = filtroSeccion.value.toLowerCase();
+        const anio = filtroAnio.value;
+        const periodo = filtroPeriodo.value;
+        const estado = filtroEstado.value.toLowerCase();
 
-// ============================================
-// APLICAR FILTROS Y BÚSQUEDA
-// ============================================
-function aplicarFiltros() {
-    const textoBusqueda = buscador.value.toLowerCase().trim();
-    const seccion = filtroSeccion.value;
-    const anio = filtroAnio.value;
-    const periodo = filtroPeriodo.value;
-    const estado = filtroEstado.value;
-    
-    const datosFiltrados = datosHistorial.filter(registro => {
-        // Filtro de búsqueda (NIE o nombre)
-        const coincideBusqueda = textoBusqueda === '' || 
-            registro.nie.toLowerCase().includes(textoBusqueda) ||
-            registro.nombre.toLowerCase().includes(textoBusqueda);
-        
-        // Filtro de sección
-        const coincideSeccion = seccion === '' || registro.seccion === seccion;
-        
-        // Filtro de año
-        const coincideAnio = anio === '' || registro.anio === anio;
-        
-        // Filtro de período
-        const coincidePeriodo = periodo === '' || registro.periodo === periodo;
-        
-        // Filtro de estado
-        const coincideEstado = estado === '' || registro.estado === estado;
-        
-        return coincideBusqueda && coincideSeccion && coincideAnio && 
-               coincidePeriodo && coincideEstado;
-    });
-    
-    renderizarTabla(datosFiltrados);
-    actualizarEstadisticas(datosFiltrados);
-}
+        const filas = listaHistorial.querySelectorAll('tr');
+        let visibles = 0;
+        let aprobados = 0;
+        let reprobados = 0;
+        let sumaPromedios = 0;
 
-// ============================================
-// ACTUALIZAR ESTADÍSTICAS
-// ============================================
-function actualizarEstadisticas(datos) {
-    const total = datos.length;
-    const aprobados = datos.filter(r => r.estado === 'Aprobado').length;
-    const reprobados = datos.filter(r => r.estado === 'Reprobado').length;
-    const promedio = total > 0 
-        ? (datos.reduce((sum, r) => sum + r.promedio, 0) / total).toFixed(1)
-        : 0;
-    
-    // Animación de números
-    animarNumero(totalRegistros, total);
-    animarNumero(totalAprobados, aprobados);
-    animarNumero(totalReprobados, reprobados);
-    promedioGeneral.textContent = promedio;
-}
+        // Mapeo para tolerar variaciones en el texto del período (1, Primer, 1er, etc.)
+        const periodoMap = {
+            "1": ["1", "primer"],
+            "2": ["2", "segundo"],
+            "3": ["3", "tercer"],
+            "4": ["4", "cuarto"]
+        };
 
-// ============================================
-// ANIMACIÓN DE NÚMEROS
-// ============================================
-function animarNumero(elemento, valorFinal) {
-    const duracion = 500;
-    const inicio = 0;
-    const incremento = valorFinal / (duracion / 16);
-    let actual = inicio;
-    
-    const intervalo = setInterval(() => {
-        actual += incremento;
-        if (actual >= valorFinal) {
-            elemento.textContent = valorFinal;
-            clearInterval(intervalo);
-        } else {
-            elemento.textContent = Math.floor(actual);
-        }
-    }, 16);
-}
+        filas.forEach(fila => {
+            if (!fila.querySelector('td')) return; // Ignorar si no es una fila de datos
 
-// ============================================
-// VER DETALLES (MODAL)
-// ============================================
-function verDetalles(index) {
-    const registro = datosHistorial[index];
-    
-    if (!registro) {
-        alert('No se encontró el registro');
-        return;
-    }
-    
-    // Construir HTML de detalles
-    let materiasHTML = '';
-    if (registro.materias && registro.materias.length > 0) {
-        materiasHTML = `
-            <div class="grades-section">
-                <h5>Materias Cursadas</h5>
-                <div class="grades-list">
-                    ${registro.materias.map(m => `
-                        <div class="grade-item">
-                            <span class="grade-name">${m.nombre}</span>
-                            <span class="grade-score">${m.nota.toFixed(1)}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    let observacionesHTML = '';
-    if (registro.observaciones) {
-        observacionesHTML = `
-            <div class="observations">
-                <div class="observations-label">Observaciones:</div>
-                <div class="observations-text">${registro.observaciones}</div>
-            </div>
-        `;
-    }
-    
-    detalleHistorial.innerHTML = `
-        <div class="student-card">
-            <h4>${registro.nombre}</h4>
-            <div class="student-info">
-                <div class="info-item">
-                    <span class="info-label">NIE:</span>
-                    <span class="info-value">${registro.nie}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Sección:</span>
-                    <span class="info-value">${registro.seccion}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Año:</span>
-                    <span class="info-value">${registro.anio}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Período:</span>
-                    <span class="info-value">${obtenerNombrePeriodo(registro.periodo)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Promedio:</span>
-                    <span class="info-value average">${registro.promedio.toFixed(1)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Estado:</span>
-                    <span class="info-value">
-                        <span class="badge ${registro.estado.toLowerCase()}">${registro.estado}</span>
-                    </span>
-                </div>
-            </div>
-            ${materiasHTML}
-            ${observacionesHTML}
-        </div>
-    `;
-    
-    modalVerDetalles.showModal();
-}
+            // Lectura de celdas (basado en el orden de tu HTML)
+            const celdas = fila.querySelectorAll('td');
+            const nie = celdas[0]?.textContent.toLowerCase().trim() || '';
+            const nombre = celdas[1]?.textContent.toLowerCase().trim() || '';
+            const filaSeccion = celdas[2]?.textContent.toLowerCase().trim() || '';
+            const filaAnio = celdas[3]?.textContent.trim() || '';
+            const filaPeriodo = celdas[4]?.textContent.toLowerCase().trim() || '';
+            const filaPromedio = parseFloat(celdas[5]?.textContent) || 0;
+            const filaEstado = celdas[6]?.textContent.toLowerCase().trim() || '';
 
-// ============================================
-// VERIFICAR ESTADO VACÍO
-// ============================================
-function verificarEstadoVacio() {
-    if (datosHistorial.length === 0) {
-        mensajeVacio.style.display = 'block';
-        listaHistorial.style.display = 'none';
-    } else {
-        mensajeVacio.style.display = 'none';
-        listaHistorial.style.display = 'table-row-group';
-    }
-}
+            // Ignorar filas completamente vacías (ej. plantillas de PHP antes de cargar)
+            if (!nie && !nombre) {
+                fila.style.display = 'none';
+                return; 
+            }
 
-// ============================================
-// UTILIDADES
-// ============================================
-function obtenerNombrePeriodo(periodo) {
-    const nombres = {
-        '1': 'Primer período',
-        '2': 'Segundo período',
-        '3': 'Tercer período',
-        '4': 'Cuarto período'
+            // Lógica de coincidencias
+            const coincideBusqueda = nie.includes(textoBusqueda) || nombre.includes(textoBusqueda);
+            const coincideSeccion = !seccion || filaSeccion.includes(seccion);
+            const coincideAnio = !anio || filaAnio === anio;
+            
+            let coincidePeriodo = true;
+            if (periodo) {
+                const opciones = periodoMap[periodo] || [periodo];
+                coincidePeriodo = opciones.some(p => filaPeriodo.includes(p));
+            }
+            
+            const coincideEstado = !estado || filaEstado === estado;
+
+            // Mostrar/Ocultar y calcular estadísticas
+            if (coincideBusqueda && coincideSeccion && coincideAnio && coincidePeriodo && coincideEstado) {
+                fila.style.display = '';
+                visibles++;
+                sumaPromedios += filaPromedio;
+                if (filaEstado.includes('aprobado')) aprobados++;
+                if (filaEstado.includes('reprobado')) reprobados++;
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+
+        // Actualizar UI de estadísticas
+        statTotal.textContent = visibles;
+        statAprobados.textContent = aprobados;
+        statReprobados.textContent = reprobados;
+        statPromedio.textContent = visibles > 0 ? (sumaPromedios / visibles).toFixed(2) : '0';
+
+        // Control del mensaje de "No hay registros"
+        mensajeVacio.style.display = (visibles === 0 && filas.length > 0) ? 'block' : 'none';
     };
-    return nombres[periodo] || periodo;
-}
 
-// ============================================
-// INTEGRACIÓN CON PHP (ejemplo)
-// ============================================
-// Cuando PHP inyecte los datos, reemplaza la función cargarDatosHistorial() con:
-/*
-function cargarDatosHistorial() {
-    // PHP inyectará algo como:
-    // datosHistorial = <?php echo json_encode($historial); ?>;
-    
-    // O mediante fetch:
-    fetch('../API/obtener_historial.php')
-        .then(response => response.json())
-        .then(data => {
-            datosHistorial = data;
-            renderizarTabla(datosHistorial);
-            actualizarEstadisticas(datosHistorial);
-            verificarEstadoVacio();
-        })
-        .catch(error => console.error('Error al cargar historial:', error));
-}
-*/
+    // Asignar eventos a todos los filtros
+    [buscarHistorial, filtroSeccion, filtroAnio, filtroPeriodo, filtroEstado].forEach(el => {
+        el.addEventListener('input', aplicarFiltros);
+        el.addEventListener('change', aplicarFiltros);
+    });
+
+    // ==========================================
+    // 3. LÓGICA DEL MODAL DE EXPORTAR PDF
+    // ==========================================
+    const camposPDF = {
+        estudiante: document.getElementById('pdf_estudiante_hist'),
+        seccion: document.getElementById('pdf_seccion_hist'),
+        anio: document.getElementById('pdf_anio_hist'),
+        periodo: document.getElementById('pdf_periodo_hist')
+    };
+
+    const toggleCamposPDF = () => {
+        const tipo = pdfTipoReporte.value;
+        
+        // Ocultar todos los campos y sus labels por defecto
+        Object.values(camposPDF).forEach(campo => {
+            const label = campo.previousElementSibling;
+            campo.style.display = 'none';
+            if (label && label.tagName === 'LABEL') label.style.display = 'none';
+        });
+
+        // Mostrar solo el campo correspondiente al tipo de reporte
+        if (tipo && tipo !== 'general' && camposPDF[tipo]) {
+            camposPDF[tipo].style.display = 'block';
+            const label = camposPDF[tipo].previousElementSibling;
+            if (label && label.tagName === 'LABEL') label.style.display = 'block';
+        }
+    };
+
+    pdfTipoReporte.addEventListener('change', toggleCamposPDF);
+
+    // ==========================================
+    // 4. CARGA DINÁMICA EN MODAL "VER DETALLES"
+    // ==========================================
+    listaHistorial.addEventListener('click', (e) => {
+        // Buscamos si el clic fue en el botón "Ver" o en su ícono interno
+        const botonVer = e.target.closest('.btn-action.see');
+        
+        if (botonVer) {
+            e.preventDefault(); // Evitar cualquier comportamiento por defecto
+            
+            const fila = botonVer.closest('tr');
+            const celdas = fila.querySelectorAll('td');
+            
+            // Extraer datos de la fila
+            const datos = {
+                nie: celdas[0].textContent,
+                nombre: celdas[1].textContent,
+                seccion: celdas[2].textContent,
+                anio: celdas[3].textContent,
+                periodo: celdas[4].textContent,
+                promedio: celdas[5].textContent,
+                estado: celdas[6].textContent
+            };
+
+            // Inyectar HTML dinámico en el cuerpo del modal
+            detallesHistorial.innerHTML = `
+                <div class="detalle-grid">
+                    <p><strong>NIE:</strong> ${datos.nie}</p>
+                    <p><strong>Nombre completo:</strong> ${datos.nombre}</p>
+                    <p><strong>Sección:</strong> ${datos.seccion}</p>
+                    <p><strong>Año lectivo:</strong> ${datos.anio}</p>
+                    <p><strong>Período:</strong> ${datos.periodo}</p>
+                    <p><strong>Promedio Final:</strong> ${datos.promedio}</p>
+                    <p><strong>Estado:</strong> <span class="badge ${datos.estado.toLowerCase() === 'aprobado' ? 'success' : 'danger'}">${datos.estado}</span></p>
+                </div>
+            `;
+            
+            // Abrir modal programáticamente
+            modalVerDetalles.showModal();
+        }
+    });
+
+    // ==========================================
+    // 5. MEJORAS DE UX EN MODALES (Cerrar al hacer clic fuera)
+    // ==========================================
+    [modalPDF, modalVerDetalles].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            // Verificar si el clic fue en el "backdrop" (el área oscura fuera del modal)
+            const dialogDim = modal.getBoundingClientRect();
+            const isInDialog = (dialogDim.top <= e.clientY && e.clientY <= dialogDim.top + dialogDim.height &&
+                                dialogDim.left <= e.clientX && e.clientX <= dialogDim.left + dialogDim.width);
+            if (!isInDialog) {
+                modal.close();
+            }
+        });
+    });
+
+    // ==========================================
+    // 6. INICIALIZACIÓN
+    // ==========================================
+    aplicarFiltros();   // Calcula estadísticas y oculta filas vacías al cargar
+    toggleCamposPDF();  // Oculta campos del PDF por defecto
+});
