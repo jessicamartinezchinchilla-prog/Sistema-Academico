@@ -1,18 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inicio de sesión</title>
     <link rel="stylesheet" href="../CSS/index.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="../JS/script.js"></script>
   </head>
   <body>
     <header class="header">
-      <img
-        src="https://images.vexels.com/media/users/3/203184/isolated/preview/8c5175a48400ee381a0a755032bc7cbb-trazo-de-icono-de-gorro-de-graduacion.png"
+      <img src="https://images.vexels.com/media/users/3/203184/isolated/preview/8c5175a48400ee381a0a755032bc7cbb-trazo-de-icono-de-gorro-de-graduacion.png"
         alt="Gorro de graduacion"
-      />
+      />  
       <h1>Sistema Académico</h1>
       <h3>Gestión de notas escolares</h3>
     </header>
@@ -24,13 +24,20 @@
         name="usuario"
         placeholder="Ingrese su usuario"
       />
+      
       <label for="contraseña">Contraseña</label>
-      <input
-        type="text"
-        id="contraseña"
-        name="contraseña"
-        placeholder="Ingrese su contraseña"
-      />
+      <div class="password-container">
+        <input
+          type="password"
+          id="contraseña"
+          name="contraseña"
+          placeholder="Ingrese su contraseña"
+        />
+        <button type="button" class="toggle-password" onclick="togglePassword()">
+          <i class="fa-solid fa-eye" id="eye-icon"></i>
+        </button>
+      </div>
+      
       <a href="../HTML/panel_principal.html">
         <button class="button">Iniciar Sesión</button>
       </a>
