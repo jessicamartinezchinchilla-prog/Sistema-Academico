@@ -1,16 +1,16 @@
 
 /* Reset y estilos base */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:"Segoe UI", sans-serif;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body{
-    background:#F5F6FA;
-    display:flex;
-    min-height:100vh;
+body {
+    background-color: #f5f7fa;
+    color: #333;
+    min-height: 100vh;
 }
 
 /* SIDEBAR */
@@ -18,7 +18,7 @@ body{
     width:250px;
     background:#2647B8;
     position:fixed;
-    left:0;
+    left:0;g
     top:0;
     height:100vh;
 
