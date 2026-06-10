@@ -10,6 +10,7 @@
 body {
     display: flex;
     background: #f8fafc;
+    min-height: 100vh;
 }
 
 /* ================= SIDEBAR FIJA ================= */
@@ -28,7 +29,7 @@ body {
 }
 
 .sidebar h1{
-     padding:28px 20px;
+    padding:28px 20px;
     font-size:20px;
     color:white;
     border-bottom:1px solid rgba(255,255,255,.15);
@@ -40,6 +41,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    padding: 15px 10px;
 }
 
 /* LINKS */
@@ -48,8 +50,8 @@ body {
     align-items: center;
     gap: 12px;
 
-    padding: 12px 14px;
-    border-radius: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
 
     color: #c7d2fe;
     text-decoration: none;
@@ -64,13 +66,13 @@ body {
     text-align: center;
 }
 
-/* ❌ SIN HOVER QUE CAMBIE TODO */
+/* HOVER (suave pero sin efecto fuerte) */
 .nav a:hover {
-    background: transparent;
-    color: #c7d2fe;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
 }
 
-/* SOLO ACTIVO */
+/* ACTIVO */
 .nav a.active {
     background: #3b82f6;
     color: white;
@@ -79,9 +81,9 @@ body {
 
 /* ================= MAIN ================= */
 .main-content {
-    margin-left: 260px; /* importante para que no se monte */
+    margin-left: 250px;
     padding: 25px 30px;
-    width: 100%;
+    width: calc(100% - 250px);
 }
 
 /* ================= TITULOS ================= */
@@ -190,13 +192,14 @@ body {
 .footer {
     position: fixed;
     bottom: 0;
-    left: 260px;
-    width: calc(100% - 260px);
+    left: 250px;
+    width: calc(100% - 250px);
     background: white;
     text-align: center;
     padding: 10px;
     font-size: 14px;
     color: #64748b;
+    border-top: 1px solid #e2e8f0;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -209,6 +212,7 @@ body {
 
     .main-content {
         margin-left: 0;
+        width: 100%;
     }
 
     .footer {
