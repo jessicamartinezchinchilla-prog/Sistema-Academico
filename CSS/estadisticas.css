@@ -5,11 +5,12 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+} 
 
 body {
-    background-color: #f5f7fa;
-    min-height:100vh;
+    background-color: #F5F6FA;
+    color: #000000 !important; /* Esto obliga al navegador a usar este color */
+    min-height: 100vh;
 }
 
 /* SIDEBAR */
@@ -72,7 +73,7 @@ body {
 
 .main-content h2 {
     font-size: 28px;
-    color: #1e3c72;
+    color: #000000;
     margin-bottom: 10px;
     font-weight: 600;
 }
@@ -413,3 +414,19 @@ body {
 .stat-item:nth-child(3) { animation-delay: 0.3s; }
 .stat-item:nth-child(4) { animation-delay: 0.4s; }
 
+/* ==========================================
+   FORZAR COLOR NEGRO EN TEXTOS
+   (Pegar al FINAL del archivo CSS)
+   ========================================== */
+.main-content > p,
+.main-content h3,
+.subject-name,
+.section-name,
+.stat-box-label,
+.section-students,
+.section-average-label,
+.empty-state,
+.footer,
+.footer p {
+    color: #000000 !important;
+}

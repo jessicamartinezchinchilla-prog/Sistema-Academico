@@ -4,11 +4,10 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:"Segoe UI", sans-serif;
-}
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
 
 body{
-    background:#F5F6FA;
+    background:#00000000;
     display:flex;
     min-height:100vh;
 }
@@ -75,7 +74,7 @@ body{
 
 .main-content h2 {
     font-size: 28px;
-    color: #1e3c72;
+    color: #000000;
     margin-bottom: 10px;
     font-weight: 600;
 }
@@ -244,7 +243,7 @@ body{
     padding: 15px 20px;
     text-align: left;
     font-weight: 600;
-    color: #1e3c72;
+    color: #000000;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -338,7 +337,7 @@ body{
 
 .students-by-section h2 {
     font-size: 22px;
-    color: #1e3c72;
+    color: #000000;
     margin-bottom: 20px;
     font-weight: 600;
 }
