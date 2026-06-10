@@ -694,3 +694,16 @@ body {
 .stat-item:nth-child(3) { animation-delay: 0.3s; }
 .stat-item:nth-child(4) { animation-delay: 0.4s; }
 
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    background: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
+}
