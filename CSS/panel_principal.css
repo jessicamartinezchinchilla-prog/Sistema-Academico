@@ -1,80 +1,71 @@
-/* ===================================
-   RESET
-=================================== */
+/* ========================================
+   CONFIGURACIÓN GENERAL
+======================================== */
 
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:'Segoe UI',sans-serif;
+    font-family:"Segoe UI", sans-serif;
 }
 
 body{
-    background:#F5F7FB;
-    min-height:100vh;
+    background:#F5F6FA;
     display:flex;
+    min-height:100vh;
 }
 
-/* ===================================
+/* ========================================
    SIDEBAR
-=================================== */
-
+======================================== */
 .header{
     width:250px;
-    height:100vh;
-    background:#2643B5;
-
+    background:#2647B8;
     position:fixed;
     left:0;
     top:0;
+    height:100vh;
 
     overflow-y:auto;
     overflow-x:hidden;
 
     scrollbar-width:thin;
-
 }
 
 .header h1{
-    color:#FFFFFF;
-    font-size:18px;
-    font-weight:700;
-    padding:28px 25px;
+     padding:28px 20px;
+    font-size:20px;
+    color:white;
     border-bottom:1px solid rgba(255,255,255,.15);
 }
 
 .list{
     list-style:none;
-    padding:15px 0;
+    padding:15px 10px;
 }
 
 .list li{
-    margin:6px 15px;
+    margin-bottom:8px;
 }
 
 .list a{
-    text-decoration:none;
-    color:#E5E7EB;
     display:flex;
     align-items:center;
     gap:12px;
+    text-decoration:none;
+    color:white;
     padding:14px 16px;
     border-radius:12px;
     transition:.3s;
-    font-size:16px;
+    font-size:15px;
 }
 
 .list a:hover{
-    background:#2E4ED0;
+    background:#2952E3;
 }
 
 .list a.active{
     background:#2952E3;
-    color:#FFFFFF;
-}
-
-.list i{
-    width:20px;
 }
 
 /* ===================================
