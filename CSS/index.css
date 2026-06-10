@@ -125,3 +125,103 @@ footer {
     font-size: 22px;
   }
 }
+
+/* ========================================
+   INPUT DE CONTRASEÑA CON OJO
+======================================== */
+
+.input-password {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input-password input {
+    width: 100%;
+    padding: 12px 45px 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #374151;
+    background: white;
+    transition: all 0.2s;
+}
+
+.input-password input::placeholder {
+    color: #9ca3af;
+}
+
+.input-password input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 16px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.btn-toggle-password:hover {
+    color: #2563eb;
+}
+
+/* Ocultar botón de ojo que está fuera del input */
+.body > button,
+.body > .btn-toggle-password {
+    display: none !important;
+}
+
+.body button:not(.button) {
+    display: none !important;
+}
+
+.body .input-password button {
+    display: flex !important;
+}
+/* ========================================
+   NOTIFICACIONES
+======================================== */
+
+.notificacion {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    z-index: 9999;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notificacion.mostrar {
+    transform: translateX(0);
+}
+
+.notificacion-success {
+    background: #10b981;
+}
+
+.notificacion-error {
+    background: #ef4444;
+}
