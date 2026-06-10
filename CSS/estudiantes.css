@@ -1,56 +1,75 @@
 
 /* Reset y estilos base */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Segoe UI", sans-serif;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f7fa;
-    color: #333;
-    line-height: 1.6;
+body{
+    background:#F5F6FA;
+    display:flex;
+    min-height:100vh;
 }
+
 
 /* SIDEBAR */
-.header {
-    width: 260px;
-    height: 100vh;
-    background: #2d4bb3;
-    color: white;
-    padding: 20px;
-    position: fixed;
+.header{
+    width:250px;
+    background:#2647B8;
+    position:fixed;
+    left:0;
+    top:0;
+    height:100vh;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    scrollbar-width:thin;
 }
 
-.header h1 {
-    margin-bottom: 25px;
+.header h1{
+     padding:28px 20px;
+    font-size:20px;
+    color:white;
+    border-bottom:1px solid rgba(255,255,255,.15);
 }
 
-.list {
-    list-style: none;
+.list{
+    list-style:none;
+    padding:15px 10px;
 }
 
-.list a {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    color: white;
-    text-decoration: none;
-    padding: 12px;
-    border-radius: 10px;
-    transition: 0.3s;
+.list li{
+    margin-bottom:8px;
 }
 
-.list a:hover,
-.list a.active {
-    background: #1f36a0;
+.list a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    text-decoration:none;
+    color:white;
+    padding:14px 16px;
+    border-radius:12px;
+    transition:.3s;
+    font-size:15px;
+}
+
+.list a:hover{
+    background:#2952E3;
+}
+
+.list a.active{
+    background:#2952E3;
 }
 
 /* Main Content */
 .main-content {
     margin-left: 260px;
     padding: 30px 40px;
+    flex: 1;
     min-height: 100vh;
 }
 
@@ -286,3 +305,14 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Footer */
+.footer {
+    margin-left: 260px;
+    padding: 20px 40px;
+    text-align: center;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    color: #666;
+    font-size: 14px;
+    width: calc(100% - 260px);
+}
