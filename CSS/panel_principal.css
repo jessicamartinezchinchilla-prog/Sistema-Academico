@@ -71,7 +71,8 @@ body{
 .container{
     margin-left:250px;
     width:calc(100% - 250px);
-    padding:35px 30px;
+    padding: 35px 30px 80px 30px; /* 80px de padding abajo para no tapar el footer */
+    min-height: 100vh;
 }
 
 /* ===================================
@@ -180,14 +181,14 @@ body{
 }
 
 /* ===================================
-   NUEVOS CONTENEDORES DE GRÁFICAS (FIX TOOLTIP)
+   CONTENEDORES DE GRÁFICAS (FIX TOOLTIP)
 =================================== */
 .chart-wrapper {
     background: #FFFFFF;
     border-radius: 14px;
     box-shadow: 0 2px 10px rgba(0,0,0,.06);
     padding: 20px; 
-    position: relative; /* CRUCIAL para que Chart.js calcule el mouse */
+    position: relative; 
 }
 
 .chart-barras {
@@ -204,26 +205,28 @@ body{
     width: 100%;
 }
 
-/* El canvas ocupa el 100% de su contenedor sin forzar dimensiones fijas */
 .chart-wrapper canvas {
     width: 100% !important;
     height: 100% !important;
 }
 
 /* ===================================
-   FOOTER
+   FOOTER (FORZADO Y FIJO)
 =================================== */
-.footer{
-    position:fixed;
-    bottom:0;
-    left:250px;
-    width:calc(100% - 250px);
-    background:#FFFFFF;
-    border-top:1px solid #E5E7EB;
-    text-align:center;
-    padding:20px;
-    color:#6B7280;
-    font-size:14px;
+.footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 250px !important;
+    width: calc(100% - 250px) !important;
+    background: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    text-align: center;
+    padding: 15px 20px !important;
+    color: #6B7280;
+    font-size: 14px;
+    z-index: 9999 !important;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    pointer-events: auto; /* Asegura que no esté "detrás" de algo invisible */
 }
 
 /* ===================================
@@ -251,13 +254,16 @@ body{
 
 @media(max-width:768px){
     .header{ width:220px; }
+    
     .container{
         margin-left:220px;
         width:calc(100% - 220px);
+        padding: 35px 20px 80px 20px;
     }
+    
     .grid{ grid-template-columns:1fr; }
-    .footer{
-        left:220px;
-        width:calc(100% - 220px);
+    .footer {
+        left: 220px !important;
+        width: calc(100% - 220px) !important;
     }
 }
