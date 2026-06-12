@@ -12,7 +12,62 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarNombres('edit_nombres');
     configurarNombres('edit_apellidos');
 
-    // --- 2. FILTROS DE BÚSQUEDA ---
+    // --- 2. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX) ---
+    // Esto hace que los formularios no recarguen la página si hay error
+    document.querySelectorAll('.modal-form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault(); // Evita el envío tradicional
+            
+            // 1. Validaciones básicas
+            if (!validarFormulario(this)) return;
+
+            // 2. Enviar datos con Fetch
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                const result = await response.text();
+                
+                // 3. Manejar respuesta
+                if (result.startsWith('ERROR:')) {
+                    const errorType = result.split(':')[1];
+                    let msg = '⚠️ Error al procesar la solicitud';
+                    
+                    if (errorType === 'gmail') msg = '⚠️ El correo debe ser obligatoriamente @gmail.com';
+                    else if (errorType === 'dui_duplicado') msg = '⚠️ El DUI ingresado ya está registrado';
+                    else if (errorType === 'nip_duplicado') msg = '⚠️ El NIP ingresado ya está registrado';
+                    else if (errorType === 'correo_duplicado') msg = '⚠️ El correo ya está registrado';
+                    // Agrega esta línea:
+                    else if (errorType === 'telefono_duplicado') msg = '⚠️ El teléfono ingresado ya está registrado';
+                    else if (errorType === 'duplicado') msg = '⚠️ Ya existen datos duplicados';
+                    else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
+                    
+                    alert(msg);
+                    // ¡El modal se queda abierto y los datos intactos!
+                } else if (result.startsWith('SUCCESS:')) {
+                    alert('✅ Operación realizada con éxito');
+                    window.location.reload(); // Recargar para ver los cambios
+                }
+            } catch (error) {
+                alert('Error de conexión con el servidor');
+            }
+        });
+    });
+
+    // --- 3. INTERCEPTAR ELIMINAR (Para que también use AJAX si quieres, o dejarlo como link) ---
+    // Dejamos el eliminar como link tradicional por simplicidad, pero recargamos al volver
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success') && urlParams.get('success') === 'eliminado') {
+        alert('🗑️ Profesor eliminado exitosamente');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // --- 4. FILTROS DE BÚSQUEDA ---
     const inputBuscar = document.getElementById('buscarProfesor');
     const filtroMateria = document.getElementById('filtroMateria');
     const filtroSeccion = document.getElementById('filtroSeccion');
@@ -46,34 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
     inputBuscar.addEventListener('input', filtrar);
     filtroMateria.addEventListener('change', filtrar);
     filtroSeccion.addEventListener('change', filtrar);
-
-    // --- 3. MENSAJES DE ERROR ---
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('error')) {
-        if (urlParams.get('error') === 'gmail') {
-            alert('⚠️ El correo debe ser obligatoriamente @gmail.com');
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // --- 4. MENSAJES DE ÉXITO ---
-    if (urlParams.has('success')) {
-        let msg = '✅ Profesor agregado exitosamente!';
-        if (urlParams.get('success') === 'editado') msg = '✅ Profesor actualizado!';
-        if (urlParams.get('success') === 'eliminado') msg = '🗑️ Profesor eliminado!';
-        alert(msg);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
 });
 
-// Función para formatear DUI (XXXXXXXX-X) y Teléfono (XXXX-XXXX)
+// Función para formatear DUI y Teléfono
 function configurarFormateo(idInput, tipo) {
     const input = document.getElementById(idInput);
     if (!input) return;
 
     input.addEventListener('input', (e) => {
-        let val = e.target.value.replace(/\D/g, ''); // Solo números
-        
+        let val = e.target.value.replace(/\D/g, '');
         if (tipo === 'dui') {
             if (val.length > 8) val = val.slice(0, 8) + '-' + val.slice(8, 9);
         } else if (tipo === 'tel') {
@@ -83,7 +119,7 @@ function configurarFormateo(idInput, tipo) {
     });
 }
 
-// Función para formatear nombres (Mayúsculas y excepciones como "de")
+// Función para formatear nombres
 function configurarNombres(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
@@ -102,45 +138,29 @@ function configurarNombres(idInput) {
     });
 }
 
-// Validación final antes de enviar el formulario
+// Validación final
 function validarFormulario(form) {
-    const nombres = document.getElementById(form.querySelector('[name="nombres"]').id).value.trim().split(' ');
-    const apellidos = document.getElementById(form.querySelector('[name="apellidos"]').id).value.trim().split(' ');
+    const nombresInput = form.querySelector('[name="nombres"]');
+    const apellidosInput = form.querySelector('[name="apellidos"]');
+    
+    const nombres = nombresInput.value.trim().split(' ');
+    const apellidos = apellidosInput.value.trim().split(' ');
     const secciones = form.querySelectorAll('input[name="id_seccion[]"]:checked');
     const correo = form.querySelector('[name="correo"]').value.trim();
 
-    // Validar nombres
-    if (nombres.length < 2) {
-        alert('⚠️ Debe ingresar al menos dos nombres.');
-        return false;
-    }
+    if (nombres.length < 2) { alert('⚠️ Debe ingresar al menos dos nombres.'); return false; }
+    if (apellidos.length < 2) { alert('️ Debe ingresar al menos dos apellidos.'); return false; }
+    if (secciones.length === 0) { alert('⚠️ Debe seleccionar al menos una sección.'); return false; }
     
-    // Validar apellidos
-    if (apellidos.length < 2) {
-        alert('⚠️ Debe ingresar al menos dos apellidos.');
-        return false;
-    }
-    
-    // Validar secciones
-    if (secciones.length === 0) {
-        alert('⚠️ Debe seleccionar al menos una sección.');
-        return false;
-    }
-    
-    // Validar que el correo sea Gmail
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    if (!emailRegex.test(correo)) {
-        alert('⚠️ El correo debe ser obligatoriamente @gmail.com');
-        return false; // Esto evita que el formulario se envíe
-    }
+    if (!emailRegex.test(correo)) { alert('️ El correo debe ser obligatoriamente @gmail.com'); return false; }
     
-    return true; // Si todo está bien, se envía
+    return true;
 }
 
 // --- FUNCIONES DE MODALES ---
 function abrirModalAgregar() {
-    // Limpiar formulario al abrir
-    document.querySelector('#modalProfesor form[action*="action.php"]').reset();
+    document.querySelector('#modalProfesor form.modal-form').reset();
     document.getElementById('modalProfesor').showModal();
 }
 
@@ -182,7 +202,6 @@ function editarProfesor(btn) {
     document.getElementById('edit_telefono').value = d.telefono;
     document.getElementById('edit_materia').value = d.materiaId;
 
-    // Generar checkboxes de secciones y marcar las asignadas
     const container = document.getElementById('edit_secciones_container');
     container.innerHTML = '';
     const seccionesAsignadas = d.seccionIds ? d.seccionIds.split(',') : [];
