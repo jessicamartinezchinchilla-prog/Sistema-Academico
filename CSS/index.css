@@ -225,3 +225,25 @@ footer {
 .notificacion-error {
     background: #ef4444;
 }
+
+/* Asegurar que el botón de submit se vea */
+.body button.button,
+.body button[type="submit"] {
+    display: block !important;
+    width: 100%;
+    padding: 14px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 20px;
+}
+
+.body button.button:hover,
+.body button[type="submit"]:hover {
+    background: #1d4ed8;
+}
