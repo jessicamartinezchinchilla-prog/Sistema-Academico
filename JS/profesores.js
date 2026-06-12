@@ -1,6 +1,18 @@
 // JS/profesores.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- 1. VALIDACIONES Y FORMATEO AUTOMÁTICO ---
+    configurarFormateo('add_dui', 'dui');
+    configurarFormateo('add_telefono', 'tel');
+    configurarNombres('add_nombres');
+    configurarNombres('add_apellidos');
+
+    configurarFormateo('edit_dui', 'dui');
+    configurarFormateo('edit_telefono', 'tel');
+    configurarNombres('edit_nombres');
+    configurarNombres('edit_apellidos');
+
+    // --- 2. FILTROS DE BÚSQUEDA ---
     const inputBuscar = document.getElementById('buscarProfesor');
     const filtroMateria = document.getElementById('filtroMateria');
     const filtroSeccion = document.getElementById('filtroSeccion');
@@ -8,58 +20,133 @@ document.addEventListener('DOMContentLoaded', () => {
     const mensajeVacio = document.getElementById('mensajeVacio');
 
     function filtrar() {
-        const textoBusqueda = inputBuscar.value.toLowerCase();
-        const materiaSeleccionada = filtroMateria.value.toLowerCase();
-        const seccionSeleccionada = filtroSeccion.value.toLowerCase();
-        
+        const texto = inputBuscar.value.toLowerCase();
+        const mat = filtroMateria.value.toLowerCase();
+        const sec = filtroSeccion.value.toLowerCase();
         let visibles = 0;
 
         filas.forEach(fila => {
-            const nombre = fila.dataset.nombres ? (fila.dataset.nombres + ' ' + fila.dataset.apellidos).toLowerCase() : '';
-            const dui = fila.dataset.dui ? fila.dataset.dui.toLowerCase() : '';
-            const nip = fila.dataset.nip ? fila.dataset.nip.toLowerCase() : '';
+            const nombre = (fila.dataset.nombres + ' ' + fila.dataset.apellidos).toLowerCase();
+            const dui = fila.dataset.dui.toLowerCase();
+            const nip = fila.dataset.nip.toLowerCase();
             const materia = fila.dataset.materiaNombre || '';
             const seccion = fila.dataset.seccionNombre || '';
 
-            // Busca en nombre, DUI o NIP
-            const coincideBusqueda = nombre.includes(textoBusqueda) || dui.includes(textoBusqueda) || nip.includes(textoBusqueda);
-            const coincideMateria = !materiaSeleccionada || materia.toLowerCase().includes(materiaSeleccionada);
-            const coincideSeccion = !seccionSeleccionada || seccion.toLowerCase().includes(seccionSeleccionada);
+            const coincide = (nombre.includes(texto) || dui.includes(texto) || nip.includes(texto)) &&
+                             (!mat || materia.toLowerCase().includes(mat)) &&
+                             (!sec || seccion.toLowerCase().includes(sec));
 
-            if (coincideBusqueda && coincideMateria && coincideSeccion) {
-                fila.style.display = '';
-                visibles++;
-            } else {
-                fila.style.display = 'none';
-            }
+            fila.style.display = coincide ? '' : 'none';
+            if (coincide) visibles++;
         });
 
-        if (visibles === 0 && filas.length > 0) {
-            mensajeVacio.classList.add('visible');
-        } else {
-            mensajeVacio.classList.remove('visible');
-        }
+        mensajeVacio.classList.toggle('visible', visibles === 0 && filas.length > 0);
     }
 
     inputBuscar.addEventListener('input', filtrar);
     filtroMateria.addEventListener('change', filtrar);
     filtroSeccion.addEventListener('change', filtrar);
 
+    // --- 3. MENSAJES DE ERROR ---
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('error')) {
+        if (urlParams.get('error') === 'gmail') {
+            alert('⚠️ El correo debe ser obligatoriamente @gmail.com');
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // --- 4. MENSAJES DE ÉXITO ---
     if (urlParams.has('success')) {
         let msg = '✅ Profesor agregado exitosamente!';
-        if (urlParams.get('success') === 'editado') msg = '✅ Profesor actualizado exitosamente!';
-        if (urlParams.get('success') === 'eliminado') msg = '🗑️ Profesor eliminado exitosamente!';
+        if (urlParams.get('success') === 'editado') msg = '✅ Profesor actualizado!';
+        if (urlParams.get('success') === 'eliminado') msg = '🗑️ Profesor eliminado!';
         alert(msg);
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 });
 
-function verProfesor(btn) {
-    const fila = btn.closest('tr');
-    const d = fila.dataset;
+// Función para formatear DUI (XXXXXXXX-X) y Teléfono (XXXX-XXXX)
+function configurarFormateo(idInput, tipo) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, ''); // Solo números
+        
+        if (tipo === 'dui') {
+            if (val.length > 8) val = val.slice(0, 8) + '-' + val.slice(8, 9);
+        } else if (tipo === 'tel') {
+            if (val.length > 4) val = val.slice(0, 4) + '-' + val.slice(4, 8);
+        }
+        e.target.value = val;
+    });
+}
+
+// Función para formatear nombres (Mayúsculas y excepciones como "de")
+function configurarNombres(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('blur', (e) => {
+        const palabras = e.target.value.split(' ');
+        const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
+        
+        const formateado = palabras.map(p => {
+            if (p.length === 0) return p;
+            if (excepciones.includes(p.toLowerCase())) return p.toLowerCase();
+            return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+        }).join(' ');
+        
+        e.target.value = formateado;
+    });
+}
+
+// Validación final antes de enviar el formulario
+function validarFormulario(form) {
+    const nombres = document.getElementById(form.querySelector('[name="nombres"]').id).value.trim().split(' ');
+    const apellidos = document.getElementById(form.querySelector('[name="apellidos"]').id).value.trim().split(' ');
+    const secciones = form.querySelectorAll('input[name="id_seccion[]"]:checked');
+    const correo = form.querySelector('[name="correo"]').value.trim();
+
+    // Validar nombres
+    if (nombres.length < 2) {
+        alert('⚠️ Debe ingresar al menos dos nombres.');
+        return false;
+    }
     
-    const contenido = `
+    // Validar apellidos
+    if (apellidos.length < 2) {
+        alert('⚠️ Debe ingresar al menos dos apellidos.');
+        return false;
+    }
+    
+    // Validar secciones
+    if (secciones.length === 0) {
+        alert('⚠️ Debe seleccionar al menos una sección.');
+        return false;
+    }
+    
+    // Validar que el correo sea Gmail
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!emailRegex.test(correo)) {
+        alert('⚠️ El correo debe ser obligatoriamente @gmail.com');
+        return false; // Esto evita que el formulario se envíe
+    }
+    
+    return true; // Si todo está bien, se envía
+}
+
+// --- FUNCIONES DE MODALES ---
+function abrirModalAgregar() {
+    // Limpiar formulario al abrir
+    document.querySelector('#modalProfesor form[action*="action.php"]').reset();
+    document.getElementById('modalProfesor').showModal();
+}
+
+function verProfesor(btn) {
+    const d = btn.closest('tr').dataset;
+    document.getElementById('contenidoVerProfesor').innerHTML = `
         <div style="margin-bottom: 20px;">
             <h4 style="color: #2647B8; margin-bottom: 10px;">Información Personal</h4>
             <p><strong>Nombre:</strong> ${d.nombres} ${d.apellidos}</p>
@@ -80,14 +167,11 @@ function verProfesor(btn) {
             </div>
         </div>
     `;
-    
-    document.getElementById('contenidoVerProfesor').innerHTML = contenido;
     document.getElementById('modalVerProfesor').showModal();
 }
 
 function editarProfesor(btn) {
-    const fila = btn.closest('tr');
-    const d = fila.dataset;
+    const d = btn.closest('tr').dataset;
 
     document.getElementById('edit_id').value = d.id;
     document.getElementById('edit_nombres').value = d.nombres;
@@ -97,7 +181,21 @@ function editarProfesor(btn) {
     document.getElementById('edit_correo').value = d.correo;
     document.getElementById('edit_telefono').value = d.telefono;
     document.getElementById('edit_materia').value = d.materiaId;
-    document.getElementById('edit_seccion').value = d.seccionId;
+
+    // Generar checkboxes de secciones y marcar las asignadas
+    const container = document.getElementById('edit_secciones_container');
+    container.innerHTML = '';
+    const seccionesAsignadas = d.seccionIds ? d.seccionIds.split(',') : [];
+    
+    window.seccionesSistema.forEach(s => {
+        const isChecked = seccionesAsignadas.includes(s.id) ? 'checked' : '';
+        container.innerHTML += `
+            <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; cursor: pointer;">
+                <input type="checkbox" name="id_seccion[]" value="${s.id}" ${isChecked}>
+                ${s.nombre}
+            </label>
+        `;
+    });
 
     document.getElementById('modalEditarProfesor').showModal();
 }
