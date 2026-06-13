@@ -751,3 +751,22 @@ body{
         width: 100%;
     }
 }
+
+/* ===================================
+   CAMPO EDAD (Idéntico al DUI deshabilitado)
+=================================== */
+#mat_edad, #edit_edad {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background-color: #f3f4f6 !important;
+    color: #9ca3af !important;
+    border-color: #d1d5db !important;
+}
+
+/* Evitar que se ilumine o cambie de color al hacer clic */
+#mat_edad:focus, #edit_edad:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: #d1d5db !important;
+    background-color: #f3f4f6 !important;
+}
