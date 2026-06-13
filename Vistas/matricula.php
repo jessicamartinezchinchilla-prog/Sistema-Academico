@@ -290,10 +290,17 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                 </div>
 
                 <label>Estado de la Matrícula:</label>
-                <select id="mat_estado" name="estado" required>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                </select>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" value="Activo" readonly 
+                           style="flex: 1; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; 
+                                  background-color: #f3f4f6; color: #16a34a; font-weight: 600; 
+                                  cursor: not-allowed; opacity: 0.7;">
+                    <input type="hidden" name="estado" value="Activo">
+                </div>
+                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    El estado se gestiona desde el panel de Estudiantes.
+                </p>
 
                 <hr class="divider">
 
@@ -486,10 +493,17 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                 </div>
 
                 <label>Estado:</label>
-                <select id="edit_estado" name="estado" required>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                </select>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" value="Activo" readonly 
+                           style="flex: 1; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; 
+                                  background-color: #f3f4f6; color: #16a34a; font-weight: 600; 
+                                  cursor: not-allowed; opacity: 0.7;">
+                    <input type="hidden" name="estado" value="Activo">
+                </div>
+                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    El estado se gestiona desde el panel de Estudiantes.
+                </p>
 
                 <hr class="divider">
 
