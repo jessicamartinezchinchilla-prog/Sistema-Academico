@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Validar antes de enviar
             if (!validarFormularioEstudiante(this)) return;
 
             const formData = new FormData(this);
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 3. FILTROS DE BÚSQUEDA (igual que profesores) ---
+    // --- 3. FILTROS DE BÚSQUEDA ---
     const inputBuscar = document.getElementById('buscador-estudiantes');
     const filtroSeccion = document.getElementById('filtroSeccion');
     const filtroEstado = document.getElementById('filtroEstado');
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                      nombres.toLowerCase().includes(texto) || 
                                      apellidos.toLowerCase().includes(texto);
             const coincideSeccion = !seccion || seccionFila.toLowerCase() === seccion;
-            const coincideEstado = !estado || estadoFila === estado;
+            const coincideEstado = !estado || estadoFila.toLowerCase() === estado;
 
             if (coincideBusqueda && coincideSeccion && coincideEstado) {
                 fila.style.display = '';
@@ -78,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filtroSeccion.addEventListener('change', filtrarEstudiantes);
     filtroEstado.addEventListener('change', filtrarEstudiantes);
 
-    // Mensajes de éxito/eliminación
+    // --- 4. MENSAJES DE ÉXITO/ELIMINACIÓN ---
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'eliminado') {
         alert('🗑️ Estudiante eliminado exitosamente');
@@ -86,18 +87,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Función para formatear NIE (solo números, máximo 10)
+// --- FUNCIONES DE FORMATEO ---
+
 function configurarFormateo(idInput, tipo) {
     const input = document.getElementById(idInput);
     if (!input) return;
 
     input.addEventListener('input', (e) => {
         let val = e.target.value.replace(/\D/g, '');
-        e.target.value = val.slice(0, 10);
+        
+        if (tipo === 'nie') {
+            val = val.slice(0, 10); // Máximo 10 dígitos
+        }
+        e.target.value = val;
     });
 }
 
-// Función para formatear nombres (Mayúsculas y excepciones como "de")
 function configurarNombres(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
@@ -106,9 +111,17 @@ function configurarNombres(idInput) {
         const palabras = e.target.value.split(' ');
         const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
         
-        const formateado = palabras.map(p => {
+        const formateado = palabras.map((p, index) => {
             if (p.length === 0) return p;
-            if (excepciones.includes(p.toLowerCase())) return p.toLowerCase();
+            // La primera palabra siempre va en mayúscula
+            if (index === 0) {
+                return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            }
+            // Las excepciones van en minúscula
+            if (excepciones.includes(p.toLowerCase())) {
+                return p.toLowerCase();
+            }
+            // Las demás palabras en mayúscula inicial
             return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
         }).join(' ');
         
@@ -116,32 +129,43 @@ function configurarNombres(idInput) {
     });
 }
 
-// Validación final antes de enviar el formulario
+// --- VALIDACIÓN DEL FORMULARIO ---
+
 function validarFormularioEstudiante(form) {
-    const nombresInput = form.querySelector('[name="nombres"]');
-    const apellidosInput = form.querySelector('[name="apellidos"]');
+    // Validar NIE (máximo 10 dígitos, mínimo 1)
     const nieInput = form.querySelector('[name="nie"]');
-    
-    const nombres = nombresInput.value.trim().split(' ');
-    const apellidos = apellidosInput.value.trim().split(' ');
-    const nie = nieInput.value.trim();
-
-    if (nie.length !== 10 || !/^\d{10}$/.test(nie)) {
-        alert('⚠️ El NIE debe contener exactamente 10 dígitos numéricos.');
-        return false;
+    if (nieInput) {
+        const nie = nieInput.value.trim();
+        if (nie.length === 0 || nie.length > 10 || !/^\d+$/.test(nie)) {
+            alert('⚠️ El NIE debe contener entre 1 y 10 dígitos numéricos.');
+            return false;
+        }
     }
 
-    if (nombres.length < 2) {
-        alert('️ Debe ingresar al menos dos nombres.');
-        return false;
+    // Validar nombres (mínimo 2)
+    const nombresInput = form.querySelector('[name="nombres"]');
+    if (nombresInput) {
+        const nombres = nombresInput.value.trim().split(/\s+/);
+        if (nombres.length < 2) {
+            alert('⚠️ Debe ingresar al menos dos nombres.');
+            return false;
+        }
     }
-    if (apellidos.length < 2) {
-        alert('️ Debe ingresar al menos dos apellidos.');
-        return false;
+
+    // Validar apellidos (mínimo 2)
+    const apellidosInput = form.querySelector('[name="apellidos"]');
+    if (apellidosInput) {
+        const apellidos = apellidosInput.value.trim().split(/\s+/);
+        if (apellidos.length < 2) {
+            alert('⚠️ Debe ingresar al menos dos apellidos.');
+            return false;
+        }
     }
-    
+
     return true;
 }
+
+// --- FUNCIONES DE MODALES ---
 
 function verEstudiante(btn) {
     const d = btn.closest('tr').dataset;
@@ -150,15 +174,24 @@ function verEstudiante(btn) {
             <h4 style="color: #2647B8; margin-bottom: 10px;">Información Personal</h4>
             <p><strong>NIE:</strong> ${d.nie || 'No registrado'}</p>
             <p><strong>Nombre:</strong> ${d.nombres} ${d.apellidos}</p>
+            <p><strong>DUI:</strong> ${d.dui || 'No registrado'}</p>
+            <p><strong>Edad:</strong> ${d.edad || 'No registrada'} años</p>
+            <p><strong>Fecha de Nacimiento:</strong> ${d.fechaNac || 'No registrada'}</p>
         </div>
         <div style="margin-bottom: 20px;">
             <h4 style="color: #2647B8; margin-bottom: 10px;">Información Académica</h4>
-            <p><strong>Sección:</strong> ${d.seccion || 'Sin asignar'}</p>
+            <p><strong>Sección:</strong> ${d.seccion || 'Sin matrícula'}</p>
             <p><strong>Estado:</strong> 
                 <span class="badge ${d.estado === 'activo' ? 'active' : 'inactive'}">
                     ${d.estado === 'activo' ? 'Activo' : 'Inactivo'}
                 </span>
             </p>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #2647B8; margin-bottom: 10px;">Contacto</h4>
+            <p><strong>Teléfono:</strong> ${d.telefono || 'No registrado'}</p>
+            <p><strong>Dirección:</strong> ${d.direccion || 'No registrada'}</p>
+            <p><strong>Email:</strong> ${d.email || 'No registrado'}</p>
         </div>
     `;
     document.getElementById('modalVerEstudiante').showModal();
@@ -171,8 +204,10 @@ function editarEstudiante(btn) {
     document.getElementById('edit_nie').value = d.nie;
     document.getElementById('edit_nombres').value = d.nombres;
     document.getElementById('edit_apellidos').value = d.apellidos;
-    document.getElementById('edit_seccion').value = d.seccionId;
     document.getElementById('edit_estado').value = d.estado;
+    
+    // Mostrar la sección actual (solo lectura)
+    document.getElementById('edit_seccion_display').value = d.seccion || 'Sin matrícula';
 
     document.getElementById('modalEditarEstudiante').showModal();
 }

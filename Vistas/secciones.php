@@ -30,7 +30,6 @@ $secciones = $pdo->query($query)->fetchAll();
 $totalSecciones = count($secciones);
 
 // Obtener datos para los selects
-$carreras = $pdo->query("SELECT * FROM carreras ORDER BY nombre")->fetchAll();
 $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
 $profesores = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos) as nombre_completo FROM profesores ORDER BY nombres")->fetchAll();
 
@@ -155,25 +154,9 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="nombre">Nombre de la Sección</label>
-                        <input type="text" id="nombre" name="nombre" placeholder="Ej: Desarrollo de Software - 1° Año - A" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="letra">Letra de Sección</label>
-                        <input type="text" id="letra" name="letra" placeholder="Ej: A" maxlength="5" required style="text-transform: uppercase;">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="carrera">Carrera</label>
-                        <select id="carrera" name="id_carrera" required>
-                            <option value="">Seleccione Carrera</option>
-                            <?php foreach ($carreras as $c): ?>
-                                <option value="<?php echo $c['id']; ?>"><?php echo $c['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input type="text" id="carrera" name="carrera" placeholder="Ej: Desarrollo de Software" required>
+                        <small class="form-hint">Si la carrera no existe, se creará automáticamente</small>
                     </div>
 
                     <div class="form-group">
@@ -184,6 +167,18 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                                 <option value="<?php echo $g['id']; ?>"><?php echo $g['nombre']; ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="letra">Sección</label>
+                        <input type="text" id="letra" name="letra" placeholder="Ej: A" maxlength="5" required style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nombre">Nombre de la Sección</label>
+                        <input type="text" id="nombre" name="nombre" placeholder="Se generará automáticamente" readonly style="background: #f3f4f6;">
                     </div>
                 </div>
 
@@ -290,24 +285,9 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Nombre de la Sección</label>
-                        <input type="text" id="edit_nombre" name="nombre" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Letra de Sección</label>
-                        <input type="text" id="edit_letra" name="letra" maxlength="5" required style="text-transform: uppercase;">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
                         <label>Carrera</label>
-                        <select id="edit_carrera" name="id_carrera" required>
-                            <?php foreach ($carreras as $c): ?>
-                                <option value="<?php echo $c['id']; ?>"><?php echo $c['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input type="text" id="edit_carrera" name="carrera" required>
+                        <small class="form-hint">Si la carrera no existe, se creará automáticamente</small>
                     </div>
 
                     <div class="form-group">
@@ -317,6 +297,18 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                                 <option value="<?php echo $g['id']; ?>"><?php echo $g['nombre']; ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Sección</label>
+                        <input type="text" id="edit_letra" name="letra" maxlength="5" required style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nombre de la Sección</label>
+                        <input type="text" id="edit_nombre" name="nombre" readonly style="background: #f3f4f6;">
                     </div>
                 </div>
 

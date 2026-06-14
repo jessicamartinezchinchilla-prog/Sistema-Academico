@@ -3,11 +3,6 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// Obtener datos para los selects
-$carreras = $pdo->query("SELECT * FROM carreras ORDER BY nombre")->fetchAll();
-$grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
-$secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
-
 // Obtener todas las matrículas con datos completos
 $query = "SELECT 
             m.id,
@@ -16,8 +11,6 @@ $query = "SELECT
             m.fecha_registro,
             e.nie,
             CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
-            c.nombre as carrera,
-            g.nombre as grado,
             s.nombre as seccion,
             r.nombres as resp_nombres,
             r.apellidos as resp_apellidos,
@@ -26,17 +19,9 @@ $query = "SELECT
             r.ocupacion,
             r.parentesco,
             r.email as resp_email,
-            r.direccion as resp_direccion,
-            e.dui as est_dui,
-            e.edad,
-            e.fecha_nacimiento,
-            e.telefono as est_telefono,
-            e.direccion as est_direccion,
-            e.email as est_email
+            r.direccion as resp_direccion
           FROM matriculas m
           INNER JOIN estudiantes e ON m.id_estudiante = e.id
-          INNER JOIN carreras c ON m.id_carrera = c.id
-          INNER JOIN grados g ON m.id_grado = g.id
           INNER JOIN secciones s ON m.id_seccion = s.id
           LEFT JOIN responsables r ON m.id = r.id_matricula
           ORDER BY m.fecha_registro DESC";
@@ -47,6 +32,12 @@ $totalMatriculas = count($matriculas);
 $matriculasActivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado = 'Activo'")->fetchColumn();
 $matriculasInactivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado = 'Inactivo'")->fetchColumn();
 $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR(CURRENT_DATE)")->fetchColumn();
+
+// Obtener estudiantes existentes
+$estudiantes = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos, ' (', nie, ')') as nombre_completo FROM estudiantes WHERE estado = 'activo' ORDER BY nombres")->fetchAll();
+
+// Obtener secciones completas
+$secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -112,10 +103,10 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
             </div>
 
             <div class="filtros">
-                <select id="filtroGrado">
-                    <option value="">Todos los grados</option>
-                    <?php foreach ($grados as $g): ?>
-                        <option value="<?php echo $g['nombre']; ?>"><?php echo $g['nombre']; ?></option>
+                <select id="filtroSeccion">
+                    <option value="">Todas las secciones</option>
+                    <?php foreach ($secciones as $s): ?>
+                        <option value="<?php echo $s['nombre']; ?>"><?php echo $s['nombre']; ?></option>
                     <?php endforeach; ?>
                 </select>
 
@@ -138,8 +129,6 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                     <tr>
                         <th scope="col">NIE</th>
                         <th scope="col">Nombre Completo</th>
-                        <th scope="col">Grado</th>
-                        <th scope="col">Carrera</th>
                         <th scope="col">Sección</th>
                         <th scope="col">Responsable</th>
                         <th scope="col">Teléfono</th>
@@ -149,24 +138,16 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                 </thead>
                 <tbody id="listaMatriculas">
                     <?php if (empty($matriculas)): ?>
-                        <tr><td colspan="9" style="text-align:center; padding:40px;">No hay matrículas registradas.</td></tr>
+                        <tr><td colspan="7" style="text-align:center; padding:40px;">No hay matrículas registradas.</td></tr>
                     <?php else: ?>
                         <?php foreach ($matriculas as $mat): ?>
                             <tr data-id="<?php echo $mat['id']; ?>"
                                 data-nie="<?php echo htmlspecialchars($mat['nie'] ?? ''); ?>"
                                 data-nombre="<?php echo htmlspecialchars($mat['nombre_completo'] ?? ''); ?>"
-                                data-grado="<?php echo htmlspecialchars($mat['grado'] ?? ''); ?>"
-                                data-carrera="<?php echo htmlspecialchars($mat['carrera'] ?? ''); ?>"
                                 data-seccion="<?php echo htmlspecialchars($mat['seccion'] ?? ''); ?>"
                                 data-responsable="<?php echo htmlspecialchars(($mat['resp_nombres'] ?? '') . ' ' . ($mat['resp_apellidos'] ?? '')); ?>"
                                 data-telefono="<?php echo htmlspecialchars($mat['resp_telefono'] ?? ''); ?>"
                                 data-estado="<?php echo htmlspecialchars($mat['estado'] ?? ''); ?>"
-                                data-est-dui="<?php echo htmlspecialchars($mat['est_dui'] ?? ''); ?>"
-                                data-est-edad="<?php echo htmlspecialchars($mat['edad'] ?? ''); ?>"
-                                data-est-fecha-nac="<?php echo htmlspecialchars($mat['fecha_nacimiento'] ?? ''); ?>"
-                                data-est-telefono="<?php echo htmlspecialchars($mat['est_telefono'] ?? ''); ?>"
-                                data-est-direccion="<?php echo htmlspecialchars($mat['est_direccion'] ?? ''); ?>"
-                                data-est-email="<?php echo htmlspecialchars($mat['est_email'] ?? ''); ?>"
                                 data-resp-dui="<?php echo htmlspecialchars($mat['resp_dui'] ?? ''); ?>"
                                 data-resp-nombres="<?php echo htmlspecialchars($mat['resp_nombres'] ?? ''); ?>"
                                 data-resp-apellidos="<?php echo htmlspecialchars($mat['resp_apellidos'] ?? ''); ?>"
@@ -174,14 +155,9 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                                 data-resp-parentesco="<?php echo htmlspecialchars($mat['parentesco'] ?? ''); ?>"
                                 data-resp-email="<?php echo htmlspecialchars($mat['resp_email'] ?? ''); ?>"
                                 data-resp-telefono="<?php echo htmlspecialchars($mat['resp_telefono'] ?? ''); ?>"
-                                data-resp-direccion="<?php echo htmlspecialchars($mat['resp_direccion'] ?? ''); ?>"
-                                data-carrera-id="<?php echo $pdo->query("SELECT id FROM carreras WHERE nombre = '" . $mat['carrera'] . "'")->fetchColumn(); ?>"
-                                data-grado-id="<?php echo $pdo->query("SELECT id FROM grados WHERE nombre = '" . $mat['grado'] . "'")->fetchColumn(); ?>"
-                                data-seccion-id="<?php echo $pdo->query("SELECT id FROM secciones WHERE nombre = '" . $mat['seccion'] . "'")->fetchColumn(); ?>">
+                                data-resp-direccion="<?php echo htmlspecialchars($mat['resp_direccion'] ?? ''); ?>">
                                 <td><?php echo $mat['nie']; ?></td>
                                 <td><?php echo $mat['nombre_completo']; ?></td>
-                                <td><?php echo $mat['grado']; ?></td>
-                                <td><?php echo $mat['carrera']; ?></td>
                                 <td><?php echo $mat['seccion']; ?></td>
                                 <td><?php echo ($mat['resp_nombres'] ?? '') . ' ' . ($mat['resp_apellidos'] ?? ''); ?></td>
                                 <td><?php echo $mat['resp_telefono'] ?? 'N/A'; ?></td>
@@ -215,79 +191,101 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
         <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formMatricula" onsubmit="return validarFormularioMatricula(this, false)">
             <input type="hidden" name="accion" value="agregar">
             
-            <!-- PASO 1: DATOS DEL ESTUDIANTE -->
+            <!-- PASO 1: TIPO DE ESTUDIANTE -->
             <div class="modal-step" id="paso1">
-                <h4><i class="fa-solid fa-user"></i> Datos personales del estudiante</h4>
+                <h4><i class="fa-solid fa-user-graduate"></i> Tipo de Estudiante</h4>
                 
-                <label>NIE del Estudiante (máx. 10 dígitos):</label>
-                <input type="text" id="mat_nie" name="nie" class="input-nie" required maxlength="10" placeholder="Ej: 1234567890" title="Solo números, máximo 10 dígitos">
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <label>Nombres (2 nombres):</label>
-                        <input type="text" id="mat_nombres" name="nombres" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               placeholder="Ej: Juan Carlos" 
-                               title="Solo se permiten letras">
-                    </div>
-                    <div class="form-col">
-                        <label>Apellidos (2 apellidos):</label>
-                        <input type="text" id="mat_apellidos" name="apellidos" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               placeholder="Ej: Pérez López" 
-                               title="Solo se permiten letras">
-                    </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <label style="flex: 1; padding: 15px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s;" id="labelExistente">
+                        <input type="radio" name="tipo_estudiante" value="existente" checked onchange="toggleTipoEstudiante()" style="margin-right: 8px;">
+                        <i class="fa-solid fa-user-check" style="font-size: 24px; color: #2563eb; display: block; margin-bottom: 8px;"></i>
+                        <strong>Estudiante Existente</strong>
+                        <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Ya está registrado en el sistema</p>
+                    </label>
+                    <label style="flex: 1; padding: 15px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s;" id="labelNuevo">
+                        <input type="radio" name="tipo_estudiante" value="nuevo" onchange="toggleTipoEstudiante()" style="margin-right: 8px;">
+                        <i class="fa-solid fa-user-plus" style="font-size: 24px; color: #2563eb; display: block; margin-bottom: 8px;"></i>
+                        <strong>Estudiante Nuevo</strong>
+                        <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Primera vez en el sistema</p>
+                    </label>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-col">
-                        <label id="label_mat_dui">DUI (no aplica - menor de edad):</label>
-                        <input type="text" id="mat_dui" name="dui" class="input-dui" disabled
-                               placeholder="00000000-0" 
-                               pattern="\d{8}-\d{1}" 
-                               title="Formato: 12345678-9">
-                    </div>
-                    <div class="form-col">
-                        <label>Edad (calculada automáticamente):</label>
-                        <input type="number" id="mat_edad" name="edad" readonly title="La edad se calcula automáticamente desde la fecha de nacimiento">
-                    </div>
+                <!-- OPCIÓN A: Estudiante Existente -->
+                <div id="bloqueExistente">
+                    <label>Seleccionar Estudiante:</label>
+                    <select id="mat_estudiante_existente" name="id_estudiante_existente">
+                        <option value="">-- Seleccione un estudiante --</option>
+                        <?php foreach ($estudiantes as $e): ?>
+                            <option value="<?php echo $e['id']; ?>"><?php echo $e['nombre_completo']; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
-                <label>Fecha de Nacimiento:</label>
-                <input type="date" id="mat_fecha_nacimiento" name="fecha_nacimiento" required max="2012-12-31">
+                <!-- OPCIÓN B: Estudiante Nuevo -->
+                <div id="bloqueNuevo" style="display: none;">
+                    <h4><i class="fa-solid fa-user"></i> Datos Personales del Estudiante</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>NIE (máx. 10 dígitos):</label>
+                            <input type="text" id="mat_nie" name="nie" class="input-nie" maxlength="10" placeholder="0000000000">
+                        </div>
+                        <div class="form-col">
+                            <label>Edad:</label>
+                            <input type="number" id="mat_edad" name="edad" min="14" max="22" readonly style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7;">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Nombres (2 nombres):</label>
+                            <input type="text" id="mat_nombres" name="nombres" class="input-nombre" placeholder="Ej: Juan Carlos">
+                        </div>
+                        <div class="form-col">
+                            <label>Apellidos (2 apellidos):</label>
+                            <input type="text" id="mat_apellidos" name="apellidos" class="input-nombre" placeholder="Ej: Pérez López">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>DUI (si tiene 18+):</label>
+                            <input type="text" id="mat_dui" name="dui" class="input-dui" disabled placeholder="00000000-0" style="background: #f3f4f6; cursor: not-allowed; opacity: 0.5;">
+                        </div>
+                        <div class="form-col">
+                            <label>Fecha de Nacimiento:</label>
+                            <input type="date" id="mat_fecha_nacimiento" name="fecha_nacimiento" max="2012-12-31">
+                        </div>
+                    </div>
+
+                    <h4><i class="fa-solid fa-address-book"></i> Contacto del Estudiante</h4>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Teléfono:</label>
+                            <input type="tel" id="mat_telefono" name="telefono" class="input-tel" maxlength="9" placeholder="0000-0000">
+                        </div>
+                        <div class="form-col">
+                            <label>Email (Solo Gmail):</label>
+                            <input type="email" id="mat_email" name="email" placeholder="estudiante@gmail.com">
+                        </div>
+                    </div>
+
+                    <label>Dirección:</label>
+                    <input type="text" id="mat_direccion" name="direccion" placeholder="Ej: Col. Las Flores, Casa #123">
+                </div>
 
                 <hr class="divider">
 
-                <h4><i class="fa-solid fa-graduation-cap"></i> Datos académicos</h4>
+                <h4><i class="fa-solid fa-school"></i> Datos Académicos</h4>
 
-                <label>Carrera:</label>
-                <select id="mat_carrera" name="carrera_id" required>
-                    <option value="">Seleccione Carrera</option>
-                    <?php foreach ($carreras as $c): ?>
-                        <option value="<?php echo $c['id']; ?>"><?php echo $c['nombre']; ?></option>
+                <label>Sección:</label>
+                <select id="mat_seccion" name="id_seccion" required>
+                    <option value="">Seleccione Sección</option>
+                    <?php foreach ($secciones as $s): ?>
+                        <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
                     <?php endforeach; ?>
                 </select>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <label>Grado:</label>
-                        <select id="mat_grado" name="grado_id" required>
-                            <option value="">Seleccione Grado</option>
-                            <?php foreach ($grados as $g): ?>
-                                <option value="<?php echo $g['id']; ?>"><?php echo $g['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-col">
-                        <label>Sección:</label>
-                        <select id="mat_seccion" name="seccion_id" required>
-                            <option value="">Seleccione Sección</option>
-                            <?php foreach ($secciones as $s): ?>
-                                <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
 
                 <label>Estado de la Matrícula:</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -297,29 +295,6 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                                   cursor: not-allowed; opacity: 0.7;">
                     <input type="hidden" name="estado" value="Activo">
                 </div>
-                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
-                    <i class="fa-solid fa-info-circle"></i> 
-                    El estado se gestiona desde el panel de Estudiantes.
-                </p>
-
-                <hr class="divider">
-
-                <h4><i class="fa-solid fa-address-book"></i> Datos de contacto</h4>
-
-                <label>Número de Teléfono:</label>
-                <input type="tel" id="mat_telefono" name="telefono" class="input-tel" required maxlength="9" 
-                       placeholder="0000-0000" 
-                       pattern="\d{4}-\d{4}" 
-                       title="Formato: 1234-5678">
-
-                <label>Dirección:</label>
-                <input type="text" id="mat_direccion" name="direccion" required placeholder="Ej: Col. Las Flores, Casa #123">
-
-                <label>Correo (Solo Gmail):</label>
-                <input type="email" id="mat_email" name="email" required 
-                       pattern="[a-zA-Z0-9._%+-]+@gmail\.com$" 
-                       placeholder="estudiante@gmail.com" 
-                       title="Debe ser un correo @gmail.com">
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalMatricula').close()">Cancelar</button>
@@ -329,26 +304,19 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
 
             <!-- PASO 2: DATOS DEL RESPONSABLE -->
             <div class="modal-step" id="paso2" style="display: none;">
-                <h4><i class="fa-solid fa-user-tie"></i> Datos personales del responsable</h4>
+                <h4><i class="fa-solid fa-user-tie"></i> Datos del Responsable</h4>
 
                 <label>DUI del Responsable:</label>
-                <input type="text" id="resp_dui" name="responsable_dui" class="input-dui" required 
-                       placeholder="00000000-0" 
-                       pattern="\d{8}-\d{1}" 
-                       title="Formato: 12345678-9">
+                <input type="text" id="resp_dui" name="responsable_dui" class="input-dui" required placeholder="00000000-0">
 
                 <div class="form-row">
                     <div class="form-col">
                         <label>Nombres (2 nombres):</label>
-                        <input type="text" id="resp_nombres" name="responsable_nombres" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
+                        <input type="text" id="resp_nombres" name="responsable_nombres" class="input-nombre" required>
                     </div>
                     <div class="form-col">
                         <label>Apellidos (2 apellidos):</label>
-                        <input type="text" id="resp_apellidos" name="responsable_apellidos" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
+                        <input type="text" id="resp_apellidos" name="responsable_apellidos" class="input-nombre" required>
                     </div>
                 </div>
 
@@ -376,19 +344,13 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
 
                 <hr class="divider">
 
-                <h4><i class="fa-solid fa-address-book"></i> Datos de contacto del responsable</h4>
+                <h4><i class="fa-solid fa-address-book"></i> Contacto del Responsable</h4>
 
                 <label>Email (Solo Gmail):</label>
-                <input type="email" id="resp_email" name="responsable_email" required 
-                       pattern="[a-zA-Z0-9._%+-]+@gmail\.com$" 
-                       placeholder="responsable@gmail.com" 
-                       title="Debe ser un correo @gmail.com">
+                <input type="email" id="resp_email" name="responsable_email" required placeholder="responsable@gmail.com">
 
                 <label>Número de Teléfono:</label>
-                <input type="tel" id="resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9" 
-                       placeholder="0000-0000" 
-                       pattern="\d{4}-\d{4}" 
-                       title="Formato: 1234-5678">
+                <input type="tel" id="resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9" placeholder="0000-0000">
 
                 <label>Dirección:</label>
                 <input type="text" id="resp_direccion" name="responsable_direccion" required placeholder="Ej: Col. Las Flores, Casa #123">
@@ -424,73 +386,23 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="matricula_id" id="edit_matricula_id">
             
-            <!-- PASO 1: DATOS DEL ESTUDIANTE -->
+            <!-- PASO 1: DATOS DE LA MATRÍCULA -->
             <div class="modal-step" id="edit_paso1">
-                <h4><i class="fa-solid fa-user"></i> Datos personales del estudiante</h4>
+                <h4><i class="fa-solid fa-user-graduate"></i> Datos de la Matrícula</h4>
                 
-                <label>NIE:</label>
-                <input type="text" id="edit_nie" name="nie" class="input-nie" required maxlength="10" readonly>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <label>Nombres:</label>
-                        <input type="text" id="edit_nombres" name="nombres" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
-                    </div>
-                    <div class="form-col">
-                        <label>Apellidos:</label>
-                        <input type="text" id="edit_apellidos" name="apellidos" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <label id="label_edit_dui">DUI (no aplica - menor de edad):</label>
-                        <input type="text" id="edit_dui" name="dui" class="input-dui" disabled
-                               pattern="\d{8}-\d{1}" 
-                               title="Formato: 12345678-9">
-                    </div>
-                    <div class="form-col">
-                        <label>Edad (calculada automáticamente):</label>
-                        <input type="number" id="edit_edad" name="edad" readonly title="La edad se calcula automáticamente desde la fecha de nacimiento">
-                    </div>
-                </div>
-
-                <label>Fecha de Nacimiento:</label>
-                <input type="date" id="edit_fecha_nacimiento" name="fecha_nacimiento" required max="2012-12-31">
-
-                <hr class="divider">
-
-                <h4><i class="fa-solid fa-graduation-cap"></i> Datos académicos</h4>
-
-                <label>Carrera:</label>
-                <select id="edit_carrera" name="carrera_id" required>
-                    <?php foreach ($carreras as $c): ?>
-                        <option value="<?php echo $c['id']; ?>"><?php echo $c['nombre']; ?></option>
+                <label>Estudiante:</label>
+                <select id="edit_estudiante" name="id_estudiante" required>
+                    <?php foreach ($estudiantes as $e): ?>
+                        <option value="<?php echo $e['id']; ?>"><?php echo $e['nombre_completo']; ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <div class="form-row">
-                    <div class="form-col">
-                        <label>Grado:</label>
-                        <select id="edit_grado" name="grado_id" required>
-                            <?php foreach ($grados as $g): ?>
-                                <option value="<?php echo $g['id']; ?>"><?php echo $g['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-col">
-                        <label>Sección:</label>
-                        <select id="edit_seccion" name="seccion_id" required>
-                            <?php foreach ($secciones as $s): ?>
-                                <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
+                <label>Sección:</label>
+                <select id="edit_seccion" name="id_seccion" required>
+                    <?php foreach ($secciones as $s): ?>
+                        <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
+                    <?php endforeach; ?>
+                </select>
 
                 <label>Estado:</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -500,27 +412,6 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
                                   cursor: not-allowed; opacity: 0.7;">
                     <input type="hidden" name="estado" value="Activo">
                 </div>
-                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
-                    <i class="fa-solid fa-info-circle"></i> 
-                    El estado se gestiona desde el panel de Estudiantes.
-                </p>
-
-                <hr class="divider">
-
-                <h4><i class="fa-solid fa-address-book"></i> Datos de contacto</h4>
-
-                <label>Teléfono:</label>
-                <input type="tel" id="edit_telefono" name="telefono" class="input-tel" required maxlength="9" 
-                       pattern="\d{4}-\d{4}" 
-                       title="Formato: 1234-5678">
-
-                <label>Dirección:</label>
-                <input type="text" id="edit_direccion" name="direccion" required>
-
-                <label>Correo:</label>
-                <input type="email" id="edit_email" name="email" required 
-                       pattern="[a-zA-Z0-9._%+-]+@gmail\.com$" 
-                       title="Debe ser un correo @gmail.com">
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
@@ -530,25 +421,19 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
 
             <!-- PASO 2: DATOS DEL RESPONSABLE -->
             <div class="modal-step" id="edit_paso2" style="display: none;">
-                <h4><i class="fa-solid fa-user-tie"></i> Datos del responsable</h4>
+                <h4><i class="fa-solid fa-user-tie"></i> Datos del Responsable</h4>
 
                 <label>DUI del Responsable:</label>
-                <input type="text" id="edit_resp_dui" name="responsable_dui" class="input-dui" required 
-                       pattern="\d{8}-\d{1}" 
-                       title="Formato: 12345678-9">
+                <input type="text" id="edit_resp_dui" name="responsable_dui" class="input-dui" required>
 
                 <div class="form-row">
                     <div class="form-col">
                         <label>Nombres:</label>
-                        <input type="text" id="edit_resp_nombres" name="responsable_nombres" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
+                        <input type="text" id="edit_resp_nombres" name="responsable_nombres" class="input-nombre" required>
                     </div>
                     <div class="form-col">
                         <label>Apellidos:</label>
-                        <input type="text" id="edit_resp_apellidos" name="responsable_apellidos" class="input-nombre" required 
-                               pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+" 
-                               title="Solo se permiten letras">
+                        <input type="text" id="edit_resp_apellidos" name="responsable_apellidos" class="input-nombre" required>
                     </div>
                 </div>
 
@@ -575,17 +460,13 @@ $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR
 
                 <hr class="divider">
 
-                <h4><i class="fa-solid fa-address-book"></i> Contacto del responsable</h4>
+                <h4><i class="fa-solid fa-address-book"></i> Contacto del Responsable</h4>
 
                 <label>Email:</label>
-                <input type="email" id="edit_resp_email" name="responsable_email" required 
-                       pattern="[a-zA-Z0-9._%+-]+@gmail\.com$" 
-                       title="Debe ser un correo @gmail.com">
+                <input type="email" id="edit_resp_email" name="responsable_email" required>
 
                 <label>Teléfono:</label>
-                <input type="tel" id="edit_resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9" 
-                       pattern="\d{4}-\d{4}" 
-                       title="Formato: 1234-5678">
+                <input type="tel" id="edit_resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9">
 
                 <label>Dirección:</label>
                 <input type="text" id="edit_resp_direccion" name="responsable_direccion" required>

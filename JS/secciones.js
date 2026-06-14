@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const errorType = result.split(':')[1];
                     let msg = '⚠️ Error al procesar la solicitud';
                     
-                    if (errorType === 'duplicado') msg = '⚠️ Ya existe una sección con esa combinación de Carrera + Grado + Letra';
+                    if (errorType === 'duplicado') msg = '⚠️ Ya existe una sección con esa combinación de Carrera + Grado + Sección';
+                    else if (errorType === 'sin_carrera') msg = '⚠️ El nombre de la carrera es obligatorio';
                     else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
                     
                     alert(msg);
@@ -60,34 +61,25 @@ function configurarAutoNombre(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
-    const inputs = ['carrera', 'grado', 'letra'].map(campo => {
-        const prefix = modalId === 'modalSeccion' ? '' : 'edit_';
-        return modal.querySelector(`[name="${campo === 'carrera' ? 'id_carrera' : (campo === 'grado' ? 'id_grado' : 'letra')}"]`);
-    });
-
-    const nombreInput = modal.querySelector(`[name="nombre"]`);
+    const carreraInput = modal.querySelector('[name="carrera"]');
+    const gradoSelect = modal.querySelector('[name="id_grado"]');
+    const letraInput = modal.querySelector('[name="letra"]');
+    const nombreInput = modal.querySelector('[name="nombre"]');
     
     function actualizarNombre() {
-        const carreraSelect = modal.querySelector('[name="id_carrera"]');
-        const gradoSelect = modal.querySelector('[name="id_grado"]');
-        const letraInput = modal.querySelector('[name="letra"]');
-        
-        const carreraTexto = carreraSelect.options[carreraSelect.selectedIndex]?.text || '';
+        const carreraTexto = carreraInput.value.trim();
         const gradoTexto = gradoSelect.options[gradoSelect.selectedIndex]?.text || '';
         const letra = letraInput.value.toUpperCase();
         
-        if (carreraTexto && carreraTexto !== 'Seleccione Carrera' && 
-            gradoTexto && gradoTexto !== 'Seleccione Grado' && 
-            letra) {
+        if (carreraTexto && gradoTexto && gradoTexto !== 'Seleccione Grado' && letra) {
             nombreInput.value = `${carreraTexto} - ${gradoTexto} - ${letra}`;
+        } else {
+            nombreInput.value = '';
         }
     }
 
-    inputs.forEach(input => {
-        if (input) input.addEventListener('change', actualizarNombre);
-    });
-
-    const letraInput = modal.querySelector('[name="letra"]');
+    if (carreraInput) carreraInput.addEventListener('input', actualizarNombre);
+    if (gradoSelect) gradoSelect.addEventListener('change', actualizarNombre);
     if (letraInput) {
         letraInput.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
@@ -97,23 +89,17 @@ function configurarAutoNombre(modalId) {
 }
 
 function validarFormularioSeccion(form) {
-    const nombre = form.querySelector('[name="nombre"]').value.trim();
+    const carrera = form.querySelector('[name="carrera"]').value.trim();
     const letra = form.querySelector('[name="letra"]').value.trim();
-    const idCarrera = form.querySelector('[name="id_carrera"]').value;
     const idGrado = form.querySelector('[name="id_grado"]').value;
     
-    if (nombre.length === 0) {
-        alert('⚠️ El nombre de la sección es obligatorio');
+    if (carrera.length === 0) {
+        alert('⚠️ El nombre de la carrera es obligatorio');
         return false;
     }
     
     if (letra.length === 0) {
-        alert('⚠️ La letra de la sección es obligatoria');
-        return false;
-    }
-    
-    if (!idCarrera) {
-        alert('⚠️ Debes seleccionar una carrera');
+        alert('⚠️ La sección es obligatoria');
         return false;
     }
     
@@ -172,9 +158,8 @@ function editarSeccion() {
     const d = seccionActual;
     
     document.getElementById('edit_id').value = d.id;
-    document.getElementById('edit_nombre').value = d.nombre;
+    document.getElementById('edit_carrera').value = d.carrera;
     document.getElementById('edit_letra').value = d.letra;
-    document.getElementById('edit_carrera').value = d.carreraId;
     document.getElementById('edit_grado').value = d.gradoId;
     document.getElementById('edit_descripcion').value = d.descripcion || '';
     

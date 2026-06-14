@@ -595,3 +595,20 @@ body {
         width: 100%;
     }
 }
+
+/* Más espacio entre filas del formulario */
+.form-row {
+    margin-bottom: 15px;
+    gap: 20px;
+}
+
+/* Separación entre secciones (Datos Personales y Contacto) */
+.modal-form h4 {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Separación del divider */
+.divider {
+    margin: 20px 0;
+}

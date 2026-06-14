@@ -19,19 +19,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
     if ($accion === 'agregar') {
-        $nombre = trim($_POST['nombre']);
+        $nombreCarrera = trim($_POST['carrera']);
         $letra = strtoupper(trim($_POST['letra']));
-        $id_carrera = $_POST['id_carrera'];
         $id_grado = $_POST['id_grado'];
         $descripcion = trim($_POST['descripcion'] ?? '');
         $profesores = $_POST['profesores'] ?? [];
 
+        if (empty($nombreCarrera)) {
+            responder('error', 'sin_carrera', $isAjax);
+        }
+
         try {
             $pdo->beginTransaction();
             
+            // Obtener o crear la carrera
+            $stmt = $pdo->prepare("SELECT id FROM carreras WHERE nombre = ?");
+            $stmt->execute([$nombreCarrera]);
+            $id_carrera = $stmt->fetchColumn();
+            
+            if (!$id_carrera) {
+                $stmt = $pdo->prepare("INSERT INTO carreras (nombre) VALUES (?)");
+                $stmt->execute([$nombreCarrera]);
+                $id_carrera = $pdo->lastInsertId();
+            }
+            
+            // Obtener nombre del grado
+            $stmt = $pdo->prepare("SELECT nombre FROM grados WHERE id = ?");
+            $stmt->execute([$id_grado]);
+            $nombreGrado = $stmt->fetchColumn();
+            
+            // Generar nombre de la sección
+            $nombreSeccion = "{$nombreCarrera} - {$nombreGrado} - {$letra}";
+            
             // Insertar sección
             $stmt = $pdo->prepare("INSERT INTO secciones (nombre, letra, id_carrera, id_grado, descripcion) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$nombre, $letra, $id_carrera, $id_grado, $descripcion]);
+            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion]);
             $id_seccion = $pdo->lastInsertId();
 
             // Insertar asignaciones de profesores
@@ -58,19 +80,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
 
     if ($accion === 'editar') {
         $id = $_POST['seccion_id'];
-        $nombre = trim($_POST['nombre']);
+        $nombreCarrera = trim($_POST['carrera']);
         $letra = strtoupper(trim($_POST['letra']));
-        $id_carrera = $_POST['id_carrera'];
         $id_grado = $_POST['id_grado'];
         $descripcion = trim($_POST['descripcion'] ?? '');
         $profesores = $_POST['profesores'] ?? [];
 
+        if (empty($nombreCarrera)) {
+            responder('error', 'sin_carrera', $isAjax);
+        }
+
         try {
             $pdo->beginTransaction();
             
+            // Obtener o crear la carrera
+            $stmt = $pdo->prepare("SELECT id FROM carreras WHERE nombre = ?");
+            $stmt->execute([$nombreCarrera]);
+            $id_carrera = $stmt->fetchColumn();
+            
+            if (!$id_carrera) {
+                $stmt = $pdo->prepare("INSERT INTO carreras (nombre) VALUES (?)");
+                $stmt->execute([$nombreCarrera]);
+                $id_carrera = $pdo->lastInsertId();
+            }
+            
+            // Obtener nombre del grado
+            $stmt = $pdo->prepare("SELECT nombre FROM grados WHERE id = ?");
+            $stmt->execute([$id_grado]);
+            $nombreGrado = $stmt->fetchColumn();
+            
+            // Generar nombre de la sección
+            $nombreSeccion = "{$nombreCarrera} - {$nombreGrado} - {$letra}";
+            
             // Actualizar sección
             $stmt = $pdo->prepare("UPDATE secciones SET nombre=?, letra=?, id_carrera=?, id_grado=?, descripcion=? WHERE id=?");
-            $stmt->execute([$nombre, $letra, $id_carrera, $id_grado, $descripcion, $id]);
+            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion, $id]);
 
             // Eliminar asignaciones anteriores
             $stmt = $pdo->prepare("DELETE FROM profesor_asignacion WHERE id_seccion = ?");
@@ -101,10 +145,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
+            $pdo->beginTransaction();
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+            
+            // 1. Obtener el id_carrera de esta sección
+            $stmt = $pdo->prepare("SELECT id_carrera FROM secciones WHERE id = ?");
+            $stmt->execute([$id]);
+            $id_carrera = $stmt->fetchColumn();
+            
+            // 2. Eliminar asignaciones de profesores
+            $stmt = $pdo->prepare("DELETE FROM profesor_asignacion WHERE id_seccion = ?");
+            $stmt->execute([$id]);
+            
+            // 3. Eliminar la sección
             $stmt = $pdo->prepare("DELETE FROM secciones WHERE id = ?");
             $stmt->execute([$id]);
+            
+            // 4. Verificar si la carrera ya no tiene secciones
+            if ($id_carrera) {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM secciones WHERE id_carrera = ?");
+                $stmt->execute([$id_carrera]);
+                $count = $stmt->fetchColumn();
+                
+                // Si no tiene más secciones, eliminar la carrera
+                if ($count == 0) {
+                    $stmt = $pdo->prepare("DELETE FROM carreras WHERE id = ?");
+                    $stmt->execute([$id_carrera]);
+                }
+            }
+            
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            $pdo->commit();
             responder('success', 'eliminado', $isAjax);
         } catch (PDOException $e) {
+            $pdo->rollBack();
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             responder('error', 'bd', $isAjax);
         }
     }

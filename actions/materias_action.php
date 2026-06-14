@@ -1,5 +1,4 @@
 <?php
-// actions/materias_action.php
 session_start();
 require_once '../config/database.php';
 
@@ -22,51 +21,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $codigo = trim($_POST['codigo']);
         $nombre = trim($_POST['nombre']);
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $carreras = $_POST['carreras'] ?? [];
-        $docentes = $_POST['docentes'] ?? [];
         $secciones = $_POST['secciones'] ?? [];
-
-        if (empty($carreras)) {
-            responder('error', 'sin_carreras', $isAjax);
-        }
-
-        if (empty($docentes)) {
-            responder('error', 'sin_docentes', $isAjax);
-        }
-
-        if (empty($secciones)) {
-            responder('error', 'sin_secciones', $isAjax);
-        }
+        $profesores = $_POST['profesores'] ?? [];
 
         try {
             $pdo->beginTransaction();
             
-            // Insertar materia
             $stmt = $pdo->prepare("INSERT INTO materias (codigo, nombre, descripcion) VALUES (?, ?, ?)");
             $stmt->execute([$codigo, $nombre, $descripcion]);
             $id_materia = $pdo->lastInsertId();
 
-            // Insertar relaciones con carreras
-            $stmt = $pdo->prepare("INSERT INTO materias_carreras (id_materia, id_carrera) VALUES (?, ?)");
-            foreach ($carreras as $id_carrera) {
-                $stmt->execute([$id_materia, $id_carrera]);
-            }
-
-            // Insertar asignaciones de docentes y secciones
-            $stmt = $pdo->prepare("INSERT INTO profesor_asignacion (id_profesor, id_materia, id_seccion) VALUES (?, ?, ?)");
-            foreach ($docentes as $id_docente) {
-                foreach ($secciones as $id_seccion) {
-                    $stmt->execute([$id_docente, $id_materia, $id_seccion]);
+            // Crear asignaciones (combinación de secciones y profesores)
+            $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
+            foreach ($secciones as $id_seccion) {
+                foreach ($profesores as $id_profesor) {
+                    $stmt->execute([$id_materia, $id_seccion, $id_profesor]);
                 }
             }
 
             $pdo->commit();
             responder('success', '1', $isAjax);
-            
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $msg = $e->getMessage();
-            if (strpos($msg, 'codigo') !== false) responder('error', 'codigo_duplicado', $isAjax);
             responder('error', 'bd', $isAjax);
         }
     }
@@ -76,58 +52,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $codigo = trim($_POST['codigo']);
         $nombre = trim($_POST['nombre']);
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $carreras = $_POST['carreras'] ?? [];
-        $docentes = $_POST['docentes'] ?? [];
         $secciones = $_POST['secciones'] ?? [];
-
-        if (empty($carreras)) {
-            responder('error', 'sin_carreras', $isAjax);
-        }
-
-        if (empty($docentes)) {
-            responder('error', 'sin_docentes', $isAjax);
-        }
-
-        if (empty($secciones)) {
-            responder('error', 'sin_secciones', $isAjax);
-        }
+        $profesores = $_POST['profesores'] ?? [];
 
         try {
             $pdo->beginTransaction();
             
-            // Actualizar materia
             $stmt = $pdo->prepare("UPDATE materias SET codigo=?, nombre=?, descripcion=? WHERE id=?");
             $stmt->execute([$codigo, $nombre, $descripcion, $id]);
 
-            // Eliminar relaciones anteriores con carreras
-            $stmt = $pdo->prepare("DELETE FROM materias_carreras WHERE id_materia = ?");
+            // Borrar asignaciones viejas
+            $stmt = $pdo->prepare("DELETE FROM asignaciones WHERE id_materia = ?");
             $stmt->execute([$id]);
 
-            // Insertar nuevas relaciones con carreras
-            $stmt = $pdo->prepare("INSERT INTO materias_carreras (id_materia, id_carrera) VALUES (?, ?)");
-            foreach ($carreras as $id_carrera) {
-                $stmt->execute([$id, $id_carrera]);
-            }
-
-            // Eliminar asignaciones anteriores de docentes
-            $stmt = $pdo->prepare("DELETE FROM profesor_asignacion WHERE id_materia = ?");
-            $stmt->execute([$id]);
-
-            // Insertar nuevas asignaciones
-            $stmt = $pdo->prepare("INSERT INTO profesor_asignacion (id_profesor, id_materia, id_seccion) VALUES (?, ?, ?)");
-            foreach ($docentes as $id_docente) {
-                foreach ($secciones as $id_seccion) {
-                    $stmt->execute([$id_docente, $id, $id_seccion]);
+            // Crear nuevas
+            $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
+            foreach ($secciones as $id_seccion) {
+                foreach ($profesores as $id_profesor) {
+                    $stmt->execute([$id, $id_seccion, $id_profesor]);
                 }
             }
 
             $pdo->commit();
             responder('success', 'editado', $isAjax);
-            
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $msg = $e->getMessage();
-            if (strpos($msg, 'codigo') !== false) responder('error', 'codigo_duplicado', $isAjax);
             responder('error', 'bd', $isAjax);
         }
     }
@@ -135,10 +84,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
             $stmt = $pdo->prepare("DELETE FROM materias WHERE id = ?");
             $stmt->execute([$id]);
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             responder('success', 'eliminado', $isAjax);
         } catch (PDOException $e) {
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             responder('error', 'bd', $isAjax);
         }
     }
