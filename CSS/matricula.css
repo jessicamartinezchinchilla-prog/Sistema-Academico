@@ -552,3 +552,22 @@ body{
         width:100%;
     }
 }
+
+/* Estilo dinámico para los radio buttons de tipo de estudiante */
+label:has(input[name="tipo_estudiante"]:checked) {
+    border-color: #2F6FED !important;
+    background: #f0f4ff !important;
+}
+
+label:has(input[name="tipo_estudiante"]:checked) i {
+    color: #2F6FED !important;
+}
+
+label:has(input[name="tipo_estudiante"]:not(:checked)) {
+    border-color: #d1d5db !important;
+    background: white !important;
+}
+
+label:has(input[name="tipo_estudiante"]:not(:checked)) i {
+    color: #6b7280 !important;
+}

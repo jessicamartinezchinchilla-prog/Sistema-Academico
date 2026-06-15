@@ -9,8 +9,17 @@ $query = "SELECT
             m.anio,
             m.estado,
             m.fecha_registro,
+            e.id as id_estudiante,
             e.nie,
+            e.nombres,
+            e.apellidos,
+            e.dui,
+            e.edad,
+            e.telefono as est_telefono,
+            e.email as est_email,
+            e.direccion as est_direccion,
             CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+            s.id as id_seccion,
             s.nombre as seccion,
             r.nombres as resp_nombres,
             r.apellidos as resp_apellidos,
@@ -33,8 +42,15 @@ $matriculasActivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado =
 $matriculasInactivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado = 'Inactivo'")->fetchColumn();
 $matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR(CURRENT_DATE)")->fetchColumn();
 
-// Obtener estudiantes existentes
-$estudiantes = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos, ' (', nie, ')') as nombre_completo FROM estudiantes WHERE estado = 'activo' ORDER BY nombres")->fetchAll();
+// Obtener estudiantes existentes (solo los que tienen matrículas activas)
+$estudiantes = $pdo->query("
+    SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos, ' (', e.nie, ')') as nombre_completo, e.nie 
+    FROM estudiantes e
+    INNER JOIN matriculas m ON e.id = m.id_estudiante
+    WHERE e.estado = 'activo' AND m.estado = 'Activo'
+    GROUP BY e.id
+    ORDER BY e.nombres
+")->fetchAll();
 
 // Obtener secciones completas
 $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
@@ -117,7 +133,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                 </select>
             </div>
 
-            <button type="button" class="button btn-primary" onclick="abrirModalNuevaMatricula()">
+            <button type="button" class="button btn-primary" onclick="abrirModalAgregar()">
                 <i class="fa-solid fa-plus"></i> Nueva Matrícula
             </button>
         </section>
@@ -142,11 +158,18 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                     <?php else: ?>
                         <?php foreach ($matriculas as $mat): ?>
                             <tr data-id="<?php echo $mat['id']; ?>"
+                                data-id-estudiante="<?php echo $mat['id_estudiante']; ?>"
                                 data-nie="<?php echo htmlspecialchars($mat['nie'] ?? ''); ?>"
+                                data-nombres="<?php echo htmlspecialchars($mat['nombres'] ?? ''); ?>"
+                                data-apellidos="<?php echo htmlspecialchars($mat['apellidos'] ?? ''); ?>"
                                 data-nombre="<?php echo htmlspecialchars($mat['nombre_completo'] ?? ''); ?>"
+                                data-dui="<?php echo htmlspecialchars($mat['dui'] ?? ''); ?>"
+                                data-edad="<?php echo htmlspecialchars($mat['edad'] ?? ''); ?>"
+                                data-telefono="<?php echo htmlspecialchars($mat['est_telefono'] ?? ''); ?>"
+                                data-email="<?php echo htmlspecialchars($mat['est_email'] ?? ''); ?>"
+                                data-direccion="<?php echo htmlspecialchars($mat['est_direccion'] ?? ''); ?>"
+                                data-id-seccion="<?php echo $mat['id_seccion']; ?>"
                                 data-seccion="<?php echo htmlspecialchars($mat['seccion'] ?? ''); ?>"
-                                data-responsable="<?php echo htmlspecialchars(($mat['resp_nombres'] ?? '') . ' ' . ($mat['resp_apellidos'] ?? '')); ?>"
-                                data-telefono="<?php echo htmlspecialchars($mat['resp_telefono'] ?? ''); ?>"
                                 data-estado="<?php echo htmlspecialchars($mat['estado'] ?? ''); ?>"
                                 data-resp-dui="<?php echo htmlspecialchars($mat['resp_dui'] ?? ''); ?>"
                                 data-resp-nombres="<?php echo htmlspecialchars($mat['resp_nombres'] ?? ''); ?>"
@@ -170,8 +193,8 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                                 </td>
                                 <td class="actions-cell">
                                     <button type="button" class="btn-action see" onclick="verMatricula(this)" title="Ver detalles"><i class="fa-solid fa-eye"></i></button>
-                                    <button type="button" class="btn-action edit" onclick="editarMatricula(this)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <a href="../actions/matricula_action.php?accion=eliminar&id=<?php echo $mat['id']; ?>" class="btn-action delete" onclick="return confirm('¿Estás seguro de eliminar esta matrícula?')" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                                    <button type="button" class="btn-action edit" onclick="abrirModalEditar(this)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button type="button" class="btn-action delete" onclick="eliminarMatricula(<?php echo $mat['id']; ?>)" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -181,76 +204,54 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
         </section>
     </main>
 
-    <!-- MODAL: NUEVA MATRÍCULA -->
-    <dialog id="modalMatricula" class="modal">
+    <!-- MODAL: AÑADIR MATRÍCULA -->
+    <dialog id="modalMatricula" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
-        <h3>Registrar Nueva Matrícula</h3>
+        <h3>Añadir Nueva Matrícula</h3>
         
-        <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formMatricula" onsubmit="return validarFormularioMatricula(this, false)">
+        <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formMatricula">
             <input type="hidden" name="accion" value="agregar">
             
-            <!-- PASO 1: TIPO DE ESTUDIANTE -->
-            <div class="modal-step" id="paso1">
+            <!-- ========== PASO 1: ESTUDIANTE + SECCIÓN ========== -->
+            <div id="paso1">
+                <!-- TIPO DE ESTUDIANTE -->
                 <h4><i class="fa-solid fa-user-graduate"></i> Tipo de Estudiante</h4>
-                
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <label style="flex: 1; padding: 15px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s;" id="labelExistente">
-                        <input type="radio" name="tipo_estudiante" value="existente" checked onchange="toggleTipoEstudiante()" style="margin-right: 8px;">
-                        <i class="fa-solid fa-user-check" style="font-size: 24px; color: #2563eb; display: block; margin-bottom: 8px;"></i>
-                        <strong>Estudiante Existente</strong>
-                        <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Ya está registrado en el sistema</p>
+                <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 15px 20px; border: 2px solid #2F6FED; border-radius: 10px; background: #f0f4ff; transition: all 0.3s;">
+                        <input type="radio" name="tipo_estudiante" value="existente" checked onchange="toggleCamposEstudiante()" style="width: 18px; height: 18px;">
+                        <i class="fa-solid fa-user-check" style="font-size: 20px; color: #2F6FED;"></i>
+                        <span style="font-weight: 600; font-size: 15px;">Estudiante Existente</span>
                     </label>
-                    <label style="flex: 1; padding: 15px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.3s;" id="labelNuevo">
-                        <input type="radio" name="tipo_estudiante" value="nuevo" onchange="toggleTipoEstudiante()" style="margin-right: 8px;">
-                        <i class="fa-solid fa-user-plus" style="font-size: 24px; color: #2563eb; display: block; margin-bottom: 8px;"></i>
-                        <strong>Estudiante Nuevo</strong>
-                        <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Primera vez en el sistema</p>
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 15px 20px; border: 2px solid #d1d5db; border-radius: 10px; background: white; transition: all 0.3s;">
+                        <input type="radio" name="tipo_estudiante" value="nuevo" onchange="toggleCamposEstudiante()" style="width: 18px; height: 18px;">
+                        <i class="fa-solid fa-user-plus" style="font-size: 20px; color: #6b7280;"></i>
+                        <span style="font-weight: 600; font-size: 15px;">Estudiante Nuevo</span>
                     </label>
                 </div>
 
-                <!-- OPCIÓN A: Estudiante Existente -->
-                <div id="bloqueExistente">
+                <!-- CAMPOS: ESTUDIANTE EXISTENTE -->
+                <div id="campos_estudiante_existente">
                     <label>Seleccionar Estudiante:</label>
-                    <select id="mat_estudiante_existente" name="id_estudiante_existente">
+                    <select name="id_estudiante_existente" id="select_estudiante_existente">
                         <option value="">-- Seleccione un estudiante --</option>
-                        <?php foreach ($estudiantes as $e): ?>
-                            <option value="<?php echo $e['id']; ?>"><?php echo $e['nombre_completo']; ?></option>
+                        <?php foreach ($estudiantes as $est): ?>
+                            <option value="<?php echo $est['id']; ?>">
+                                <?php echo htmlspecialchars($est['nombre_completo'] . ' (NIE: ' . $est['nie'] . ')'); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
-                <!-- OPCIÓN B: Estudiante Nuevo -->
-                <div id="bloqueNuevo" style="display: none;">
-                    <h4><i class="fa-solid fa-user"></i> Datos Personales del Estudiante</h4>
+                <!-- CAMPOS: ESTUDIANTE NUEVO -->
+                <div id="campos_estudiante_nuevo" style="display: none;">
+                    <h4><i class="fa-solid fa-user-plus"></i> Datos del Nuevo Estudiante</h4>
                     
                     <div class="form-row">
                         <div class="form-col">
-                            <label>NIE (máx. 10 dígitos):</label>
-                            <input type="text" id="mat_nie" name="nie" class="input-nie" maxlength="10" placeholder="0000000000">
-                        </div>
-                        <div class="form-col">
-                            <label>Edad:</label>
-                            <input type="number" id="mat_edad" name="edad" min="14" max="22" readonly style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7;">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-col">
-                            <label>Nombres (2 nombres):</label>
-                            <input type="text" id="mat_nombres" name="nombres" class="input-nombre" placeholder="Ej: Juan Carlos">
-                        </div>
-                        <div class="form-col">
-                            <label>Apellidos (2 apellidos):</label>
-                            <input type="text" id="mat_apellidos" name="apellidos" class="input-nombre" placeholder="Ej: Pérez López">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-col">
-                            <label>DUI (si tiene 18+):</label>
-                            <input type="text" id="mat_dui" name="dui" class="input-dui" disabled placeholder="00000000-0" style="background: #f3f4f6; cursor: not-allowed; opacity: 0.5;">
+                            <label>NIE:</label>
+                            <input type="text" id="mat_nie" name="nie" maxlength="10" pattern="\d{1,10}" placeholder="Ej: 123456789" title="Solo números (1-10 dígitos)">
                         </div>
                         <div class="form-col">
                             <label>Fecha de Nacimiento:</label>
@@ -258,77 +259,116 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                         </div>
                     </div>
 
-                    <h4><i class="fa-solid fa-address-book"></i> Contacto del Estudiante</h4>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Nombres (2 nombres):</label>
+                            <input type="text" id="mat_nombres" name="nombres" pattern="[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+" placeholder="Ej: Juan Carlos">
+                        </div>
+                        <div class="form-col">
+                            <label>Apellidos (2 apellidos):</label>
+                            <input type="text" id="mat_apellidos" name="apellidos" pattern="[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+" placeholder="Ej: Pérez López">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>DUI:</label>
+                            <input type="text" id="mat_dui" name="dui" pattern="\d{8}-\d" maxlength="10" placeholder="00000000-0" title="Formato: 00000000-0 (8 dígitos, guión, 1 dígito)" disabled style="opacity: 0.5; cursor: not-allowed; background: #f3f4f6;">
+                        </div>
+                        <div class="form-col">
+                            <label>Edad:</label>
+                            <input type="text" id="mat_edad" name="edad" readonly placeholder="Cálculo automático" style="background: #f3f4f6; cursor: not-allowed; text-align: center; font-style: italic; color: #9ca3af;">
+                        </div>
+                    </div>
 
                     <div class="form-row">
                         <div class="form-col">
                             <label>Teléfono:</label>
-                            <input type="tel" id="mat_telefono" name="telefono" class="input-tel" maxlength="9" placeholder="0000-0000">
+                            <input type="tel" id="mat_telefono" name="telefono" pattern="\d{4}-\d{4}" maxlength="9" placeholder="0000-0000" title="Formato: 0000-0000">
                         </div>
                         <div class="form-col">
-                            <label>Email (Solo Gmail):</label>
-                            <input type="email" id="mat_email" name="email" placeholder="estudiante@gmail.com">
+                            <label>Email:</label>
+                            <input type="email" id="mat_email" name="email" placeholder="estudiante@gmail.com" title="Correo electrónico">
                         </div>
                     </div>
 
-                    <label>Dirección:</label>
-                    <input type="text" id="mat_direccion" name="direccion" placeholder="Ej: Col. Las Flores, Casa #123">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Dirección:</label>
+                            <input type="text" id="mat_direccion" name="direccion" placeholder="Dirección del estudiante">
+                        </div>
+                    </div>
                 </div>
 
                 <hr class="divider">
 
-                <h4><i class="fa-solid fa-school"></i> Datos Académicos</h4>
-
-                <label>Sección:</label>
-                <select id="mat_seccion" name="id_seccion" required>
-                    <option value="">Seleccione Sección</option>
-                    <?php foreach ($secciones as $s): ?>
-                        <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <label>Estado de la Matrícula:</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" value="Activo" readonly 
-                           style="flex: 1; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; 
-                                  background-color: #f3f4f6; color: #16a34a; font-weight: 600; 
-                                  cursor: not-allowed; opacity: 0.7;">
-                    <input type="hidden" name="estado" value="Activo">
+                <!-- SECCIÓN Y ESTADO (Estado readonly) -->
+                <h4><i class="fa-solid fa-school"></i> Información Académica</h4>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Sección:</label>
+                        <select name="id_seccion">
+                            <option value="">-- Seleccione una sección --</option>
+                            <?php foreach ($secciones as $s): ?>
+                                <option value="<?php echo $s['id']; ?>">
+                                    <?php echo htmlspecialchars($s['nombre']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-col">
+                        <label>Estado del Estudiante:</label>
+                        <input type="text" value="Activo" readonly style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7; color: #15803d; font-weight: 600;">
+                        <input type="hidden" name="estado" value="Activo">
+                        <p style="font-size: 11px; color: #6b7280; margin-top: 5px;">
+                            <i class="fa-solid fa-info-circle"></i> El estado se gestiona desde el panel de Estudiantes
+                        </p>
+                    </div>
                 </div>
 
+                <!-- BOTONES DEL PASO 1 -->
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalMatricula').close()">Cancelar</button>
-                    <button type="button" class="btn-primary" onclick="mostrarPaso(2)">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="button" class="btn-save" onclick="siguientePaso()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
             </div>
+            <!-- ========== FIN PASO 1 ========== -->
 
-            <!-- PASO 2: DATOS DEL RESPONSABLE -->
-            <div class="modal-step" id="paso2" style="display: none;">
-                <h4><i class="fa-solid fa-user-tie"></i> Datos del Responsable</h4>
-
-                <label>DUI del Responsable:</label>
-                <input type="text" id="resp_dui" name="responsable_dui" class="input-dui" required placeholder="00000000-0">
+            <!-- ========== PASO 2: RESPONSABLE ========== -->
+            <div id="paso2" style="display: none;">
+                <h4><i class="fa-solid fa-address-book"></i> Contacto del Responsable</h4>
+                <p style="font-size: 12px; color: #6b7280; margin-bottom: 15px;">
+                    <i class="fa-solid fa-info-circle"></i> Si ingresas un DUI ya registrado, los datos se completarán automáticamente.
+                </p>
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>Nombres (2 nombres):</label>
-                        <input type="text" id="resp_nombres" name="responsable_nombres" class="input-nombre" required>
+                        <label>DUI del Responsable:</label>
+                        <input type="text" name="responsable_dui" pattern="\d{8}-\d" maxlength="10" placeholder="00000000-0" title="Formato: 00000000-0">
                     </div>
                     <div class="form-col">
-                        <label>Apellidos (2 apellidos):</label>
-                        <input type="text" id="resp_apellidos" name="responsable_apellidos" class="input-nombre" required>
+                        <label>Ocupación:</label>
+                        <input type="text" name="responsable_ocupacion" placeholder="Ej: Profesor">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label>Ocupación:</label>
-                        <input type="text" id="resp_ocupacion" name="responsable_ocupacion" required placeholder="Ej: Comerciante">
+                        <label>Nombres del Responsable (2 nombres):</label>
+                        <input type="text" name="responsable_nombres" required pattern="[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+" placeholder="Ej: María Elena">
                     </div>
                     <div class="form-col">
+                        <label>Apellidos del Responsable (2 apellidos):</label>
+                        <input type="text" name="responsable_apellidos" required pattern="[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+" placeholder="Ej: García López">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
                         <label>Parentesco:</label>
-                        <select id="resp_parentesco" name="responsable_parentesco" required>
-                            <option value="">Seleccione Parentesco</option>
+                        <select name="responsable_parentesco">
+                            <option value="">-- Seleccione --</option>
                             <option value="Padre">Padre</option>
                             <option value="Madre">Madre</option>
                             <option value="Tío">Tío</option>
@@ -340,49 +380,52 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                             <option value="Otro">Otro</option>
                         </select>
                     </div>
+                    <div class="form-col">
+                        <label>Email (Solo Gmail):</label>
+                        <input type="email" name="responsable_email" required pattern="[a-zA-Z0-9._%+-]+@gmail\.com" placeholder="responsable@gmail.com" title="Debe ser un correo @gmail.com">
+                    </div>
                 </div>
 
-                <hr class="divider">
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Número de Teléfono:</label>
+                        <input type="tel" name="responsable_telefono" required pattern="\d{4}-\d{4}" maxlength="9" placeholder="0000-0000" title="Formato: 0000-0000">
+                    </div>
+                    <div class="form-col">
+                        <label>Dirección:</label>
+                        <input type="text" name="responsable_direccion" placeholder="Dirección del responsable">
+                    </div>
+                </div>
 
-                <h4><i class="fa-solid fa-address-book"></i> Contacto del Responsable</h4>
-
-                <label>Email (Solo Gmail):</label>
-                <input type="email" id="resp_email" name="responsable_email" required placeholder="responsable@gmail.com">
-
-                <label>Número de Teléfono:</label>
-                <input type="tel" id="resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9" placeholder="0000-0000">
-
-                <label>Dirección:</label>
-                <input type="text" id="resp_direccion" name="responsable_direccion" required placeholder="Ej: Col. Las Flores, Casa #123">
-
+                <!-- BOTONES DEL PASO 2 -->
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="mostrarPaso(1)"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
-                    <button type="button" class="btn-cancel" onclick="document.getElementById('modalMatricula').close()">Cancelar</button>
+                    <button type="button" class="btn-cancel" onclick="pasoAnterior()"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
                     <button type="submit" class="btn-save">Guardar Matrícula</button>
                 </div>
             </div>
+            <!-- ========== FIN PASO 2 ========== -->
         </form>
     </dialog>
 
     <!-- MODAL: VER DETALLES -->
-    <dialog id="modalVer" class="modal">
+    <dialog id="modalVer" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
         <h3>Información de la Matrícula</h3>
-        <div id="detalleMatricula" class="modal-form"></div>
+        <div id="detalleMatricula" class="modal-form" style="padding: 0 25px 25px;"></div>
         <div class="modal-actions">
             <button type="button" class="btn-cancel" onclick="document.getElementById('modalVer').close()">Cerrar</button>
         </div>
     </dialog>
 
     <!-- MODAL: EDITAR MATRÍCULA -->
-    <dialog id="modalEditar" class="modal">
+    <dialog id="modalEditar" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
         <h3>Editar Matrícula</h3>
-        <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formEditar" onsubmit="return validarFormularioMatricula(this, false)">
+        <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formEditar">
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="matricula_id" id="edit_matricula_id">
             
@@ -415,7 +458,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
-                    <button type="button" class="btn-primary" onclick="mostrarPasoEditar(2)">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="button" class="btn-save" onclick="mostrarPasoEditar(2)">Continuar <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
             </div>
 
@@ -424,16 +467,16 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                 <h4><i class="fa-solid fa-user-tie"></i> Datos del Responsable</h4>
 
                 <label>DUI del Responsable:</label>
-                <input type="text" id="edit_resp_dui" name="responsable_dui" class="input-dui" required>
+                <input type="text" id="edit_resp_dui" name="responsable_dui" required>
 
                 <div class="form-row">
                     <div class="form-col">
                         <label>Nombres:</label>
-                        <input type="text" id="edit_resp_nombres" name="responsable_nombres" class="input-nombre" required>
+                        <input type="text" id="edit_resp_nombres" name="responsable_nombres" required>
                     </div>
                     <div class="form-col">
                         <label>Apellidos:</label>
-                        <input type="text" id="edit_resp_apellidos" name="responsable_apellidos" class="input-nombre" required>
+                        <input type="text" id="edit_resp_apellidos" name="responsable_apellidos" required>
                     </div>
                 </div>
 
@@ -445,6 +488,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                     <div class="form-col">
                         <label>Parentesco:</label>
                         <select id="edit_resp_parentesco" name="responsable_parentesco" required>
+                            <option value="">-- Seleccione --</option>
                             <option value="Padre">Padre</option>
                             <option value="Madre">Madre</option>
                             <option value="Tío">Tío</option>
@@ -466,7 +510,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                 <input type="email" id="edit_resp_email" name="responsable_email" required>
 
                 <label>Teléfono:</label>
-                <input type="tel" id="edit_resp_telefono" name="responsable_telefono" class="input-tel" required maxlength="9">
+                <input type="tel" id="edit_resp_telefono" name="responsable_telefono" required maxlength="9">
 
                 <label>Dirección:</label>
                 <input type="text" id="edit_resp_direccion" name="responsable_direccion" required>

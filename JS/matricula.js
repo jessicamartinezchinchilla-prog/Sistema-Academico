@@ -1,34 +1,35 @@
 // JS/matricula.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. FORMATEO AUTOMÁTICO ---
-    configurarFormateo('mat_dui', 'dui');
-    configurarFormateo('mat_telefono', 'tel');
-    configurarFormateo('mat_nie', 'nie');
-    configurarNombres('mat_nombres');
-    configurarNombres('mat_apellidos');
     
-    configurarFormateo('resp_dui', 'dui');
-    configurarFormateo('resp_telefono', 'tel');
-    configurarNombres('resp_nombres');
-    configurarNombres('resp_apellidos');
-    
-    configurarFormateo('edit_resp_dui', 'dui');
-    configurarFormateo('edit_resp_telefono', 'tel');
-    configurarNombres('edit_resp_nombres');
-    configurarNombres('edit_resp_apellidos');
-
-    // --- 2. CÁLCULO AUTOMÁTICO DE EDAD ---
-    actualizarEdadDesdeFecha('mat_fecha_nacimiento', 'mat_edad');
-
-    // --- 3. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX) ---
+    // ==========================================
+    // 1. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX)
+    // ==========================================
     document.querySelectorAll('.modal-form').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (!validarFormularioMatricula(this, false)) return;
-
+            if (this.action.includes('generar_pdf.php')) return;
+            
+            // DEBUG: Ver qué se está enviando
             const formData = new FormData(this);
+            console.log('=== DEBUG FORMULARIO ===');
+            console.log('Form ID:', this.id);
+            console.log('Action:', this.action);
+            console.log('Tipo estudiante:', formData.get('tipo_estudiante'));
+            console.log('ID estudiante existente:', formData.get('id_estudiante_existente'));
+            console.log('Todos los datos:', Object.fromEntries(formData));
+            console.log('======================');
+            
+            const esFormMatricula = this.id === 'formMatricula' || this.id === 'formEditar';
+            
+            if (esFormMatricula) {
+                if (!validarFormularioMatricula(this, false)) {
+                    console.log('❌ Validación falló');
+                    return;
+                }
+                console.log('✅ Validación pasó');
+            }
             
             try {
                 const response = await fetch(this.action, {
@@ -38,48 +39,101 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 const result = await response.text();
+                console.log('Respuesta del servidor:', result);
                 
                 if (result.startsWith('ERROR:')) {
-                    const errorType = result.split(':')[1];
-                    let msg = '⚠️ Error al procesar la solicitud';
+                    const errorType = result.replace('ERROR:', '').trim();
+                    let msg = 'Error al procesar la solicitud';
                     
-                    if (errorType === 'gmail') msg = '⚠️ El correo debe ser @gmail.com';
-                    else if (errorType === 'nie_duplicado') msg = '⚠️ El NIE ya está registrado';
-                    else if (errorType === 'dui_duplicado') msg = '⚠️ El DUI del responsable ya está registrado';
-                    else if (errorType === 'sin_estudiante') msg = '⚠️ Debes seleccionar un estudiante';
-                    else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
+                    switch(errorType) {
+                        case 'campos_incompletos':
+                            msg = 'Todos los campos obligatorios deben estar llenos';
+                            break;
+                        case 'gmail':
+                            msg = 'El correo debe ser @gmail.com';
+                            break;
+                        case 'nie_duplicado':
+                            msg = 'Ya existe un estudiante con ese NIE';
+                            break;
+                        case 'dui_estudiante_duplicado':
+                            msg = 'Ya existe un estudiante con ese DUI';
+                            break;
+                        case 'dui_responsable_existe_estudiante':
+                            msg = 'El DUI del responsable ya está registrado como estudiante';
+                            break;
+                        case 'telefono_estudiante_duplicado':
+                            msg = 'Ya existe un estudiante con ese número de teléfono';
+                            break;
+                        case 'telefono_existe_responsable':
+                            msg = 'El teléfono del estudiante ya está registrado en un responsable';
+                            break;
+                        case 'telefono_responsable_duplicado':
+                            msg = 'Ya existe un responsable con ese número de teléfono';
+                            break;
+                        case 'telefono_existe_estudiante':
+                            msg = 'El teléfono del responsable ya está registrado en un estudiante';
+                            break;
+                        case 'email_estudiante_duplicado':
+                            msg = 'Ya existe un estudiante con ese correo electrónico';
+                            break;
+                        case 'email_existe_responsable':
+                            msg = 'El correo del estudiante ya está registrado en un responsable';
+                            break;
+                        case 'email_responsable_duplicado':
+                            msg = 'Ya existe un responsable con ese correo electrónico';
+                            break;
+                        case 'email_existe_estudiante':
+                            msg = 'El correo del responsable ya está registrado en un estudiante';
+                            break;
+                        case 'sin_estudiante':
+                            msg = 'Debes seleccionar un estudiante existente';
+                            break;
+                        case 'seccion_invalida':
+                            msg = 'La sección seleccionada no es válida';
+                            break;
+                        case 'bd':
+                            msg = 'Error en la base de datos';
+                            break;
+                        default:
+                            msg = errorType;
+                    }
                     
                     alert(msg);
                 } else if (result.startsWith('SUCCESS:')) {
-                    alert('✅ Matrícula guardada exitosamente');
+                    alert('Matrícula guardada exitosamente');
                     window.location.reload();
                 }
             } catch (error) {
+                console.error('Error:', error);
                 alert('Error de conexión con el servidor');
             }
         });
     });
 
-    // --- 4. FILTROS DE BÚSQUEDA ---
+    // ==========================================
+    // 2. FILTROS DE BÚSQUEDA
+    // ==========================================
     const inputBuscar = document.getElementById('buscarMatricula');
     const filtroSeccion = document.getElementById('filtroSeccion');
     const filtroEstado = document.getElementById('filtroEstado');
     const filas = document.querySelectorAll('#listaMatriculas tr');
 
     function filtrarMatriculas() {
-        const texto = inputBuscar.value.toLowerCase();
-        const seccion = filtroSeccion.value.toLowerCase();
-        const estado = filtroEstado.value.toLowerCase();
+        const texto = inputBuscar ? inputBuscar.value.toLowerCase() : '';
+        const seccion = filtroSeccion ? filtroSeccion.value.toLowerCase() : '';
+        const estado = filtroEstado ? filtroEstado.value.toLowerCase() : '';
 
         filas.forEach(fila => {
+            if (!fila.dataset.id) return;
+
             const nie = fila.dataset.nie || '';
             const nombre = fila.dataset.nombre || '';
-            const responsable = fila.dataset.responsable || '';
+            const responsable = (fila.dataset.respNombres || '') + ' ' + (fila.dataset.respApellidos || '');
             const seccionFila = fila.dataset.seccion || '';
             const estadoFila = fila.dataset.estado || '';
 
             const coincideBusqueda = nie.toLowerCase().includes(texto) || 
-                                     nombre.toLowerCase().includes(texto) || 
+                                     nombre.toLowerCase().includes(texto) ||
                                      responsable.toLowerCase().includes(texto);
             const coincideSeccion = !seccion || seccionFila.toLowerCase() === seccion;
             const coincideEstado = !estado || estadoFila.toLowerCase() === estado;
@@ -92,301 +146,381 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    inputBuscar.addEventListener('input', filtrarMatriculas);
-    filtroSeccion.addEventListener('change', filtrarMatriculas);
-    filtroEstado.addEventListener('change', filtrarMatriculas);
+    if (inputBuscar) inputBuscar.addEventListener('input', filtrarMatriculas);
+    if (filtroSeccion) filtroSeccion.addEventListener('change', filtrarMatriculas);
+    if (filtroEstado) filtroEstado.addEventListener('change', filtrarMatriculas);
 
-    // --- 5. MENSAJES DE ÉXITO/ELIMINACIÓN ---
+    // ==========================================
+    // 3. MENSAJES DE URL
+    // ==========================================
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'eliminado') {
-        alert('️ Matrícula eliminada exitosamente');
+        alert('Matrícula eliminada exitosamente');
         window.history.replaceState({}, document.title, window.location.pathname);
     }
-});
 
-// --- TOGGLE TIPO DE ESTUDIANTE ---
+    // ==========================================
+    // 4. CALCULAR EDAD AUTOMÁTICAMENTE
+    // ==========================================
+    const inputFechaNac = document.getElementById('mat_fecha_nacimiento');
+    const inputEdad = document.getElementById('mat_edad');
+    const inputDui = document.getElementById('mat_dui');
 
-function toggleTipoEstudiante() {
-    const tipo = document.querySelector('input[name="tipo_estudiante"]:checked').value;
-    const bloqueExistente = document.getElementById('bloqueExistente');
-    const bloqueNuevo = document.getElementById('bloqueNuevo');
-    const labelExistente = document.getElementById('labelExistente');
-    const labelNuevo = document.getElementById('labelNuevo');
-    
-    if (tipo === 'existente') {
-        bloqueExistente.style.display = 'block';
-        bloqueNuevo.style.display = 'none';
-        labelExistente.style.borderColor = '#2563eb';
-        labelExistente.style.background = '#eff6ff';
-        labelNuevo.style.borderColor = '#d1d5db';
-        labelNuevo.style.background = 'white';
-    } else {
-        bloqueExistente.style.display = 'none';
-        bloqueNuevo.style.display = 'block';
-        labelNuevo.style.borderColor = '#2563eb';
-        labelNuevo.style.background = '#eff6ff';
-        labelExistente.style.borderColor = '#d1d5db';
-        labelExistente.style.background = 'white';
-    }
-}
+    function actualizarEdadDesdeFecha() {
+        if (!inputFechaNac || !inputFechaNac.value) {
+            if (inputEdad) {
+                inputEdad.value = '';
+                inputEdad.placeholder = 'Cálculo automático';
+                inputEdad.removeAttribute('data-edad-calculada');
+            }
+            if (inputDui) {
+                inputDui.setAttribute('disabled', 'disabled');
+                inputDui.removeAttribute('required');
+                inputDui.value = '';
+                inputDui.style.opacity = '0.5';
+                inputDui.style.cursor = 'not-allowed';
+                inputDui.style.backgroundColor = '#f3f4f6';
+                inputDui.placeholder = 'No requerido (menor de 18)';
+            }
+            return;
+        }
 
-// --- FUNCIONES DE FORMATEO ---
-
-function calcularEdad(fechaNacimiento) {
-    if (!fechaNacimiento) return null;
-    
-    const hoy = new Date();
-    const fechaNac = new Date(fechaNacimiento + 'T00:00:00');
-    
-    let edad = hoy.getFullYear() - fechaNac.getFullYear();
-    const mesDiff = hoy.getMonth() - fechaNac.getMonth();
-    
-    if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fechaNac.getDate())) {
-        edad--;
-    }
-    
-    return edad;
-}
-
-function actualizarEdadDesdeFecha(inputId, edadId) {
-    const inputFecha = document.getElementById(inputId);
-    const inputEdad = document.getElementById(edadId);
-    
-    if (!inputFecha || !inputEdad) return;
-    
-    inputFecha.addEventListener('change', (e) => {
-        const fechaNac = e.target.value;
-        const edad = calcularEdad(fechaNac);
+        const fechaNac = new Date(inputFechaNac.value);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - fechaNac.getFullYear();
+        const mes = hoy.getMonth() - fechaNac.getMonth();
         
-        if (edad !== null) {
+        if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+            edad--;
+        }
+
+        if (inputEdad) {
             inputEdad.value = edad;
-            
-            const duiInput = document.getElementById('mat_dui');
-            const duiLabel = document.getElementById('label_mat_dui');
-            
+            inputEdad.setAttribute('data-edad-calculada', edad);
+        }
+
+        if (edad < 14 || edad > 22) {
+            alert('La edad debe estar entre 14 y 22 años');
+        }
+
+        if (inputDui) {
             if (edad >= 18) {
-                if (duiInput) {
-                    duiInput.removeAttribute('disabled');
-                    duiInput.setAttribute('required', 'required');
-                    duiInput.style.opacity = '1';
-                    duiInput.style.cursor = 'text';
-                    duiInput.style.backgroundColor = '';
-                }
+                inputDui.removeAttribute('disabled');
+                inputDui.setAttribute('required', 'required');
+                inputDui.style.opacity = '1';
+                inputDui.style.cursor = 'text';
+                inputDui.style.backgroundColor = '';
+                inputDui.placeholder = '00000000-0';
             } else {
-                if (duiInput) {
-                    duiInput.setAttribute('disabled', 'disabled');
-                    duiInput.removeAttribute('required');
-                    duiInput.value = '';
-                    duiInput.style.opacity = '0.5';
-                    duiInput.style.cursor = 'not-allowed';
-                    duiInput.style.backgroundColor = '#f3f4f6';
-                }
+                inputDui.setAttribute('disabled', 'disabled');
+                inputDui.removeAttribute('required');
+                inputDui.value = '';
+                inputDui.style.opacity = '0.5';
+                inputDui.style.cursor = 'not-allowed';
+                inputDui.style.backgroundColor = '#f3f4f6';
+                inputDui.placeholder = 'No requerido (menor de 18)';
             }
+        }
+    }
+
+    if (inputFechaNac) {
+        inputFechaNac.addEventListener('change', actualizarEdadDesdeFecha);
+    }
+
+    // ==========================================
+    // 5. MOSTRAR/OCULTAR CAMPOS SEGÚN TIPO DE ESTUDIANTE
+    // ==========================================
+    const radiosTipo = document.querySelectorAll('[name="tipo_estudiante"]');
+    const camposExistente = document.getElementById('campos_estudiante_existente');
+    const camposNuevo = document.getElementById('campos_estudiante_nuevo');
+
+    function toggleCamposEstudiante() {
+        const tipoSeleccionado = document.querySelector('[name="tipo_estudiante"]:checked');
+        if (!tipoSeleccionado) return;
+
+        if (tipoSeleccionado.value === 'existente') {
+            if (camposExistente) camposExistente.style.display = 'block';
+            if (camposNuevo) camposNuevo.style.display = 'none';
+        } else if (tipoSeleccionado.value === 'nuevo') {
+            if (camposExistente) camposExistente.style.display = 'none';
+            if (camposNuevo) camposNuevo.style.display = 'block';
+        }
+    }
+
+    // ✅ FIX: Hacer la función global para que el onchange del HTML funcione
+    window.toggleCamposEstudiante = toggleCamposEstudiante;
+
+    radiosTipo.forEach(radio => {
+        radio.addEventListener('change', toggleCamposEstudiante);
+    });
+
+    toggleCamposEstudiante();
+
+    // ==========================================
+    // 6. FORMATEAR DUI AUTOMÁTICAMENTE
+    // ==========================================
+    const duiInput = document.getElementById('mat_dui');
+    if (duiInput) {
+        duiInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 9);
+            if (valor.length > 8) {
+                valor = valor.substring(0, 8) + '-' + valor.substring(8, 9);
+            }
+            e.target.value = valor;
+        });
+    }
+
+    // ==========================================
+    // 7. FORMATEAR TELÉFONO AUTOMÁTICAMENTE
+    // ==========================================
+    const telInput = document.getElementById('mat_telefono');
+    if (telInput) {
+        telInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 8);
+            if (valor.length > 4) {
+                valor = valor.substring(0, 4) + '-' + valor.substring(4, 8);
+            }
+            e.target.value = valor;
+        });
+    }
+
+    const respTelInput = document.querySelector('[name="responsable_telefono"]');
+    if (respTelInput) {
+        respTelInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 8);
+            if (valor.length > 4) {
+                valor = valor.substring(0, 4) + '-' + valor.substring(4, 8);
+            }
+            e.target.value = valor;
+        });
+    }
+
+    const respDuiInput = document.querySelector('[name="responsable_dui"]');
+    if (respDuiInput) {
+        respDuiInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 9);
+            if (valor.length > 8) {
+                valor = valor.substring(0, 8) + '-' + valor.substring(8, 9);
+            }
+            e.target.value = valor;
+        });
+    }
+
+    // ==========================================
+    // 8. BUSCAR RESPONSABLE POR DUI (AUTO-COMPLETAR)
+    // ==========================================
+    const buscarResponsableDuiInput = document.querySelector('[name="responsable_dui"]');
+    if (buscarResponsableDuiInput) {
+        let debounceTimer;
+        
+        buscarResponsableDuiInput.addEventListener('input', function(e) {
+            clearTimeout(debounceTimer);
+            const dui = e.target.value.trim();
             
-            if (edad < 14) {
-                alert('⚠️ La edad mínima para matrícula es 14 años.');
-                e.target.value = '';
-                inputEdad.value = '';
-            } else if (edad > 22) {
-                alert('⚠️ La edad máxima para matrícula es 22 años.');
-                e.target.value = '';
-                inputEdad.value = '';
+            if (dui.length === 10 && /^\d{8}-\d$/.test(dui)) {
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`../actions/buscar_responsable.php?dui=${encodeURIComponent(dui)}`);
+                        const data = await response.json();
+                        
+                        if (data.encontrado) {
+                            document.querySelector('[name="responsable_nombres"]').value = data.datos.nombres || '';
+                            document.querySelector('[name="responsable_apellidos"]').value = data.datos.apellidos || '';
+                            document.querySelector('[name="responsable_ocupacion"]').value = data.datos.ocupacion || '';
+                            document.querySelector('[name="responsable_parentesco"]').value = data.datos.parentesco || '';
+                            document.querySelector('[name="responsable_email"]').value = data.datos.email || '';
+                            document.querySelector('[name="responsable_telefono"]').value = data.datos.telefono || '';
+                            document.querySelector('[name="responsable_direccion"]').value = data.datos.direccion || '';
+                            
+                            e.target.style.borderColor = '#16a34a';
+                            e.target.style.boxShadow = '0 0 5px rgba(22, 163, 74, 0.5)';
+                            
+                            setTimeout(() => {
+                                alert('Responsable encontrado. Campos auto-completados.');
+                                e.target.style.borderColor = '';
+                                e.target.style.boxShadow = '';
+                            }, 300);
+                        } else {
+                            e.target.style.borderColor = '#9ca3af';
+                        }
+                    } catch (error) {
+                        console.error('Error buscando responsable:', error);
+                    }
+                }, 500);
             }
-        }
-    });
-}
-
-function configurarFormateo(idInput, tipo) {
-    const input = document.getElementById(idInput);
-    if (!input) return;
-
-    input.addEventListener('input', (e) => {
-        let val = e.target.value;
-        
-        if (tipo === 'dui') {
-            val = val.replace(/\D/g, '');
-            if (val.length > 8) {
-                val = val.slice(0, 8) + '-' + val.slice(8, 9);
-            }
-        } else if (tipo === 'tel') {
-            val = val.replace(/\D/g, '');
-            if (val.length > 4) {
-                val = val.slice(0, 4) + '-' + val.slice(4, 8);
-            }
-        } else if (tipo === 'nie') {
-            val = val.replace(/\D/g, '').slice(0, 10);
-        }
-        
-        e.target.value = val;
-    });
-}
-
-function configurarNombres(idInput) {
-    const input = document.getElementById(idInput);
-    if (!input) return;
-
-    input.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-    });
-
-    input.addEventListener('blur', (e) => {
-        const palabras = e.target.value.trim().split(/\s+/);
-        const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
-        
-        const formateado = palabras.map((p, index) => {
-            if (p.length === 0) return p;
-            if (index === 0) {
-                return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-            }
-            if (excepciones.includes(p.toLowerCase())) {
-                return p.toLowerCase();
-            }
-            return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-        }).join(' ');
-        
-        e.target.value = formateado;
-    });
-}
-
-// --- VALIDACIÓN DEL FORMULARIO ---
-
-function validarFormularioMatricula(form, soloPaso1 = false) {
-    const tipoEstudiante = form.querySelector('[name="tipo_estudiante"]')?.value;
-    
-    // Validar según tipo de estudiante
-    if (tipoEstudiante === 'existente') {
-        const estudiante = form.querySelector('[name="id_estudiante_existente"]')?.value;
-        if (!estudiante) {
-            alert('⚠️ Debes seleccionar un estudiante existente');
-            return false;
-        }
-    } else if (tipoEstudiante === 'nuevo') {
-        // Validar NIE
-        const nieInput = form.querySelector('[name="nie"]');
-        if (nieInput) {
-            const nie = nieInput.value.trim();
-            if (nie.length === 0 || nie.length > 10 || !/^\d+$/.test(nie)) {
-                alert('⚠️ El NIE debe contener entre 1 y 10 dígitos numéricos.');
-                return false;
-            }
-        }
-
-        // Validar nombres
-        const nombresInput = form.querySelector('[name="nombres"]');
-        if (nombresInput) {
-            const nombres = nombresInput.value.trim().split(/\s+/);
-            if (nombres.length < 2) {
-                alert('️ Debe ingresar al menos dos nombres.');
-                return false;
-            }
-        }
-
-        // Validar apellidos
-        const apellidosInput = form.querySelector('[name="apellidos"]');
-        if (apellidosInput) {
-            const apellidos = apellidosInput.value.trim().split(/\s+/);
-            if (apellidos.length < 2) {
-                alert('⚠️ Debe ingresar al menos dos apellidos.');
-                return false;
-            }
-        }
-
-        // Validar edad
-        const edadInput = form.querySelector('[name="edad"]');
-        if (edadInput) {
-            const edad = parseInt(edadInput.value);
-            if (isNaN(edad) || edad < 14 || edad > 22) {
-                alert('⚠️ La edad debe estar entre 14 y 22 años.');
-                return false;
-            }
-        }
+        });
     }
 
-    if (!soloPaso1) {
-        // Validar sección
-        const seccion = form.querySelector('[name="id_seccion"]')?.value;
-        if (!seccion) {
-            alert('⚠️ Debes seleccionar una sección');
-            return false;
-        }
-
-        // Validar correos Gmail
-        const emailInputs = form.querySelectorAll('[name="responsable_email"]');
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-        
-        for (let input of emailInputs) {
-            const email = input.value.trim();
-            if (email && !emailRegex.test(email)) {
-                alert('⚠️ El correo debe ser @gmail.com');
-                return false;
+    // ==========================================
+    // 9. CAMBIO DE ESTUDIANTE EXISTENTE (AUTO-COMPLETAR RESPONSABLE)
+    // ==========================================
+    const selectEstudianteExistente = document.getElementById('select_estudiante_existente');
+    if (selectEstudianteExistente) {
+        selectEstudianteExistente.addEventListener('change', async function() {
+            const idEstudiante = this.value;
+            if (!idEstudiante) return;
+            
+            try {
+                const response = await fetch(`../actions/buscar_responsable_por_estudiante.php?id_estudiante=${idEstudiante}`);
+                const data = await response.json();
+                
+                if (data.encontrado) {
+                    document.querySelector('[name="responsable_nombres"]').value = data.datos.nombres || '';
+                    document.querySelector('[name="responsable_apellidos"]').value = data.datos.apellidos || '';
+                    document.querySelector('[name="responsable_ocupacion"]').value = data.datos.ocupacion || '';
+                    document.querySelector('[name="responsable_parentesco"]').value = data.datos.parentesco || '';
+                    document.querySelector('[name="responsable_email"]').value = data.datos.email || '';
+                    document.querySelector('[name="responsable_telefono"]').value = data.datos.telefono || '';
+                    document.querySelector('[name="responsable_dui"]').value = data.datos.dui || '';
+                    document.querySelector('[name="responsable_direccion"]').value = data.datos.direccion || '';
+                }
+            } catch (error) {
+                console.error('Error buscando responsable:', error);
             }
-        }
-
-        // Validar nombres del responsable
-        const respNombresInput = form.querySelector('[name="responsable_nombres"]');
-        if (respNombresInput) {
-            const respNombres = respNombresInput.value.trim().split(/\s+/);
-            if (respNombres.length < 2) {
-                alert('⚠️ Los nombres del responsable deben incluir al menos dos nombres.');
-                return false;
-            }
-        }
-
-        // Validar apellidos del responsable
-        const respApellidosInput = form.querySelector('[name="responsable_apellidos"]');
-        if (respApellidosInput) {
-            const respApellidos = respApellidosInput.value.trim().split(/\s+/);
-            if (respApellidos.length < 2) {
-                alert('⚠️ Los apellidos del responsable deben incluir al menos dos apellidos.');
-                return false;
-            }
-        }
+        });
     }
 
-    return true;
-}
-
-// --- FUNCIONES DE PASOS DEL FORMULARIO ---
-
-function mostrarPaso(paso) {
-    if (paso === 2) {
+    // ==========================================
+    // 10. NAVEGACIÓN ENTRE PASOS
+    // ==========================================
+    function siguientePaso() {
         const form = document.getElementById('formMatricula');
         if (!validarFormularioMatricula(form, true)) return;
+        
+        document.getElementById('paso1').style.display = 'none';
+        document.getElementById('paso2').style.display = 'block';
+        document.getElementById('modalMatricula').scrollTop = 0;
     }
     
-    document.getElementById('paso1').style.display = paso === 1 ? 'block' : 'none';
-    document.getElementById('paso2').style.display = paso === 2 ? 'block' : 'none';
-}
+    function pasoAnterior() {
+        document.getElementById('paso2').style.display = 'none';
+        document.getElementById('paso1').style.display = 'block';
+        document.getElementById('modalMatricula').scrollTop = 0;
+    }
+    
+    function mostrarPasoEditar(paso) {
+        if (paso === 1) {
+            document.getElementById('edit_paso1').style.display = 'block';
+            document.getElementById('edit_paso2').style.display = 'none';
+        } else if (paso === 2) {
+            document.getElementById('edit_paso1').style.display = 'none';
+            document.getElementById('edit_paso2').style.display = 'block';
+        }
+        document.getElementById('modalEditar').scrollTop = 0;
+    }
+    
+    window.siguientePaso = siguientePaso;
+    window.pasoAnterior = pasoAnterior;
+    window.mostrarPasoEditar = mostrarPasoEditar;
+});
 
-function mostrarPasoEditar(paso) {
-    document.getElementById('edit_paso1').style.display = paso === 1 ? 'block' : 'none';
-    document.getElementById('edit_paso2').style.display = paso === 2 ? 'block' : 'none';
-}
+// ==========================================
+// FUNCIONES DE MODALES (Globales)
+// ==========================================
 
-// --- FUNCIONES DE MODALES ---
-
-function abrirModalNuevaMatricula() {
-    document.getElementById('formMatricula').reset();
-    toggleTipoEstudiante();
-    mostrarPaso(1);
+function abrirModalAgregar() {
+    const form = document.getElementById('formMatricula');
+    if (form) {
+        form.reset();
+    }
+    
+    const inputEdad = document.getElementById('mat_edad');
+    const inputDui = document.getElementById('mat_dui');
+    const inputFechaNac = document.getElementById('mat_fecha_nacimiento');
+    
+    if (inputEdad) {
+        inputEdad.value = '';
+        inputEdad.placeholder = 'Cálculo automático';
+        inputEdad.removeAttribute('data-edad-calculada');
+    }
+    if (inputDui) {
+        inputDui.setAttribute('disabled', 'disabled');
+        inputDui.removeAttribute('required');
+        inputDui.value = '';
+        inputDui.style.opacity = '0.5';
+        inputDui.style.cursor = 'not-allowed';
+        inputDui.style.backgroundColor = '#f3f4f6';
+        inputDui.placeholder = 'No requerido (menor de 18)';
+    }
+    if (inputFechaNac) {
+        inputFechaNac.value = '';
+    }
+    
+    const camposExistente = document.getElementById('campos_estudiante_existente');
+    const camposNuevo = document.getElementById('campos_estudiante_nuevo');
+    if (camposExistente) camposExistente.style.display = 'block';
+    if (camposNuevo) camposNuevo.style.display = 'none';
+    
+    const paso1 = document.getElementById('paso1');
+    const paso2 = document.getElementById('paso2');
+    if (paso1) paso1.style.display = 'block';
+    if (paso2) paso2.style.display = 'none';
+    
     document.getElementById('modalMatricula').showModal();
 }
 
+function abrirModalEditar(btn) {
+    const fila = btn.closest('tr');
+    if (!fila) return;
+
+    const d = fila.dataset;
+    
+    document.getElementById('edit_matricula_id').value = d.id;
+    document.getElementById('edit_estudiante').value = d.idEstudiante;
+    document.getElementById('edit_seccion').value = d.idSeccion;
+    
+    document.getElementById('edit_resp_dui').value = d.respDui || '';
+    document.getElementById('edit_resp_nombres').value = d.respNombres || '';
+    document.getElementById('edit_resp_apellidos').value = d.respApellidos || '';
+    document.getElementById('edit_resp_ocupacion').value = d.respOcupacion || '';
+    document.getElementById('edit_resp_parentesco').value = d.respParentesco || '';
+    document.getElementById('edit_resp_email').value = d.respEmail || '';
+    document.getElementById('edit_resp_telefono').value = d.respTelefono || '';
+    document.getElementById('edit_resp_direccion').value = d.respDireccion || '';
+    
+    document.getElementById('edit_paso1').style.display = 'block';
+    document.getElementById('edit_paso2').style.display = 'none';
+    
+    document.getElementById('modalEditar').showModal();
+}
+
+function eliminarMatricula(id) {
+    if (confirm('¿Estás seguro de eliminar esta matrícula? Se eliminará también al estudiante asociado.')) {
+        window.location.href = '../actions/matricula_action.php?accion=eliminar&id=' + id;
+    }
+}
+
 function verMatricula(btn) {
-    const d = btn.closest('tr').dataset;
+    const fila = btn.closest('tr');
+    if (!fila) return;
+
+    const d = fila.dataset;
     
     const contenido = `
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: #2647B8; margin-bottom: 10px;">Datos de la Matrícula</h4>
+        <div style="padding: 10px;">
+            <h4 style="color: #2647B8; margin-bottom: 15px;">Datos del Estudiante</h4>
             <p><strong>NIE:</strong> ${d.nie}</p>
-            <p><strong>Nombre:</strong> ${d.nombre}</p>
+            <p><strong>Nombre:</strong> ${d.nombres} ${d.apellidos}</p>
+            <p><strong>Edad:</strong> ${d.edad || 'No registrada'} años</p>
+            <p><strong>DUI:</strong> ${d.dui || 'No registrado'}</p>
+            <p><strong>Teléfono:</strong> ${d.telefono || 'No registrado'}</p>
+            <p><strong>Email:</strong> ${d.email || 'No registrado'}</p>
+            <p><strong>Dirección:</strong> ${d.direccion || 'No registrada'}</p>
             <p><strong>Sección:</strong> ${d.seccion}</p>
-            <p><strong>Estado:</strong> <span class="badge ${d.estado === 'Activo' ? 'active' : 'inactive'}">${d.estado}</span></p>
-        </div>
-        
-        <div>
-            <h4 style="color: #2647B8; margin-bottom: 10px;">Datos del Responsable</h4>
-            <p><strong>Nombre:</strong> ${d.respNombres} ${d.respApellidos}</p>
+            <p><strong>Estado:</strong> 
+                <span class="${d.estado === 'Activo' ? 'estado-aprobado' : 'estado-reprobado'}">
+                    ${d.estado}
+                </span>
+            </p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <h4 style="color: #2647B8; margin-bottom: 15px;">Datos del Responsable</h4>
+            <p><strong>Nombre:</strong> ${d.respNombres || 'No registrado'} ${d.respApellidos || ''}</p>
             <p><strong>DUI:</strong> ${d.respDui || 'No registrado'}</p>
             <p><strong>Ocupación:</strong> ${d.respOcupacion || 'No registrada'}</p>
             <p><strong>Parentesco:</strong> ${d.respParentesco || 'No registrado'}</p>
@@ -400,19 +534,125 @@ function verMatricula(btn) {
     document.getElementById('modalVer').showModal();
 }
 
-function editarMatricula(btn) {
-    const d = btn.closest('tr').dataset;
+// ==========================================
+// VALIDACIÓN DEL FORMULARIO DE MATRÍCULA
+// ==========================================
 
-    document.getElementById('edit_matricula_id').value = d.id;
-    document.getElementById('edit_resp_dui').value = d.respDui || '';
-    document.getElementById('edit_resp_nombres').value = d.respNombres || '';
-    document.getElementById('edit_resp_apellidos').value = d.respApellidos || '';
-    document.getElementById('edit_resp_ocupacion').value = d.respOcupacion || '';
-    document.getElementById('edit_resp_parentesco').value = d.respParentesco || '';
-    document.getElementById('edit_resp_email').value = d.respEmail || '';
-    document.getElementById('edit_resp_telefono').value = d.respTelefono || '';
-    document.getElementById('edit_resp_direccion').value = d.respDireccion || '';
+function validarFormularioMatricula(form, soloPaso1 = false) {
+    const tipoEstudiante = form.querySelector('[name="tipo_estudiante"]:checked')?.value;
+    
+    if (tipoEstudiante === 'existente') {
+        const estudiante = form.querySelector('[name="id_estudiante_existente"]')?.value;
+        if (!estudiante) {
+            alert('Debes seleccionar un estudiante existente');
+            return false;
+        }
+    } else if (tipoEstudiante === 'nuevo') {
+        const nieInput = form.querySelector('[name="nie"]');
+        if (nieInput) {
+            const nie = nieInput.value.trim();
+            if (nie.length === 0 || nie.length > 10 || !/^\d+$/.test(nie)) {
+                alert('El NIE debe contener entre 1 y 10 dígitos numéricos.');
+                return false;
+            }
+        }
 
-    mostrarPasoEditar(1);
-    document.getElementById('modalEditar').showModal();
+        const nombresInput = form.querySelector('[name="nombres"]');
+        if (nombresInput) {
+            const nombres = nombresInput.value.trim().split(/\s+/);
+            if (nombres.length < 2) {
+                alert('Debe ingresar al menos dos nombres.');
+                return false;
+            }
+        }
+
+        const apellidosInput = form.querySelector('[name="apellidos"]');
+        if (apellidosInput) {
+            const apellidos = apellidosInput.value.trim().split(/\s+/);
+            if (apellidos.length < 2) {
+                alert('Debe ingresar al menos dos apellidos.');
+                return false;
+            }
+        }
+
+        const edadInput = form.querySelector('[name="edad"]');
+        if (edadInput) {
+            const edadTexto = edadInput.value.trim();
+            const edad = parseInt(edadTexto);
+            
+            if (isNaN(edad) || edad < 14 || edad > 22) {
+                alert('La edad debe estar entre 14 y 22 años.');
+                return false;
+            }
+            
+            if (edad >= 18) {
+                const duiInput = form.querySelector('[name="dui"]');
+                if (duiInput) {
+                    const dui = duiInput.value.trim();
+                    if (!dui || dui.length < 10) {
+                        alert('Al tener 18 años o más, el DUI es obligatorio (formato: 00000000-0)');
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    if (soloPaso1) {
+        const seccion = form.querySelector('[name="id_seccion"]')?.value;
+        if (!seccion) {
+            alert('Debes seleccionar una sección');
+            return false;
+        }
+        return true;
+    }
+
+    const emailInputs = form.querySelectorAll('[name="responsable_email"]');
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    
+    for (let input of emailInputs) {
+        const email = input.value.trim();
+        if (email && !emailRegex.test(email)) {
+            alert('El correo debe ser @gmail.com');
+            return false;
+        }
+    }
+
+    const respNombresInput = form.querySelector('[name="responsable_nombres"]');
+    if (respNombresInput) {
+        const respNombres = respNombresInput.value.trim().split(/\s+/);
+        if (respNombres.length < 2) {
+            alert('Los nombres del responsable deben incluir al menos dos nombres.');
+            return false;
+        }
+    }
+
+    const respApellidosInput = form.querySelector('[name="responsable_apellidos"]');
+    if (respApellidosInput) {
+        const respApellidos = respApellidosInput.value.trim().split(/\s+/);
+        if (respApellidos.length < 2) {
+            alert('Los apellidos del responsable deben incluir al menos dos apellidos.');
+            return false;
+        }
+    }
+
+    const respTelefonoInput = form.querySelector('[name="responsable_telefono"]');
+    if (respTelefonoInput) {
+        const telefono = respTelefonoInput.value.trim().replace(/-/g, '');
+        if (telefono.length !== 8 || !/^\d+$/.test(telefono)) {
+            alert('El teléfono debe tener 8 dígitos (formato: 0000-0000)');
+            return false;
+        }
+    }
+
+    const respDuiInput = form.querySelector('[name="responsable_dui"]');
+    if (respDuiInput) {
+        const dui = respDuiInput.value.trim();
+        if (dui && !/^\d{8}-\d$/.test(dui)) {
+            alert('El DUI del responsable debe tener el formato: 00000000-0');
+            return false;
+        }
+    }
+
+    return true;
 }
