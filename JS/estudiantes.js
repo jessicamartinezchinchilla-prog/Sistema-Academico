@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Validar antes de enviar
             if (!validarFormularioEstudiante(this)) return;
 
             const formData = new FormData(this);
@@ -95,44 +94,42 @@ function configurarFormateo(idInput, tipo) {
 
     input.addEventListener('input', (e) => {
         let val = e.target.value.replace(/\D/g, '');
-        
         if (tipo === 'nie') {
-            val = val.slice(0, 10); // Máximo 10 dígitos
+            val = val.slice(0, 10);
         }
         e.target.value = val;
     });
 }
 
+// ✅ CAMBIO: ahora usa 'input' en vez de 'blur' (tiempo real)
 function configurarNombres(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
 
-    input.addEventListener('blur', (e) => {
-        const palabras = e.target.value.split(' ');
+    input.addEventListener('input', (e) => {
+        const valor = e.target.value;
+        const cursorPos = e.target.selectionStart;
+        
+        const palabras = valor.split(' ');
         const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
         
         const formateado = palabras.map((p, index) => {
             if (p.length === 0) return p;
-            // La primera palabra siempre va en mayúscula
-            if (index === 0) {
-                return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-            }
-            // Las excepciones van en minúscula
-            if (excepciones.includes(p.toLowerCase())) {
-                return p.toLowerCase();
-            }
-            // Las demás palabras en mayúscula inicial
+            if (index === 0) return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            if (excepciones.includes(p.toLowerCase())) return p.toLowerCase();
             return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
         }).join(' ');
         
-        e.target.value = formateado;
+        if (valor !== formateado) {
+            e.target.value = formateado;
+            e.target.setSelectionRange(cursorPos, cursorPos);
+        }
     });
 }
 
 // --- VALIDACIÓN DEL FORMULARIO ---
 
 function validarFormularioEstudiante(form) {
-    // Validar NIE (máximo 10 dígitos, mínimo 1)
     const nieInput = form.querySelector('[name="nie"]');
     if (nieInput) {
         const nie = nieInput.value.trim();
@@ -142,7 +139,6 @@ function validarFormularioEstudiante(form) {
         }
     }
 
-    // Validar nombres (mínimo 2)
     const nombresInput = form.querySelector('[name="nombres"]');
     if (nombresInput) {
         const nombres = nombresInput.value.trim().split(/\s+/);
@@ -152,7 +148,6 @@ function validarFormularioEstudiante(form) {
         }
     }
 
-    // Validar apellidos (mínimo 2)
     const apellidosInput = form.querySelector('[name="apellidos"]');
     if (apellidosInput) {
         const apellidos = apellidosInput.value.trim().split(/\s+/);
@@ -206,7 +201,6 @@ function editarEstudiante(btn) {
     document.getElementById('edit_apellidos').value = d.apellidos;
     document.getElementById('edit_estado').value = d.estado;
     
-    // Mostrar la sección actual (solo lectura)
     document.getElementById('edit_seccion_display').value = d.seccion || 'Sin matrícula';
 
     document.getElementById('modalEditarEstudiante').showModal();

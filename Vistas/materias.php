@@ -1,19 +1,60 @@
 <?php
+// Vistas/materias.php
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// Obtener materias con sus asignaciones
-$query = "SELECT 
-            m.id, m.codigo, m.nombre, m.descripcion,
-            GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') as secciones_nombres,
-            GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ') as profesores_nombres
-          FROM materias m
-          LEFT JOIN asignaciones a ON m.id = a.id_materia
-          LEFT JOIN secciones s ON a.id_seccion = s.id
-          LEFT JOIN profesores p ON a.id_profesor = p.id
-          GROUP BY m.id
-          ORDER BY m.nombre";
-$materias = $pdo->query($query)->fetchAll();
+// Obtener todas las materias SIN duplicados
+$materias = [];
+$query = $pdo->query("SELECT id, codigo, nombre, descripcion FROM materias ORDER BY nombre");
+while ($mat = $query->fetch()) {
+    $id_materia = $mat['id'];
+    
+    // Obtener secciones desde asignaciones
+    $stmt = $pdo->prepare("
+        SELECT GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') as secciones
+        FROM asignaciones a
+        INNER JOIN secciones s ON a.id_seccion = s.id
+        WHERE a.id_materia = ?
+    ");
+    $stmt->execute([$id_materia]);
+    $secciones_data = $stmt->fetch();
+    $mat['secciones_nombres'] = $secciones_data['secciones'] ?? null;
+    
+    // Obtener profesores desde asignaciones
+    $stmt = $pdo->prepare("
+        SELECT GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ') as profesores
+        FROM asignaciones a
+        INNER JOIN profesores p ON a.id_profesor = p.id
+        WHERE a.id_materia = ?
+    ");
+    $stmt->execute([$id_materia]);
+    $prof_asignaciones = $stmt->fetch();
+    
+    // Obtener profesores desde profesor_materia
+    $stmt = $pdo->prepare("
+        SELECT GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ') as profesores
+        FROM profesor_materia pm
+        INNER JOIN profesores p ON pm.id_profesor = p.id
+        WHERE pm.id_materia = ?
+    ");
+    $stmt->execute([$id_materia]);
+    $prof_materias = $stmt->fetch();
+    
+    // Combinar profesores de ambas fuentes
+    $profesores = [];
+    if (!empty($prof_asignaciones['profesores'])) {
+        $profesores = array_merge($profesores, explode(', ', $prof_asignaciones['profesores']));
+    }
+    if (!empty($prof_materias['profesores'])) {
+        $profesores = array_merge($profesores, explode(', ', $prof_materias['profesores']));
+    }
+    
+    // Eliminar duplicados y unir
+    $profesores = array_unique($profesores);
+    $mat['profesores_nombres'] = !empty($profesores) ? implode(', ', $profesores) : null;
+    
+    $materias[] = $mat;
+}
 
 // Datos para los selects
 $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
@@ -151,7 +192,7 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
                 <?php endif; ?>
             </div>
 
-            <label>Docentes (selecciona uno o más):</label>
+            <label>Docentes (opcional - selecciona uno o más):</label>
             <div style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 150px; overflow-y: auto; padding: 10px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px;">
                 <?php 
                 $profesoresLista = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos) as nombre_completo FROM profesores ORDER BY nombres")->fetchAll();
@@ -203,7 +244,7 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
                 <?php endforeach; ?>
             </div>
 
-            <label>Docentes:</label>
+            <label>Docentes (opcional):</label>
             <div id="edit_profesores_container" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 150px; overflow-y: auto; padding: 10px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px;">
                 <?php foreach ($profesoresLista as $p): ?>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px;">

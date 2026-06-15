@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = urlParams.get('success');
         if (type === '1') alert('✅ Materia agregada');
         else if (type === 'editado') alert('✅ Materia actualizada');
-        else if (type === 'eliminado') alert('️ Materia eliminada');
+        else if (type === 'eliminado') alert('🗑️ Materia eliminada');
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 });
@@ -41,20 +41,17 @@ function validarFormularioMateria(form) {
     const codigo = form.querySelector('[name="codigo"]').value.trim();
     const nombre = form.querySelector('[name="nombre"]').value.trim();
     const secciones = form.querySelectorAll('input[name="secciones[]"]:checked');
-    const profesores = form.querySelectorAll('input[name="profesores[]"]:checked');
+    // Ya no validamos profesores (es opcional)
     
     if (!codigo || !nombre) {
         alert('⚠️ Código y nombre son obligatorios');
         return false;
     }
     if (secciones.length === 0) {
-        alert('️ Selecciona al menos una sección');
+        alert('⚠️ Selecciona al menos una sección');
         return false;
     }
-    if (profesores.length === 0) {
-        alert('⚠️ Selecciona al menos un docente');
-        return false;
-    }
+    // Eliminada la validación de profesores
     return true;
 }
 

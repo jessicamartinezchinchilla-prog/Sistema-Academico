@@ -7,7 +7,7 @@ require_once '../config/database.php';
 $query = "SELECT 
             m.id,
             m.anio,
-            m.estado,
+            m.estado as estado_matricula,
             m.fecha_registro,
             e.id as id_estudiante,
             e.nie,
@@ -18,6 +18,7 @@ $query = "SELECT
             e.telefono as est_telefono,
             e.email as est_email,
             e.direccion as est_direccion,
+            e.estado as estado_estudiante,
             CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
             s.id as id_seccion,
             s.nombre as seccion,
@@ -128,8 +129,8 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
 
                 <select id="filtroEstado">
                     <option value="">Todos los estados</option>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
                 </select>
             </div>
 
@@ -170,7 +171,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                                 data-direccion="<?php echo htmlspecialchars($mat['est_direccion'] ?? ''); ?>"
                                 data-id-seccion="<?php echo $mat['id_seccion']; ?>"
                                 data-seccion="<?php echo htmlspecialchars($mat['seccion'] ?? ''); ?>"
-                                data-estado="<?php echo htmlspecialchars($mat['estado'] ?? ''); ?>"
+                                data-estado="<?php echo htmlspecialchars(strtolower($mat['estado_estudiante']) ?? ''); ?>"
                                 data-resp-dui="<?php echo htmlspecialchars($mat['resp_dui'] ?? ''); ?>"
                                 data-resp-nombres="<?php echo htmlspecialchars($mat['resp_nombres'] ?? ''); ?>"
                                 data-resp-apellidos="<?php echo htmlspecialchars($mat['resp_apellidos'] ?? ''); ?>"
@@ -185,7 +186,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                                 <td><?php echo ($mat['resp_nombres'] ?? '') . ' ' . ($mat['resp_apellidos'] ?? ''); ?></td>
                                 <td><?php echo $mat['resp_telefono'] ?? 'N/A'; ?></td>
                                 <td>
-                                    <?php if ($mat['estado'] === 'Activo'): ?>
+                                    <?php if (strtolower($mat['estado_estudiante']) === 'activo'): ?>
                                         <span class="badge active">Activo</span>
                                     <?php else: ?>
                                         <span class="badge inactive">Inactivo</span>
@@ -320,7 +321,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                     <div class="form-col">
                         <label>Estado del Estudiante:</label>
                         <input type="text" value="Activo" readonly style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7; color: #15803d; font-weight: 600;">
-                        <input type="hidden" name="estado" value="Activo">
+                        <input type="hidden" name="estado" value="activo">
                         <p style="font-size: 11px; color: #6b7280; margin-top: 5px;">
                             <i class="fa-solid fa-info-circle"></i> El estado se gestiona desde el panel de Estudiantes
                         </p>
@@ -428,13 +429,14 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
         <form action="../actions/matricula_action.php" method="POST" class="modal-form" id="formEditar">
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="matricula_id" id="edit_matricula_id">
+            <input type="hidden" name="id_estudiante" id="edit_id_estudiante_hidden">
             
             <!-- PASO 1: DATOS DE LA MATRÍCULA -->
             <div class="modal-step" id="edit_paso1">
                 <h4><i class="fa-solid fa-user-graduate"></i> Datos de la Matrícula</h4>
                 
                 <label>Estudiante:</label>
-                <select id="edit_estudiante" name="id_estudiante" required>
+                <select id="edit_estudiante" name="id_estudiante">
                     <?php foreach ($estudiantes as $e): ?>
                         <option value="<?php echo $e['id']; ?>"><?php echo $e['nombre_completo']; ?></option>
                     <?php endforeach; ?>
@@ -447,14 +449,14 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                     <?php endforeach; ?>
                 </select>
 
-                <label>Estado:</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" value="Activo" readonly 
-                           style="flex: 1; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; 
-                                  background-color: #f3f4f6; color: #16a34a; font-weight: 600; 
-                                  cursor: not-allowed; opacity: 0.7;">
-                    <input type="hidden" name="estado" value="Activo">
-                </div>
+                <label>Estado del Estudiante:</label>
+                <select id="edit_estado" name="estado" required style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-weight: 600;">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                </select>
+                <p style="font-size: 11px; color: #6b7280; margin-top: 5px;">
+                    <i class="fa-solid fa-info-circle"></i> Este cambio se reflejará también en el panel de Estudiantes
+                </p>
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>

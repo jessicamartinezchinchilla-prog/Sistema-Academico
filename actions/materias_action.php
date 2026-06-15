@@ -31,11 +31,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt->execute([$codigo, $nombre, $descripcion]);
             $id_materia = $pdo->lastInsertId();
 
-            // Crear asignaciones (combinación de secciones y profesores)
-            $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
-            foreach ($secciones as $id_seccion) {
-                foreach ($profesores as $id_profesor) {
-                    $stmt->execute([$id_materia, $id_seccion, $id_profesor]);
+            // Si hay profesores, crear asignaciones completas
+            if (!empty($profesores) && !empty($secciones)) {
+                $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
+                foreach ($secciones as $id_seccion) {
+                    foreach ($profesores as $id_profesor) {
+                        $stmt->execute([$id_materia, $id_seccion, $id_profesor]);
+                    }
+                }
+            } 
+            // Si solo hay secciones (sin profesores), crear asignaciones con profesor NULL
+            else if (!empty($secciones)) {
+                $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, NULL)");
+                foreach ($secciones as $id_seccion) {
+                    $stmt->execute([$id_materia, $id_seccion]);
                 }
             }
 
@@ -65,11 +74,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt = $pdo->prepare("DELETE FROM asignaciones WHERE id_materia = ?");
             $stmt->execute([$id]);
 
-            // Crear nuevas
-            $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
-            foreach ($secciones as $id_seccion) {
-                foreach ($profesores as $id_profesor) {
-                    $stmt->execute([$id, $id_seccion, $id_profesor]);
+            // Crear nuevas asignaciones
+            if (!empty($profesores) && !empty($secciones)) {
+                $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, ?)");
+                foreach ($secciones as $id_seccion) {
+                    foreach ($profesores as $id_profesor) {
+                        $stmt->execute([$id, $id_seccion, $id_profesor]);
+                    }
+                }
+            } 
+            else if (!empty($secciones)) {
+                $stmt = $pdo->prepare("INSERT INTO asignaciones (id_materia, id_seccion, id_profesor) VALUES (?, ?, NULL)");
+                foreach ($secciones as $id_seccion) {
+                    $stmt->execute([$id, $id_seccion]);
                 }
             }
 

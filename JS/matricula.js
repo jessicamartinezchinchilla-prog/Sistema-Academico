@@ -3,6 +3,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     
     // ==========================================
+    // 0. CAPITALIZACIÓN AUTOMÁTICA DE NOMBRES
+    // ==========================================
+    configurarCapitalizacion('mat_nombres');
+    configurarCapitalizacion('mat_apellidos');
+    configurarCapitalizacionNombre('responsable_nombres');
+    configurarCapitalizacionNombre('responsable_apellidos');
+    configurarCapitalizacionNombre('edit_resp_nombres');
+    configurarCapitalizacionNombre('edit_resp_apellidos');
+
+    // ==========================================
     // 1. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX)
     // ==========================================
     document.querySelectorAll('.modal-form').forEach(form => {
@@ -11,24 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (this.action.includes('generar_pdf.php')) return;
             
-            // DEBUG: Ver qué se está enviando
             const formData = new FormData(this);
-            console.log('=== DEBUG FORMULARIO ===');
-            console.log('Form ID:', this.id);
-            console.log('Action:', this.action);
-            console.log('Tipo estudiante:', formData.get('tipo_estudiante'));
-            console.log('ID estudiante existente:', formData.get('id_estudiante_existente'));
-            console.log('Todos los datos:', Object.fromEntries(formData));
-            console.log('======================');
-            
             const esFormMatricula = this.id === 'formMatricula' || this.id === 'formEditar';
             
             if (esFormMatricula) {
                 if (!validarFormularioMatricula(this, false)) {
-                    console.log('❌ Validación falló');
                     return;
                 }
-                console.log('✅ Validación pasó');
             }
             
             try {
@@ -39,68 +38,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 const result = await response.text();
-                console.log('Respuesta del servidor:', result);
                 
                 if (result.startsWith('ERROR:')) {
                     const errorType = result.replace('ERROR:', '').trim();
                     let msg = 'Error al procesar la solicitud';
                     
                     switch(errorType) {
-                        case 'campos_incompletos':
-                            msg = 'Todos los campos obligatorios deben estar llenos';
-                            break;
-                        case 'gmail':
-                            msg = 'El correo debe ser @gmail.com';
-                            break;
-                        case 'nie_duplicado':
-                            msg = 'Ya existe un estudiante con ese NIE';
-                            break;
-                        case 'dui_estudiante_duplicado':
-                            msg = 'Ya existe un estudiante con ese DUI';
-                            break;
-                        case 'dui_responsable_existe_estudiante':
-                            msg = 'El DUI del responsable ya está registrado como estudiante';
-                            break;
-                        case 'telefono_estudiante_duplicado':
-                            msg = 'Ya existe un estudiante con ese número de teléfono';
-                            break;
-                        case 'telefono_existe_responsable':
-                            msg = 'El teléfono del estudiante ya está registrado en un responsable';
-                            break;
-                        case 'telefono_responsable_duplicado':
-                            msg = 'Ya existe un responsable con ese número de teléfono';
-                            break;
-                        case 'telefono_existe_estudiante':
-                            msg = 'El teléfono del responsable ya está registrado en un estudiante';
-                            break;
-                        case 'email_estudiante_duplicado':
-                            msg = 'Ya existe un estudiante con ese correo electrónico';
-                            break;
-                        case 'email_existe_responsable':
-                            msg = 'El correo del estudiante ya está registrado en un responsable';
-                            break;
-                        case 'email_responsable_duplicado':
-                            msg = 'Ya existe un responsable con ese correo electrónico';
-                            break;
-                        case 'email_existe_estudiante':
-                            msg = 'El correo del responsable ya está registrado en un estudiante';
-                            break;
-                        case 'sin_estudiante':
-                            msg = 'Debes seleccionar un estudiante existente';
-                            break;
-                        case 'seccion_invalida':
-                            msg = 'La sección seleccionada no es válida';
-                            break;
-                        case 'bd':
-                            msg = 'Error en la base de datos';
-                            break;
-                        default:
-                            msg = errorType;
+                        case 'campos_incompletos': msg = 'Todos los campos obligatorios deben estar llenos'; break;
+                        case 'gmail': msg = 'El correo debe ser @gmail.com'; break;
+                        case 'nie_duplicado': msg = 'Ya existe un estudiante con ese NIE'; break;
+                        case 'dui_estudiante_duplicado': msg = 'Ya existe un estudiante con ese DUI'; break;
+                        case 'dui_responsable_existe_estudiante': msg = 'El DUI del responsable ya está registrado como estudiante'; break;
+                        case 'dui_responsable_existe_profesor': msg = 'El DUI del responsable ya está registrado como profesor'; break;
+                        case 'dui_estudiante_existe_profesor': msg = 'El DUI del estudiante ya está registrado como profesor'; break;
+                        case 'dui_estudiante_existe_responsable': msg = 'El DUI del estudiante ya está registrado como responsable'; break;
+                        case 'dui_profesor_existe_estudiante': msg = 'El DUI del profesor ya está registrado como estudiante'; break;
+                        case 'dui_profesor_existe_responsable': msg = 'El DUI del profesor ya está registrado como responsable'; break;
+                        case 'dui_duplicado': msg = 'Este DUI ya está registrado en el sistema'; break;
+                        case 'telefono_estudiante_duplicado': msg = 'Ya existe un estudiante con ese número de teléfono'; break;
+                        case 'telefono_existe_responsable': msg = 'El teléfono del estudiante ya está registrado en un responsable'; break;
+                        case 'telefono_responsable_duplicado': msg = 'Ya existe un responsable con ese número de teléfono'; break;
+                        case 'telefono_existe_estudiante': msg = 'El teléfono del responsable ya está registrado en un estudiante'; break;
+                        case 'email_estudiante_duplicado': msg = 'Ya existe un estudiante con ese correo electrónico'; break;
+                        case 'email_existe_responsable': msg = 'El correo del estudiante ya está registrado en un responsable'; break;
+                        case 'email_responsable_duplicado': msg = 'Ya existe un responsable con ese correo electrónico'; break;
+                        case 'email_existe_estudiante': msg = 'El correo del responsable ya está registrado en un estudiante'; break;
+                        case 'sin_estudiante': msg = 'Debes seleccionar un estudiante existente'; break;
+                        case 'seccion_invalida': msg = 'La sección seleccionada no es válida'; break;
+                        case 'bd': msg = 'Error en la base de datos'; break;
+                        default: msg = errorType;
                     }
                     
-                    alert(msg);
+                    alert('⚠️ ' + msg);
                 } else if (result.startsWith('SUCCESS:')) {
-                    alert('Matrícula guardada exitosamente');
+                    alert('✅ Matrícula guardada exitosamente');
                     window.location.reload();
                 }
             } catch (error) {
@@ -155,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'eliminado') {
-        alert('Matrícula eliminada exitosamente');
+        alert('️ Matrícula eliminada exitosamente');
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -200,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (edad < 14 || edad > 22) {
-            alert('La edad debe estar entre 14 y 22 años');
+            alert('⚠️ La edad debe estar entre 14 y 22 años');
         }
 
         if (inputDui) {
@@ -228,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 5. MOSTRAR/OCULTAR CAMPOS SEGÚN TIPO DE ESTUDIANTE
+    // 5. MOSTRAR/OCULTAR CAMPOS SEGÚN TIPO
     // ==========================================
     const radiosTipo = document.querySelectorAll('[name="tipo_estudiante"]');
     const camposExistente = document.getElementById('campos_estudiante_existente');
@@ -247,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ✅ FIX: Hacer la función global para que el onchange del HTML funcione
     window.toggleCamposEstudiante = toggleCamposEstudiante;
 
     radiosTipo.forEach(radio => {
@@ -311,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 8. BUSCAR RESPONSABLE POR DUI (AUTO-COMPLETAR)
+    // 8. BUSCAR RESPONSABLE POR DUI
     // ==========================================
     const buscarResponsableDuiInput = document.querySelector('[name="responsable_dui"]');
     if (buscarResponsableDuiInput) {
@@ -340,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             e.target.style.boxShadow = '0 0 5px rgba(22, 163, 74, 0.5)';
                             
                             setTimeout(() => {
-                                alert('Responsable encontrado. Campos auto-completados.');
+                                alert('✅ Responsable encontrado. Campos auto-completados.');
                                 e.target.style.borderColor = '';
                                 e.target.style.boxShadow = '';
                             }, 300);
@@ -356,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 9. CAMBIO DE ESTUDIANTE EXISTENTE (AUTO-COMPLETAR RESPONSABLE)
+    // 9. CAMBIO DE ESTUDIANTE EXISTENTE
     // ==========================================
     const selectEstudianteExistente = document.getElementById('select_estudiante_existente');
     if (selectEstudianteExistente) {
@@ -419,14 +389,66 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
+// FUNCIONES DE CAPITALIZACIÓN (GLOBALES)
+// ==========================================
+
+function configurarCapitalizacion(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        const valor = e.target.value;
+        const cursorPos = e.target.selectionStart;
+        
+        const palabras = valor.split(' ');
+        const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
+        
+        const formateado = palabras.map((p, index) => {
+            if (p.length === 0) return p;
+            if (index === 0) return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            if (excepciones.includes(p.toLowerCase())) return p.toLowerCase();
+            return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+        }).join(' ');
+        
+        if (valor !== formateado) {
+            e.target.value = formateado;
+            e.target.setSelectionRange(cursorPos, cursorPos);
+        }
+    });
+}
+
+function configurarCapitalizacionNombre(idInput) {
+    const input = document.querySelector(`[name="${idInput}"]`);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        const valor = e.target.value;
+        const cursorPos = e.target.selectionStart;
+        
+        const palabras = valor.split(' ');
+        const excepciones = ['de', 'la', 'las', 'los', 'y', 'del', 'van', 'von'];
+        
+        const formateado = palabras.map((p, index) => {
+            if (p.length === 0) return p;
+            if (index === 0) return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            if (excepciones.includes(p.toLowerCase())) return p.toLowerCase();
+            return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+        }).join(' ');
+        
+        if (valor !== formateado) {
+            e.target.value = formateado;
+            e.target.setSelectionRange(cursorPos, cursorPos);
+        }
+    });
+}
+
+// ==========================================
 // FUNCIONES DE MODALES (Globales)
 // ==========================================
 
 function abrirModalAgregar() {
     const form = document.getElementById('formMatricula');
-    if (form) {
-        form.reset();
-    }
+    if (form) form.reset();
     
     const inputEdad = document.getElementById('mat_edad');
     const inputDui = document.getElementById('mat_dui');
@@ -446,9 +468,7 @@ function abrirModalAgregar() {
         inputDui.style.backgroundColor = '#f3f4f6';
         inputDui.placeholder = 'No requerido (menor de 18)';
     }
-    if (inputFechaNac) {
-        inputFechaNac.value = '';
-    }
+    if (inputFechaNac) inputFechaNac.value = '';
     
     const camposExistente = document.getElementById('campos_estudiante_existente');
     const camposNuevo = document.getElementById('campos_estudiante_nuevo');
@@ -471,7 +491,9 @@ function abrirModalEditar(btn) {
     
     document.getElementById('edit_matricula_id').value = d.id;
     document.getElementById('edit_estudiante').value = d.idEstudiante;
+    document.getElementById('edit_id_estudiante_hidden').value = d.idEstudiante; // ✅ AGREGAR
     document.getElementById('edit_seccion').value = d.idSeccion;
+    document.getElementById('edit_estado').value = d.estado || 'activo';
     
     document.getElementById('edit_resp_dui').value = d.respDui || '';
     document.getElementById('edit_resp_nombres').value = d.respNombres || '';
@@ -512,8 +534,8 @@ function verMatricula(btn) {
             <p><strong>Dirección:</strong> ${d.direccion || 'No registrada'}</p>
             <p><strong>Sección:</strong> ${d.seccion}</p>
             <p><strong>Estado:</strong> 
-                <span class="${d.estado === 'Activo' ? 'estado-aprobado' : 'estado-reprobado'}">
-                    ${d.estado}
+                <span class="${d.estado === 'activo' ? 'estado-aprobado' : 'estado-reprobado'}">
+                    ${d.estado === 'activo' ? 'Activo' : 'Inactivo'}
                 </span>
             </p>
             
@@ -535,16 +557,24 @@ function verMatricula(btn) {
 }
 
 // ==========================================
-// VALIDACIÓN DEL FORMULARIO DE MATRÍCULA
+// VALIDACIÓN DEL FORMULARIO
 // ==========================================
 
 function validarFormularioMatricula(form, soloPaso1 = false) {
+    // ✅ Validar que el formulario de editar tenga estudiante seleccionado
+    if (form.id === 'formEditar') {
+        const estudianteEdit = form.querySelector('[name="id_estudiante"]');
+        if (estudianteEdit && !estudianteEdit.value) {
+            alert('⚠️ Debes seleccionar un estudiante');
+            return false;
+        }
+    }
     const tipoEstudiante = form.querySelector('[name="tipo_estudiante"]:checked')?.value;
     
     if (tipoEstudiante === 'existente') {
         const estudiante = form.querySelector('[name="id_estudiante_existente"]')?.value;
         if (!estudiante) {
-            alert('Debes seleccionar un estudiante existente');
+            alert('⚠️ Debes seleccionar un estudiante existente');
             return false;
         }
     } else if (tipoEstudiante === 'nuevo') {
@@ -552,7 +582,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         if (nieInput) {
             const nie = nieInput.value.trim();
             if (nie.length === 0 || nie.length > 10 || !/^\d+$/.test(nie)) {
-                alert('El NIE debe contener entre 1 y 10 dígitos numéricos.');
+                alert('⚠️ El NIE debe contener entre 1 y 10 dígitos numéricos.');
                 return false;
             }
         }
@@ -561,7 +591,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         if (nombresInput) {
             const nombres = nombresInput.value.trim().split(/\s+/);
             if (nombres.length < 2) {
-                alert('Debe ingresar al menos dos nombres.');
+                alert('⚠️ Debe ingresar al menos dos nombres.');
                 return false;
             }
         }
@@ -570,7 +600,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         if (apellidosInput) {
             const apellidos = apellidosInput.value.trim().split(/\s+/);
             if (apellidos.length < 2) {
-                alert('Debe ingresar al menos dos apellidos.');
+                alert('⚠️ Debe ingresar al menos dos apellidos.');
                 return false;
             }
         }
@@ -581,7 +611,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
             const edad = parseInt(edadTexto);
             
             if (isNaN(edad) || edad < 14 || edad > 22) {
-                alert('La edad debe estar entre 14 y 22 años.');
+                alert('⚠️ La edad debe estar entre 14 y 22 años.');
                 return false;
             }
             
@@ -590,7 +620,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
                 if (duiInput) {
                     const dui = duiInput.value.trim();
                     if (!dui || dui.length < 10) {
-                        alert('Al tener 18 años o más, el DUI es obligatorio (formato: 00000000-0)');
+                        alert('⚠️ Al tener 18 años o más, el DUI es obligatorio (formato: 00000000-0)');
                         return false;
                     }
                 }
@@ -601,55 +631,92 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
     if (soloPaso1) {
         const seccion = form.querySelector('[name="id_seccion"]')?.value;
         if (!seccion) {
-            alert('Debes seleccionar una sección');
+            alert('⚠️ Debes seleccionar una sección');
             return false;
         }
         return true;
     }
 
+    // ✅ VALIDACIÓN DEL PASO 2 (RESPONSABLE) - Solo para modal de AGREGAR
+    // Para modal de EDITAR, los campos del responsable son opcionales
+    
+    const esModalEditar = form.id === 'formEditar';
+    
+    if (!esModalEditar) {
+        // Solo validar campos obligatorios del responsable si es modal de AGREGAR
+        const respNombresInput = form.querySelector('[name="responsable_nombres"]');
+        if (respNombresInput && respNombresInput.value.trim() === '') {
+            alert('⚠️ Los nombres del responsable son obligatorios.');
+            return false;
+        }
+        
+        const respApellidosInput = form.querySelector('[name="responsable_apellidos"]');
+        if (respApellidosInput && respApellidosInput.value.trim() === '') {
+            alert('⚠️ Los apellidos del responsable son obligatorios.');
+            return false;
+        }
+        
+        const respEmailInput = form.querySelector('[name="responsable_email"]');
+        if (respEmailInput && respEmailInput.value.trim() === '') {
+            alert('⚠️ El email del responsable es obligatorio.');
+            return false;
+        }
+        
+        const respTelefonoInput = form.querySelector('[name="responsable_telefono"]');
+        if (respTelefonoInput && respTelefonoInput.value.trim() === '') {
+            alert('⚠️ El teléfono del responsable es obligatorio.');
+            return false;
+        }
+    }
+
+    // Validar formato de email si tiene valor
     const emailInputs = form.querySelectorAll('[name="responsable_email"]');
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     
     for (let input of emailInputs) {
         const email = input.value.trim();
         if (email && !emailRegex.test(email)) {
-            alert('El correo debe ser @gmail.com');
+            alert('⚠️ El correo debe ser @gmail.com');
             return false;
         }
     }
 
+    // Validar formato de nombres del responsable si tiene valor
     const respNombresInput = form.querySelector('[name="responsable_nombres"]');
-    if (respNombresInput) {
+    if (respNombresInput && respNombresInput.value.trim() !== '') {
         const respNombres = respNombresInput.value.trim().split(/\s+/);
         if (respNombres.length < 2) {
-            alert('Los nombres del responsable deben incluir al menos dos nombres.');
+            alert('⚠️ Los nombres del responsable deben incluir al menos dos nombres.');
             return false;
         }
     }
 
+    // Validar formato de apellidos del responsable si tiene valor
     const respApellidosInput = form.querySelector('[name="responsable_apellidos"]');
-    if (respApellidosInput) {
+    if (respApellidosInput && respApellidosInput.value.trim() !== '') {
         const respApellidos = respApellidosInput.value.trim().split(/\s+/);
         if (respApellidos.length < 2) {
-            alert('Los apellidos del responsable deben incluir al menos dos apellidos.');
+            alert('⚠️ Los apellidos del responsable deben incluir al menos dos apellidos.');
             return false;
         }
     }
 
+    // Validar formato de teléfono del responsable si tiene valor
     const respTelefonoInput = form.querySelector('[name="responsable_telefono"]');
-    if (respTelefonoInput) {
+    if (respTelefonoInput && respTelefonoInput.value.trim() !== '') {
         const telefono = respTelefonoInput.value.trim().replace(/-/g, '');
         if (telefono.length !== 8 || !/^\d+$/.test(telefono)) {
-            alert('El teléfono debe tener 8 dígitos (formato: 0000-0000)');
+            alert('⚠️ El teléfono debe tener 8 dígitos (formato: 0000-0000)');
             return false;
         }
     }
 
+    // Validar formato de DUI del responsable si tiene valor
     const respDuiInput = form.querySelector('[name="responsable_dui"]');
-    if (respDuiInput) {
+    if (respDuiInput && respDuiInput.value.trim() !== '') {
         const dui = respDuiInput.value.trim();
-        if (dui && !/^\d{8}-\d$/.test(dui)) {
-            alert('El DUI del responsable debe tener el formato: 00000000-0');
+        if (!/^\d{8}-\d$/.test(dui)) {
+            alert('⚠️ El DUI del responsable debe tener el formato: 00000000-0');
             return false;
         }
     }

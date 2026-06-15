@@ -19,6 +19,46 @@ function validarGmail($correo) {
     return preg_match('/^[a-zA-Z0-9._%+-]+@gmail\.com$/i', $correo);
 }
 
+// ✅ FUNCIÓN: Validar DUI único en TODO el sistema
+function validarDuiUnicoSistema($pdo, $dui, $tabla_actual = null, $id_excluir = null) {
+    if (empty($dui)) return null;
+    
+    $tablas = ['estudiantes', 'profesores', 'responsables'];
+    
+    foreach ($tablas as $tabla) {
+        if ($tabla === $tabla_actual) continue;
+        
+        $sql = "SELECT id FROM {$tabla} WHERE dui = ?";
+        $params = [$dui];
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        if ($stmt->fetch()) {
+            return "dui_existe_en_{$tabla}";
+        }
+    }
+    
+    if ($tabla_actual) {
+        $sql = "SELECT id FROM {$tabla_actual} WHERE dui = ?";
+        $params = [$dui];
+        
+        if ($id_excluir) {
+            $sql .= " AND id != ?";
+            $params[] = $id_excluir;
+        }
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        if ($stmt->fetch()) {
+            return "dui_duplicado_en_{$tabla_actual}";
+        }
+    }
+    
+    return null;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $accion = $_POST['accion'] ?? '';
     
@@ -28,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($accion === 'agregar') {
         $tipo_estudiante = $_POST['tipo_estudiante'] ?? '';
         $id_seccion = $_POST['id_seccion'] ?? 0;
-        $estado = 'Activo';
+        $estado = 'activo'; // ✅ Siempre activo al agregar
         
         $resp_dui = trim($_POST['responsable_dui'] ?? '');
         $resp_nombres = trim($_POST['responsable_nombres'] ?? '');
@@ -40,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $resp_direccion = trim($_POST['responsable_direccion'] ?? '');
 
         if (!validarGmail($resp_email)) {
-            responder('error', 'El correo debe ser @gmail.com', $isAjax);
+            responder('error', 'gmail', $isAjax);
         }
 
         try {
@@ -52,17 +92,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             if (!$seccion_data) {
                 $pdo->rollBack();
-                responder('error', 'Sección inválida', $isAjax);
+                responder('error', 'seccion_invalida', $isAjax);
             }
             
             $id_carrera = $seccion_data['id_carrera'];
             $id_grado = $seccion_data['id_grado'];
             
+            // ==========================================
+            // PROCESAR ESTUDIANTE
+            // ==========================================
             if ($tipo_estudiante === 'existente') {
                 $id_estudiante = $_POST['id_estudiante_existente'] ?? 0;
                 if (!$id_estudiante) {
                     $pdo->rollBack();
-                    responder('error', 'Debes seleccionar un estudiante', $isAjax);
+                    responder('error', 'sin_estudiante', $isAjax);
                 }
             } else {
                 $nie = trim($_POST['nie'] ?? '');
@@ -75,28 +118,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $email = trim($_POST['email'] ?? '') ?: null;
                 $direccion = trim($_POST['direccion'] ?? '') ?: null;
 
+                // Validar NIE único
                 $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE nie = ?");
                 $stmt->execute([$nie]);
                 if ($stmt->fetch()) {
                     $pdo->rollBack();
-                    responder('error', 'Ya existe un estudiante con ese NIE', $isAjax);
+                    responder('error', 'nie_duplicado', $isAjax);
                 }
 
+                // ✅ Validar DUI del estudiante en TODO el sistema
                 if ($dui) {
-                    $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
-                    $stmt->execute([$dui]);
-                    if ($stmt->fetch()) {
+                    $error_dui = validarDuiUnicoSistema($pdo, $dui, 'estudiantes');
+                    if ($error_dui) {
                         $pdo->rollBack();
-                        responder('error', 'Ya existe un estudiante con ese DUI', $isAjax);
+                        if (strpos($error_dui, 'profesores') !== false) {
+                            responder('error', 'dui_estudiante_existe_profesor', $isAjax);
+                        } elseif (strpos($error_dui, 'responsables') !== false) {
+                            responder('error', 'dui_estudiante_existe_responsable', $isAjax);
+                        } else {
+                            responder('error', 'dui_estudiante_duplicado', $isAjax);
+                        }
                     }
                 }
 
+                // Validar teléfono
                 if ($telefono) {
                     $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE telefono = ?");
                     $stmt->execute([$telefono]);
                     if ($stmt->fetch()) {
                         $pdo->rollBack();
-                        responder('error', 'Ya existe un estudiante con ese teléfono', $isAjax);
+                        responder('error', 'telefono_estudiante_duplicado', $isAjax);
                     }
                 }
 
@@ -105,33 +156,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $id_estudiante = $pdo->lastInsertId();
             }
 
-            $stmt = $pdo->prepare("SELECT id FROM responsables WHERE dui = ?");
+            // ==========================================
+            // PROCESAR RESPONSABLE
+            // ==========================================
+            
+            // Validar DUI del responsable en TODO el sistema (excepto en responsables)
+            if ($resp_dui) {
+                $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
+                $stmt->execute([$resp_dui]);
+                if ($stmt->fetch()) {
+                    $pdo->rollBack();
+                    responder('error', 'dui_responsable_existe_estudiante', $isAjax);
+                }
+                
+                $stmt = $pdo->prepare("SELECT id FROM profesores WHERE dui = ?");
+                $stmt->execute([$resp_dui]);
+                if ($stmt->fetch()) {
+                    $pdo->rollBack();
+                    responder('error', 'dui_responsable_existe_profesor', $isAjax);
+                }
+            }
+            
+            // Verificar si el responsable YA EXISTE por DUI
+            $stmt = $pdo->prepare("SELECT id, dui, nombres, apellidos, ocupacion, parentesco, email, telefono, direccion FROM responsables WHERE dui = ? LIMIT 1");
             $stmt->execute([$resp_dui]);
             $responsable_existente = $stmt->fetch();
             
-            if ($responsable_existente) {
-                if ($resp_dui) {
-                    $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
-                    $stmt->execute([$resp_dui]);
-                    if ($stmt->fetch()) {
-                        $pdo->rollBack();
-                        responder('error', 'El DUI del responsable ya está registrado como estudiante', $isAjax);
-                    }
-                }
-            } else {
+            if (!$responsable_existente) {
+                // SOLO validar unicidad de teléfono/email si es un responsable NUEVO
                 if ($resp_telefono) {
                     $stmt = $pdo->prepare("SELECT id FROM responsables WHERE telefono = ?");
                     $stmt->execute([$resp_telefono]);
                     if ($stmt->fetch()) {
                         $pdo->rollBack();
-                        responder('error', 'Ya existe un responsable con ese teléfono', $isAjax);
+                        responder('error', 'telefono_responsable_duplicado', $isAjax);
                     }
                     
                     $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE telefono = ?");
                     $stmt->execute([$resp_telefono]);
                     if ($stmt->fetch()) {
                         $pdo->rollBack();
-                        responder('error', 'El teléfono ya está registrado en un estudiante', $isAjax);
+                        responder('error', 'telefono_existe_estudiante', $isAjax);
                     }
                 }
                 
@@ -140,40 +205,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute([$resp_email]);
                     if ($stmt->fetch()) {
                         $pdo->rollBack();
-                        responder('error', 'Ya existe un responsable con ese correo', $isAjax);
+                        responder('error', 'email_responsable_duplicado', $isAjax);
                     }
                     
                     $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE email = ?");
                     $stmt->execute([$resp_email]);
                     if ($stmt->fetch()) {
                         $pdo->rollBack();
-                        responder('error', 'El correo ya está registrado en un estudiante', $isAjax);
-                    }
-                }
-                
-                if ($resp_dui) {
-                    $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
-                    $stmt->execute([$resp_dui]);
-                    if ($stmt->fetch()) {
-                        $pdo->rollBack();
-                        responder('error', 'El DUI ya está registrado como estudiante', $isAjax);
+                        responder('error', 'email_existe_estudiante', $isAjax);
                     }
                 }
             }
 
+            // ==========================================
+            // INSERTAR MATRÍCULA Y RESPONSABLE
+            // ==========================================
             $stmt = $pdo->prepare("INSERT INTO matriculas (id_estudiante, id_carrera, id_grado, id_seccion, estado) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$id_estudiante, $id_carrera, $id_grado, $id_seccion, $estado]);
+            $stmt->execute([$id_estudiante, $id_carrera, $id_grado, $id_seccion, 'Activo']);
             $id_matricula = $pdo->lastInsertId();
 
-            $stmt = $pdo->prepare("INSERT INTO responsables (id_matricula, dui, nombres, apellidos, ocupacion, parentesco, email, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$id_matricula, $resp_dui, $resp_nombres, $resp_apellidos, $resp_ocupacion, $resp_parentesco, $resp_email, $resp_telefono, $resp_direccion]);
+            if ($responsable_existente) {
+                $stmt = $pdo->prepare("INSERT INTO responsables (id_matricula, dui, nombres, apellidos, ocupacion, parentesco, email, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $id_matricula, 
+                    $responsable_existente['dui'], 
+                    $responsable_existente['nombres'], 
+                    $responsable_existente['apellidos'], 
+                    $responsable_existente['ocupacion'], 
+                    $responsable_existente['parentesco'], 
+                    $responsable_existente['email'], 
+                    $responsable_existente['telefono'], 
+                    $responsable_existente['direccion']
+                ]);
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO responsables (id_matricula, dui, nombres, apellidos, ocupacion, parentesco, email, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$id_matricula, $resp_dui, $resp_nombres, $resp_apellidos, $resp_ocupacion, $resp_parentesco, $resp_email, $resp_telefono, $resp_direccion]);
+            }
 
             $pdo->commit();
             responder('success', 'Matrícula guardada exitosamente', $isAjax);
             
         } catch (PDOException $e) {
             $pdo->rollBack();
-            responder('error', 'Error en la base de datos', $isAjax);
+            responder('error', 'bd: ' . $e->getMessage(), $isAjax);
         }
     }
     
@@ -184,7 +258,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $matricula_id = $_POST['matricula_id'] ?? 0;
         $id_estudiante = $_POST['id_estudiante'] ?? 0;
         $id_seccion = $_POST['id_seccion'] ?? 0;
-        $estado = $_POST['estado'] ?? 'Activo';
+        $estado = $_POST['estado'] ?? 'activo'; // ✅ Estado editable
         
         $resp_dui = trim($_POST['responsable_dui'] ?? '');
         $resp_nombres = trim($_POST['responsable_nombres'] ?? '');
@@ -196,7 +270,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $resp_direccion = trim($_POST['responsable_direccion'] ?? '');
 
         if (!validarGmail($resp_email)) {
-            responder('error', 'El correo debe ser @gmail.com', $isAjax);
+            responder('error', 'gmail', $isAjax);
         }
 
         try {
@@ -210,12 +284,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $id_carrera = $seccion_data['id_carrera'];
                 $id_grado = $seccion_data['id_grado'];
             } else {
-                responder('error', 'Sección inválida', $isAjax);
+                $pdo->rollBack();
+                responder('error', 'seccion_invalida', $isAjax);
+            }
+
+            // Validar que el DUI del responsable no exista en estudiantes o profesores
+            if ($resp_dui) {
+                $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
+                $stmt->execute([$resp_dui]);
+                if ($stmt->fetch()) {
+                    $pdo->rollBack();
+                    responder('error', 'dui_responsable_existe_estudiante', $isAjax);
+                }
+                
+                $stmt = $pdo->prepare("SELECT id FROM profesores WHERE dui = ?");
+                $stmt->execute([$resp_dui]);
+                if ($stmt->fetch()) {
+                    $pdo->rollBack();
+                    responder('error', 'dui_responsable_existe_profesor', $isAjax);
+                }
             }
             
-            $stmt = $pdo->prepare("UPDATE matriculas SET id_estudiante=?, id_carrera=?, id_grado=?, id_seccion=?, estado=? WHERE id=?");
-            $stmt->execute([$id_estudiante, $id_carrera, $id_grado, $id_seccion, $estado, $matricula_id]);
+            // ✅ Actualizar estado del estudiante en la tabla estudiantes
+            $stmt = $pdo->prepare("UPDATE estudiantes SET estado=? WHERE id=?");
+            $stmt->execute([$estado, $id_estudiante]);
 
+            // Actualizar matrícula
+            $stmt = $pdo->prepare("UPDATE matriculas SET id_estudiante=?, id_carrera=?, id_grado=?, id_seccion=? WHERE id=?");
+            $stmt->execute([$id_estudiante, $id_carrera, $id_grado, $id_seccion, $matricula_id]);
+
+            // Actualizar responsable
             $stmt = $pdo->prepare("UPDATE responsables SET dui=?, nombres=?, apellidos=?, ocupacion=?, parentesco=?, email=?, telefono=?, direccion=? WHERE id_matricula=?");
             $stmt->execute([$resp_dui, $resp_nombres, $resp_apellidos, $resp_ocupacion, $resp_parentesco, $resp_email, $resp_telefono, $resp_direccion, $matricula_id]);
 
@@ -224,7 +322,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
         } catch (PDOException $e) {
             $pdo->rollBack();
-            responder('error', 'Error en la base de datos', $isAjax);
+            responder('error', 'bd: ' . $e->getMessage(), $isAjax);
         }
     }
 }
@@ -236,29 +334,23 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'eliminar') {
     $id = $_GET['id'] ?? 0;
     
     try {
-        // Desactivar restricciones de claves foráneas
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
         
-        // 1. Obtener el ID del estudiante asociado a esta matrícula
         $stmt = $pdo->prepare("SELECT id_estudiante FROM matriculas WHERE id = ?");
         $stmt->execute([$id]);
         $id_estudiante = $stmt->fetchColumn();
         
-        // 2. Eliminar responsable (depende de matrícula)
         $stmt = $pdo->prepare("DELETE FROM responsables WHERE id_matricula = ?");
         $stmt->execute([$id]);
         
-        // 3. Eliminar matrícula
         $stmt = $pdo->prepare("DELETE FROM matriculas WHERE id = ?");
         $stmt->execute([$id]);
         
-        // 4. Eliminar estudiante (si existe)
         if ($id_estudiante) {
             $stmt = $pdo->prepare("DELETE FROM estudiantes WHERE id = ?");
             $stmt->execute([$id_estudiante]);
         }
         
-        // Reactivar restricciones
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
         
         header("Location: ../Vistas/matricula.php?success=eliminado");

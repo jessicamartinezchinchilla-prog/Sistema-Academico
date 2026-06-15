@@ -2,20 +2,18 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// Obtener profesores con su especialidad
+// Obtener profesores
 $query = "SELECT 
-            p.id, p.nombres, p.apellidos, p.dui, p.telefono, p.email,
-            c.nombre as especialidad
+            p.id, p.nombres, p.apellidos, p.dui, p.nip, p.telefono, p.email
           FROM profesores p
-          LEFT JOIN carreras c ON p.id_carrera = c.id
           ORDER BY p.nombres";
 $profesores = $pdo->query($query)->fetchAll();
 
 // Estadísticas
 $totalProfesores = count($profesores);
 
-// Obtener carreras para el select
-$carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetchAll();
+// Obtener materias para los checkboxes
+$materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -54,14 +52,12 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
         <h2>Gestión de Profesores</h2>
         <p>Administración del cuerpo docente del sistema</p>
 
-        <!-- BARRA DE ACCIONES (BOTÓN ARRIBA A LA DERECHA) -->
         <section class="actions-bar">
             <button type="button" class="button btn-primary" onclick="abrirModalAgregar()">
                 <i class="fa-solid fa-plus"></i> Añadir Profesor
             </button>
         </section>
 
-        <!-- ESTADÍSTICAS -->
         <section class="stats-summary">
             <article class="stat-item">
                 <span class="stat-number"><?php echo $totalProfesores; ?></span>
@@ -69,30 +65,19 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
             </article>
         </section>
 
-        <!-- BARRA DE FILTROS Y BÚSQUEDA -->
         <section class="filters-bar">
             <div class="busqueda">
-                <input type="search" id="buscarProfesor" placeholder="Buscar por nombre, apellido o especialidad...">
-            </div>
-
-            <div class="filtros">
-                <select id="filtroEspecialidad">
-                    <option value="">Todas las especialidades</option>
-                    <?php foreach ($carreras as $c): ?>
-                        <option value="<?php echo htmlspecialchars($c['nombre']); ?>"><?php echo htmlspecialchars($c['nombre']); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <input type="search" id="buscarProfesor" placeholder="Buscar por nombre, apellido o materia...">
             </div>
         </section>
 
-        <!-- TABLA DE PROFESORES -->
         <section class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th scope="col">Nombres</th>
                         <th scope="col">Apellidos</th>
-                        <th scope="col">Especialidad</th>
+                        <th scope="col">Materias</th>
                         <th scope="col">Teléfono</th>
                         <th scope="col">Email</th>
                         <th scope="col">Acciones</th>
@@ -103,16 +88,33 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
                         <tr><td colspan="6" style="text-align:center; padding:40px;">No hay profesores registrados.</td></tr>
                     <?php else: ?>
                         <?php foreach ($profesores as $prof): ?>
+                            <?php
+                            $stmt = $pdo->prepare("
+                                SELECT m.nombre 
+                                FROM materias m
+                                INNER JOIN profesor_materia pm ON m.id = pm.id_materia
+                                WHERE pm.id_profesor = ?
+                            ");
+                            $stmt->execute([$prof['id']]);
+                            $materias_prof = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                            $materias_text = implode(', ', $materias_prof);
+                            
+                            $stmt2 = $pdo->prepare("SELECT id_materia FROM profesor_materia WHERE id_profesor = ?");
+                            $stmt2->execute([$prof['id']]);
+                            $materias_ids = implode(',', $stmt2->fetchAll(PDO::FETCH_COLUMN));
+                            ?>
                             <tr data-id="<?php echo $prof['id']; ?>"
                                 data-nombres="<?php echo htmlspecialchars($prof['nombres'] ?? ''); ?>"
                                 data-apellidos="<?php echo htmlspecialchars($prof['apellidos'] ?? ''); ?>"
-                                data-especialidad="<?php echo htmlspecialchars($prof['especialidad'] ?? 'Sin especialidad'); ?>"
+                                data-materias="<?php echo htmlspecialchars($materias_text); ?>"
+                                data-materias-ids="<?php echo $materias_ids; ?>"
                                 data-telefono="<?php echo htmlspecialchars($prof['telefono'] ?? ''); ?>"
                                 data-email="<?php echo htmlspecialchars($prof['email'] ?? ''); ?>"
-                                data-dui="<?php echo htmlspecialchars($prof['dui'] ?? ''); ?>">
+                                data-dui="<?php echo htmlspecialchars($prof['dui'] ?? ''); ?>"
+                                data-nip="<?php echo htmlspecialchars($prof['nip'] ?? ''); ?>">
                                 <td><?php echo $prof['nombres']; ?></td>
                                 <td><?php echo $prof['apellidos']; ?></td>
-                                <td><?php echo $prof['especialidad'] ?? 'Sin especialidad'; ?></td>
+                                <td><?php echo $materias_text ?: 'Sin asignar'; ?></td>
                                 <td><?php echo $prof['telefono'] ?? 'N/A'; ?></td>
                                 <td><?php echo $prof['email'] ?? 'N/A'; ?></td>
                                 <td class="actions-cell">
@@ -129,13 +131,13 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
     </main>
 
     <!-- MODAL: AÑADIR PROFESOR -->
-    <dialog id="modalProfesor" class="modal">
+    <dialog id="modalProfesor" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
         <h3>Añadir Nuevo Profesor</h3>
         
-        <form action="../actions/profesores_action.php" method="POST" class="modal-form" id="formProfesor" onsubmit="return validarFormularioProfesor(this)">
+        <form action="../actions/profesores_action.php" method="POST" class="modal-form" id="formProfesor">
             <input type="hidden" name="accion" value="agregar">
             
             <h4><i class="fa-solid fa-user"></i> Datos Personales</h4>
@@ -143,27 +145,22 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Nombres (2 nombres):</label>
-                    <input type="text" id="prof_nombres" name="nombres" class="input-nombre" required placeholder="Ej: Juan Carlos">
+                    <input type="text" id="prof_nombres" name="nombres" required placeholder="Ej: Juan Carlos">
                 </div>
                 <div class="form-col">
                     <label>Apellidos (2 apellidos):</label>
-                    <input type="text" id="prof_apellidos" name="apellidos" class="input-nombre" required placeholder="Ej: Pérez López">
+                    <input type="text" id="prof_apellidos" name="apellidos" required placeholder="Ej: Pérez López">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-col">
                     <label>DUI:</label>
-                    <input type="text" id="prof_dui" name="dui" class="input-dui" placeholder="00000000-0">
+                    <input type="text" id="prof_dui" name="dui" maxlength="10" placeholder="00000000-0">
                 </div>
                 <div class="form-col">
-                    <label>Especialidad:</label>
-                    <select id="prof_especialidad" name="id_carrera" required>
-                        <option value="">Seleccione Especialidad</option>
-                        <?php foreach ($carreras as $c): ?>
-                            <option value="<?php echo $c['id']; ?>"><?php echo htmlspecialchars($c['nombre']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label>NIP:</label>
+                    <input type="text" id="prof_nip" name="nip" maxlength="10" placeholder="Número de Identificación Profesional">
                 </div>
             </div>
 
@@ -174,12 +171,32 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Teléfono:</label>
-                    <input type="tel" id="prof_telefono" name="telefono" class="input-tel" required maxlength="9" placeholder="0000-0000">
+                    <input type="tel" id="prof_telefono" name="telefono" required maxlength="9" placeholder="0000-0000">
                 </div>
                 <div class="form-col">
                     <label>Email (Solo Gmail):</label>
                     <input type="email" id="prof_email" name="email" required placeholder="profesor@gmail.com">
                 </div>
+            </div>
+
+            <hr class="divider">
+
+            <h4><i class="fa-solid fa-book"></i> Materias que Imparte</h4>
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 10px;">
+                <i class="fa-solid fa-info-circle"></i> Seleccione una o varias materias
+            </p>
+            
+            <div id="prof_materias_container" class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                <?php if (empty($materias)): ?>
+                    <p style="color: #9ca3af; text-align: center; grid-column: 1 / -1;">No hay materias registradas</p>
+                <?php else: ?>
+                    <?php foreach ($materias as $m): ?>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                            <input type="checkbox" name="id_materias[]" value="<?php echo $m['id']; ?>">
+                            <span><?php echo htmlspecialchars($m['nombre']); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
 
             <div class="modal-actions">
@@ -190,7 +207,7 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
     </dialog>
 
     <!-- MODAL: VER DETALLES -->
-    <dialog id="modalVer" class="modal">
+    <dialog id="modalVer" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
@@ -202,12 +219,12 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
     </dialog>
 
     <!-- MODAL: EDITAR PROFESOR -->
-    <dialog id="modalEditar" class="modal">
+    <dialog id="modalEditar" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
         <h3>Editar Profesor</h3>
-        <form action="../actions/profesores_action.php" method="POST" class="modal-form" id="formEditar" onsubmit="return validarFormularioProfesor(this)">
+        <form action="../actions/profesores_action.php" method="POST" class="modal-form" id="formEditar">
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="profesor_id" id="edit_profesor_id">
             
@@ -216,26 +233,22 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Nombres:</label>
-                    <input type="text" id="edit_nombres" name="nombres" class="input-nombre" required>
+                    <input type="text" id="edit_nombres" name="nombres" required>
                 </div>
                 <div class="form-col">
                     <label>Apellidos:</label>
-                    <input type="text" id="edit_apellidos" name="apellidos" class="input-nombre" required>
+                    <input type="text" id="edit_apellidos" name="apellidos" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-col">
                     <label>DUI:</label>
-                    <input type="text" id="edit_dui" name="dui" class="input-dui">
+                    <input type="text" id="edit_dui" name="dui" maxlength="10">
                 </div>
                 <div class="form-col">
-                    <label>Especialidad:</label>
-                    <select id="edit_especialidad" name="id_carrera" required>
-                        <?php foreach ($carreras as $c): ?>
-                            <option value="<?php echo $c['id']; ?>"><?php echo htmlspecialchars($c['nombre']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label>NIP:</label>
+                    <input type="text" id="edit_nip" name="nip" maxlength="10">
                 </div>
             </div>
 
@@ -246,12 +259,28 @@ $carreras = $pdo->query("SELECT id, nombre FROM carreras ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Teléfono:</label>
-                    <input type="tel" id="edit_telefono" name="telefono" class="input-tel" required maxlength="9">
+                    <input type="tel" id="edit_telefono" name="telefono" required maxlength="9">
                 </div>
                 <div class="form-col">
                     <label>Email:</label>
                     <input type="email" id="edit_email" name="email" required>
                 </div>
+            </div>
+
+            <hr class="divider">
+
+            <h4><i class="fa-solid fa-book"></i> Materias que Imparte</h4>
+            <div id="edit_materias_container" class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                <?php if (empty($materias)): ?>
+                    <p style="color: #9ca3af; text-align: center; grid-column: 1 / -1;">No hay materias registradas</p>
+                <?php else: ?>
+                    <?php foreach ($materias as $m): ?>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                            <input type="checkbox" name="id_materias[]" value="<?php echo $m['id']; ?>" class="edit_materia_checkbox">
+                            <span><?php echo htmlspecialchars($m['nombre']); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
 
             <div class="modal-actions">
