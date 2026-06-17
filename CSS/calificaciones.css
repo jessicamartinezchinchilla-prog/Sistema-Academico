@@ -485,3 +485,55 @@ body{
 .main-content{
     position:relative;
 }
+
+/* ==========================================
+   COLORES DE BOTONES DE ACCIÓN (TABLA)
+   ========================================== */
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    margin: 0 2px;
+}
+
+/* Ojito - AZUL */
+.btn-action.see {
+    color: #0284c7;            /* Ícono azul fuerte */
+}
+
+.btn-action.see:hover {
+    background-color: #bae6fd;
+    color: #0369a1;
+    transform: translateY(-2px);
+}
+
+/* Lapicito - VERDE */
+.btn-action.edit {
+    color: #16a34a;            /* Ícono verde fuerte */
+}
+
+.btn-action.edit:hover {
+    background-color: #bbf7d0;
+    color: #15803d;
+    transform: translateY(-2px);
+}
+
+/* Basurero - ROJO (por si acaso lo necesitas después) */
+.btn-action.delete {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-action.delete:hover {
+    background-color: #fecaca;
+    color: #b91c1c;
+    transform: translateY(-2px);
+}
