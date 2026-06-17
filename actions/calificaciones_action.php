@@ -2,6 +2,7 @@
 // actions/calificaciones_action.php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -128,6 +129,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                 ]);
             }
             
+            // ✅ AUDITORÍA
+            $totalPeriodos = count($periodos_registrados);
+            registrarAuditoria($pdo, 'creacion', 'calificaciones', "Se agregaron {$totalPeriodos} calificación(es) al estudiante '{$nombre_completo}' (NIE: {$nie}) en la materia '{$nombre_materia}'");
+            
             responder('success', '1', $isAjax);
             
         } catch (PDOException $e) {
@@ -214,6 +219,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                     'nota_nueva' => $cambio['nota_nueva'],
                     'nie' => $nie
                 ]);
+            }
+            
+            // ✅ AUDITORÍA
+            $totalCambios = count($cambios_registrados);
+            if ($totalCambios > 0) {
+                registrarAuditoria($pdo, 'modificacion', 'calificaciones', "Se modificaron {$totalCambios} calificación(es) del estudiante '{$nombre_completo}' (NIE: {$nie}) en la materia '{$nombre_materia}'");
             }
             
             responder('success', 'editado', $isAjax);

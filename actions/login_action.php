@@ -2,6 +2,7 @@
 // actions/login_action.php
 session_start(); // Iniciamos la sesión para recordar al usuario
 require_once '../config/database.php'; // Incluimos la conexión
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 // Verificamos que el formulario se haya enviado por POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -25,6 +26,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Guardamos los datos en la sesión
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['usuario'];
+            
+            // ✅ AUDITORÍA: Registrar inicio de sesión exitoso
+            registrarAuditoria($pdo, 'inicio_sesion', 'sistema', "El usuario '{$user['usuario']}' inició sesión");
             
             // Redirigimos al panel principal
             header("Location: ../Vistas/panel_principal.php");

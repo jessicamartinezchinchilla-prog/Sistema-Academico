@@ -2,6 +2,7 @@
 // actions/matricula_action.php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -291,6 +292,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'estudiante_nuevo' => $estudiante_nuevo
             ]);
             
+            // ✅ AUDITORÍA
+            registrarAuditoria($pdo, 'creacion', 'matriculas', "Se matriculó al estudiante '{$nombre_completo}' (NIE: {$datos_estudiante['nie']}) en la sección '{$nombre_seccion}'");
+            
             responder('success', 'Matrícula guardada exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -408,6 +412,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'estado' => $estado
             ]);
             
+            // ✅ AUDITORÍA
+            registrarAuditoria($pdo, 'modificacion', 'matriculas', "Se modificó la matrícula del estudiante '{$nombre_completo}' (NIE: {$datos_estudiante['nie']}) en la sección '{$seccion_nueva_nombre}'");
+            
             responder('success', 'Matrícula actualizada exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -462,6 +469,9 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'eliminar') {
                 'seccion' => $seccion_nombre,
                 'nie' => $nie
             ]);
+            
+            // ✅ AUDITORÍA
+            registrarAuditoria($pdo, 'eliminacion', 'matriculas', "Se eliminó la matrícula del estudiante '{$nombre_completo}' (NIE: {$nie}) de la sección '{$seccion_nombre}'");
         }
         
         header("Location: ../Vistas/matricula.php?success=eliminado");

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -49,6 +50,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $totalAsignaciones = count($secciones) * max(count($profesores), 1);
+            $descripcionAuditoria = "Se creó la materia '{$nombre}' (código: {$codigo})";
+            if (!empty($secciones)) {
+                $descripcionAuditoria .= " asignada a " . count($secciones) . " sección(es)";
+            }
+            if (!empty($profesores)) {
+                $descripcionAuditoria .= " con " . count($profesores) . " profesor(es)";
+            }
+            registrarAuditoria($pdo, 'creacion', 'materias', $descripcionAuditoria);
+            
             responder('success', '1', $isAjax);
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -91,6 +104,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $descripcionAuditoria = "Se modificó la materia '{$nombre}' (código: {$codigo})";
+            if (!empty($secciones)) {
+                $descripcionAuditoria .= " con " . count($secciones) . " sección(es)";
+            }
+            if (!empty($profesores)) {
+                $descripcionAuditoria .= " y " . count($profesores) . " profesor(es)";
+            }
+            registrarAuditoria($pdo, 'modificacion', 'materias', $descripcionAuditoria);
+            
             responder('success', 'editado', $isAjax);
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -101,10 +125,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
+            // ✅ AUDITORÍA: Obtener datos ANTES de eliminar
+            $stmt = $pdo->prepare("SELECT nombre, codigo FROM materias WHERE id = ?");
+            $stmt->execute([$id]);
+            $datos = $stmt->fetch(PDO::FETCH_ASSOC);
+            
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
             $stmt = $pdo->prepare("DELETE FROM materias WHERE id = ?");
             $stmt->execute([$id]);
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            
+            // ✅ AUDITORÍA
+            if ($datos) {
+                registrarAuditoria($pdo, 'eliminacion', 'materias', "Se eliminó la materia '{$datos['nombre']}' (código: {$datos['codigo']})");
+            }
+            
             responder('success', 'eliminado', $isAjax);
         } catch (PDOException $e) {
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");

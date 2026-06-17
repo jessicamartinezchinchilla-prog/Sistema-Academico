@@ -2,6 +2,7 @@
 // actions/profesores_action.php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -108,6 +109,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $nombre_completo = $nombres . ' ' . $apellidos;
+            registrarAuditoria($pdo, 'creacion', 'profesores', "Se creó al profesor '{$nombre_completo}' con " . count($id_materias) . " materia(s) asignada(s)");
+            
             responder('success', 'Profesor guardado exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -179,6 +185,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $nombre_completo = $nombres . ' ' . $apellidos;
+            registrarAuditoria($pdo, 'modificacion', 'profesores', "Se modificó al profesor '{$nombre_completo}' con " . count($id_materias) . " materia(s) asignada(s)");
+            
             responder('success', 'Profesor actualizado exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -195,10 +206,21 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'eliminar') {
     $id = $_GET['id'] ?? 0;
     
     try {
+        // ✅ AUDITORÍA: Obtener datos ANTES de eliminar
+        $stmt = $pdo->prepare("SELECT nombres, apellidos FROM profesores WHERE id = ?");
+        $stmt->execute([$id]);
+        $datos = $stmt->fetch(PDO::FETCH_ASSOC);
+        
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
         $stmt = $pdo->prepare("DELETE FROM profesores WHERE id = ?");
         $stmt->execute([$id]);
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+        
+        // ✅ AUDITORÍA
+        if ($datos) {
+            $nombre_completo = $datos['nombres'] . ' ' . $datos['apellidos'];
+            registrarAuditoria($pdo, 'eliminacion', 'profesores', "Se eliminó al profesor '{$nombre_completo}'");
+        }
         
         header("Location: ../Vistas/profesores.php?success=eliminado");
         exit;

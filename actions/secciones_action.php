@@ -2,6 +2,7 @@
 // actions/secciones_action.php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/audit.php'; // ✅ AUDITORÍA
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -65,6 +66,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $descripcionAuditoria = "Se creó la sección '{$nombreSeccion}'";
+            if (!empty($profesores)) {
+                $descripcionAuditoria .= " con " . count($profesores) . " profesor(es) asignado(s)";
+            }
+            registrarAuditoria($pdo, 'creacion', 'secciones', $descripcionAuditoria);
+            
             responder('success', '1', $isAjax);
             
         } catch (PDOException $e) {
@@ -129,6 +138,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             }
 
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            $descripcionAuditoria = "Se modificó la sección '{$nombreSeccion}'";
+            if (!empty($profesores)) {
+                $descripcionAuditoria .= " con " . count($profesores) . " profesor(es) asignado(s)";
+            }
+            registrarAuditoria($pdo, 'modificacion', 'secciones', $descripcionAuditoria);
+            
             responder('success', 'editado', $isAjax);
             
         } catch (PDOException $e) {
@@ -145,6 +162,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
+            // ✅ AUDITORÍA: Obtener datos ANTES de eliminar
+            $stmt = $pdo->prepare("SELECT nombre FROM secciones WHERE id = ?");
+            $stmt->execute([$id]);
+            $nombreSeccion = $stmt->fetchColumn();
+            
             $pdo->beginTransaction();
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
             
@@ -176,6 +198,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             $pdo->commit();
+            
+            // ✅ AUDITORÍA
+            if ($nombreSeccion) {
+                registrarAuditoria($pdo, 'eliminacion', 'secciones', "Se eliminó la sección '{$nombreSeccion}'");
+            }
+            
             responder('success', 'eliminado', $isAjax);
         } catch (PDOException $e) {
             $pdo->rollBack();
