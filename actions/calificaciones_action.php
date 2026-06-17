@@ -15,52 +15,42 @@ function responder($tipo, $mensaje, $isAjax) {
     }
 }
 
+// ✅ FUNCIÓN: Registrar evento en historial académico
+function registrarEventoHistorial($pdo, $id_estudiante, $tipo_evento, $descripcion, $datos_adicionales = null) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO historial_academico (id_estudiante, tipo_evento, descripcion, datos_adicionales) VALUES (?, ?, ?, ?)");
+        $stmt->execute([
+            $id_estudiante, 
+            $tipo_evento, 
+            $descripcion, 
+            $datos_adicionales ? json_encode($datos_adicionales, JSON_UNESCAPED_UNICODE) : null
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        error_log("Error al registrar evento en historial: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ✅ FUNCIÓN: Obtener nombre de materia
+function obtenerNombreMateria($pdo, $id_materia) {
+    $stmt = $pdo->prepare("SELECT nombre FROM materias WHERE id = ?");
+    $stmt->execute([$id_materia]);
+    return $stmt->fetchColumn();
+}
+
+// ✅ FUNCIÓN: Obtener datos del estudiante
+function obtenerDatosEstudiante($pdo, $id_estudiante) {
+    $stmt = $pdo->prepare("SELECT nombres, apellidos, nie FROM estudiantes WHERE id = ?");
+    $stmt->execute([$id_estudiante]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
     // ==========================================
-    // ✅ NUEVO: OBTENER NOTA EXISTENTE (para precargar)
-    // ==========================================
-    if ($accion === 'obtener_nota_existente') {
-        $id_estudiante = $_GET['id_estudiante'] ?? 0;
-        $id_materia = $_GET['id_materia'] ?? 0;
-        $periodo = $_GET['periodo'] ?? 0;
-        $anio = date('Y');
-
-        try {
-            $stmt = $pdo->prepare("SELECT id, nota FROM calificaciones 
-                                   WHERE id_estudiante = ? 
-                                   AND id_materia = ? 
-                                   AND periodo = ? 
-                                   AND anio = ?
-                                   LIMIT 1");
-            $stmt->execute([$id_estudiante, $id_materia, $periodo, $anio]);
-            $calificacion = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                if ($calificacion) {
-                    echo json_encode([
-                        'existe' => true,
-                        'id' => $calificacion['id'],
-                        'nota' => $calificacion['nota']
-                    ]);
-                } else {
-                    echo json_encode(['existe' => false]);
-                }
-                exit;
-            }
-        } catch (PDOException $e) {
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode(['existe' => false]);
-                exit;
-            }
-        }
-    }
-    
-    // ==========================================
-    // AGREGAR CALIFICACIÓN
+    // AGREGAR CALIFICACIÓN (MULTIPLES PERÍODOS)
     // ==========================================
     if ($accion === 'agregar') {
         $id_estudiante = $_POST['id_estudiante'] ?? 0;
@@ -68,204 +58,227 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $id_seccion = $_POST['id_seccion'] ?? 0;
         $id_carrera = $_POST['id_carrera'] ?? 0;
         $id_grado = $_POST['id_grado'] ?? 0;
-        $periodo = $_POST['periodo'] ?? 0;
-        $nota = $_POST['nota'] ?? null;
         $anio = date('Y');
 
-        if (empty($id_estudiante) || empty($id_materia) || empty($id_seccion) || empty($id_carrera) || empty($id_grado) || empty($periodo)) {
-            responder('error', 'campos_incompletos', $isAjax);
-        }
-
-        if ($nota === null || $nota === '') {
-            responder('error', 'sin_nota', $isAjax);
-        }
-
-        $nota = floatval($nota);
-        if ($nota < 0 || $nota > 10) {
-            responder('error', 'nota_invalida', $isAjax);
-        }
-
-        if ($periodo < 1 || $periodo > 4) {
-            responder('error', 'periodo_invalido', $isAjax);
-        }
-
-        try {
-            $stmt = $pdo->prepare("
-                SELECT m.id 
-                FROM materias m
-                INNER JOIN asignaciones a ON m.id = a.id_materia
-                INNER JOIN secciones s ON a.id_seccion = s.id
-                WHERE m.id = ? AND s.id_carrera = ? AND s.id_grado = ?
-                LIMIT 1
-            ");
-            $stmt->execute([$id_materia, $id_carrera, $id_grado]);
-            
-            if (!$stmt->fetch()) {
-                responder('error', 'materia_no_pertenece', $isAjax);
+        $periodos = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $nota = $_POST["periodo_{$i}"] ?? null;
+            if ($nota !== null && $nota !== '') {
+                $nota = floatval($nota);
+                if ($nota >= 0 && $nota <= 10) {
+                    $periodos[$i] = $nota;
+                }
             }
-
-            $stmt = $pdo->prepare("SELECT id FROM calificaciones 
-                                   WHERE id_estudiante = ? 
-                                   AND id_materia = ? 
-                                   AND id_seccion = ? 
-                                   AND periodo = ? 
-                                   AND anio = ?");
-            $stmt->execute([$id_estudiante, $id_materia, $id_seccion, $periodo, $anio]);
-            
-            if ($stmt->fetch()) {
-                responder('error', 'duplicado', $isAjax);
-            }
-
-            $stmt = $pdo->prepare("INSERT INTO calificaciones 
-                                   (id_estudiante, id_materia, id_seccion, periodo, anio, nota) 
-                                   VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$id_estudiante, $id_materia, $id_seccion, $periodo, $anio, $nota]);
-
-            responder('success', '1', $isAjax);
-            
-        } catch (PDOException $e) {
-            $msg = $e->getMessage();
-            if (strpos($msg, 'unique_calificacion') !== false || strpos($msg, 'Duplicate') !== false) {
-                responder('error', 'duplicado', $isAjax);
-            }
-            responder('error', 'bd: ' . $msg, $isAjax);
         }
-    }
-
-    // ==========================================
-    // EDITAR CALIFICACIÓN (individual - cuando se precargó una existente)
-    // ==========================================
-    if ($accion === 'editar') {
-        $id = $_POST['calificacion_id'] ?? 0;
-        $id_estudiante = $_POST['id_estudiante'] ?? 0;
-        $id_materia = $_POST['id_materia'] ?? 0;
-        $id_seccion = $_POST['id_seccion'] ?? 0;
-        $id_carrera = $_POST['id_carrera'] ?? 0;
-        $id_grado = $_POST['id_grado'] ?? 0;
-        $periodo = $_POST['periodo'] ?? 0;
-        $nota = $_POST['nota'] ?? null;
-        $anio = date('Y');
-
-        if (empty($id)) {
-            responder('error', 'sin_id', $isAjax);
-        }
-
-        if ($nota === null || $nota === '') {
-            responder('error', 'sin_nota', $isAjax);
-        }
-
-        $nota = floatval($nota);
-        if ($nota < 0 || $nota > 10) {
-            responder('error', 'nota_invalida', $isAjax);
-        }
-
-        try {
-            $stmt = $pdo->prepare("UPDATE calificaciones 
-                                   SET nota = ? 
-                                   WHERE id = ?");
-            $stmt->execute([$nota, $id]);
-
-            responder('success', 'editado', $isAjax);
-            
-        } catch (PDOException $e) {
-            responder('error', 'bd', $isAjax);
-        }
-    }
-
-    // ==========================================
-    // EDITAR MÚLTIPLES CALIFICACIONES
-    // ==========================================
-    if ($accion === 'editar_multiples') {
-        $id_estudiante = $_POST['id_estudiante'] ?? 0;
-        $id_materia = $_POST['id_materia'] ?? 0;
-        $id_seccion = $_POST['id_seccion'] ?? 0;
-        $id_carrera = $_POST['id_carrera'] ?? 0;
-        $id_grado = $_POST['id_grado'] ?? 0;
-        $calificacion_ids = $_POST['calificacion_ids'] ?? [];
-        $periodos = $_POST['periodos'] ?? [];
-        $notas = $_POST['notas'] ?? [];
-        $anio = date('Y');
 
         if (empty($id_estudiante) || empty($id_materia) || empty($id_seccion) || empty($id_carrera) || empty($id_grado)) {
             responder('error', 'campos_incompletos', $isAjax);
         }
 
+        if (empty($periodos)) {
+            responder('error', 'sin_nota', $isAjax);
+        }
+
         try {
-            $stmt = $pdo->prepare("
-                SELECT m.id 
-                FROM materias m
-                INNER JOIN asignaciones a ON m.id = a.id_materia
-                INNER JOIN secciones s ON a.id_seccion = s.id
-                WHERE m.id = ? AND s.id_carrera = ? AND s.id_grado = ?
-                LIMIT 1
-            ");
-            $stmt->execute([$id_materia, $id_carrera, $id_grado]);
-            
-            if (!$stmt->fetch()) {
-                responder('error', 'materia_no_pertenece', $isAjax);
-            }
+            // ✅ Obtener datos ANTES de la transacción (para el historial)
+            $nombre_materia = obtenerNombreMateria($pdo, $id_materia);
+            $datos_estudiante = obtenerDatosEstudiante($pdo, $id_estudiante);
+            $nombre_completo = ($datos_estudiante['nombres'] ?? '') . ' ' . ($datos_estudiante['apellidos'] ?? '');
+            $nie = $datos_estudiante['nie'] ?? '';
 
             $pdo->beginTransaction();
 
-            for ($i = 0; $i < count($periodos); $i++) {
-                $periodo = $periodos[$i];
-                $nota = $notas[$i] ?? '';
-                $calif_id = $calificacion_ids[$i] ?? '';
+            $periodos_registrados = [];
+            
+            foreach ($periodos as $periodo => $nota) {
+                $stmt = $pdo->prepare("SELECT id FROM calificaciones 
+                                       WHERE id_estudiante = ? 
+                                       AND id_materia = ? 
+                                       AND periodo = ? 
+                                       AND anio = ?");
+                $stmt->execute([$id_estudiante, $id_materia, $periodo, $anio]);
                 
-                if (empty($nota) && !empty($calif_id)) {
-                    $stmt = $pdo->prepare("DELETE FROM calificaciones WHERE id = ?");
-                    $stmt->execute([$calif_id]);
-                    continue;
-                }
-                
-                if (empty($nota)) {
-                    continue;
-                }
-                
-                $nota = floatval($nota);
-                if ($nota < 0 || $nota > 10) {
-                    $pdo->rollBack();
-                    responder('error', 'nota_invalida', $isAjax);
-                }
-                
-                if (!empty($calif_id)) {
-                    $stmt = $pdo->prepare("UPDATE calificaciones SET nota = ? WHERE id = ?");
-                    $stmt->execute([$nota, $calif_id]);
+                if ($stmt->fetch()) {
+                    $stmt = $pdo->prepare("UPDATE calificaciones SET nota = ? 
+                                           WHERE id_estudiante = ? 
+                                           AND id_materia = ? 
+                                           AND periodo = ? 
+                                           AND anio = ?");
+                    $stmt->execute([$nota, $id_estudiante, $id_materia, $periodo, $anio]);
+                    $periodos_registrados[] = ['periodo' => $periodo, 'nota' => $nota, 'tipo' => 'actualizada'];
                 } else {
                     $stmt = $pdo->prepare("INSERT INTO calificaciones 
                                            (id_estudiante, id_materia, id_seccion, periodo, anio, nota) 
                                            VALUES (?, ?, ?, ?, ?, ?)");
                     $stmt->execute([$id_estudiante, $id_materia, $id_seccion, $periodo, $anio, $nota]);
+                    $periodos_registrados[] = ['periodo' => $periodo, 'nota' => $nota, 'tipo' => 'nueva'];
                 }
             }
 
             $pdo->commit();
-            responder('success', 'editado', $isAjax);
+            
+            // ✅ REGISTRAR EVENTOS EN HISTORIAL
+            foreach ($periodos_registrados as $reg) {
+                $descripcion = "Nota {$reg['nota']} agregada en '{$nombre_materia}', Período {$reg['periodo']} para {$nombre_completo}";
+                registrarEventoHistorial($pdo, $id_estudiante, 'nota_agregada', $descripcion, [
+                    'materia' => $nombre_materia,
+                    'periodo' => $reg['periodo'],
+                    'nota' => $reg['nota'],
+                    'nie' => $nie
+                ]);
+            }
+            
+            responder('success', '1', $isAjax);
             
         } catch (PDOException $e) {
-            $pdo->rollBack();
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             responder('error', 'bd: ' . $e->getMessage(), $isAjax);
         }
     }
 
     // ==========================================
-    // ELIMINAR CALIFICACIÓN
+    // EDITAR CALIFICACIÓN (MULTIPLES PERÍODOS)
     // ==========================================
-    if ($accion === 'eliminar') {
-        $id = $_GET['id'] ?? 0;
+    if ($accion === 'editar') {
+        $id_estudiante = $_POST['id_estudiante'] ?? 0;
+        $id_materia = $_POST['id_materia'] ?? 0;
+        $id_seccion = $_POST['id_seccion'] ?? 0;
+        $id_carrera = $_POST['id_carrera'] ?? 0;
+        $id_grado = $_POST['id_grado'] ?? 0;
+        $anio = date('Y');
 
-        if (empty($id)) {
-            responder('error', 'sin_id', $isAjax);
+        $periodos = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $nota = $_POST["periodo_{$i}"] ?? null;
+            if ($nota !== null && $nota !== '') {
+                $nota = floatval($nota);
+                if ($nota >= 0 && $nota <= 10) {
+                    $periodos[$i] = $nota;
+                }
+            }
+        }
+
+        if (empty($periodos)) {
+            responder('error', 'sin_nota', $isAjax);
         }
 
         try {
-            $stmt = $pdo->prepare("DELETE FROM calificaciones WHERE id = ?");
-            $stmt->execute([$id]);
+            // ✅ Obtener datos ANTES de la transacción
+            $nombre_materia = obtenerNombreMateria($pdo, $id_materia);
+            $datos_estudiante = obtenerDatosEstudiante($pdo, $id_estudiante);
+            $nombre_completo = ($datos_estudiante['nombres'] ?? '') . ' ' . ($datos_estudiante['apellidos'] ?? '');
+            $nie = $datos_estudiante['nie'] ?? '';
+            
+            // ✅ Obtener notas ANTERIORES
+            $stmt = $pdo->prepare("SELECT periodo, nota FROM calificaciones 
+                                   WHERE id_estudiante = ? AND id_materia = ? AND anio = ?");
+            $stmt->execute([$id_estudiante, $id_materia, $anio]);
+            $notas_anteriores = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $notas_anteriores[$row['periodo']] = floatval($row['nota']);
+            }
 
-            responder('success', 'eliminado', $isAjax);
+            $pdo->beginTransaction();
+
+            $cambios_registrados = [];
+            
+            foreach ($periodos as $periodo => $nota_nueva) {
+                $nota_anterior = $notas_anteriores[$periodo] ?? null;
+                
+                if ($nota_anterior !== null && $nota_anterior != $nota_nueva) {
+                    $stmt = $pdo->prepare("UPDATE calificaciones SET nota = ? 
+                                           WHERE id_estudiante = ? 
+                                           AND id_materia = ? 
+                                           AND periodo = ? 
+                                           AND anio = ?");
+                    $stmt->execute([$nota_nueva, $id_estudiante, $id_materia, $periodo, $anio]);
+                    $cambios_registrados[] = [
+                        'periodo' => $periodo,
+                        'nota_anterior' => $nota_anterior,
+                        'nota_nueva' => $nota_nueva
+                    ];
+                }
+            }
+
+            $pdo->commit();
+            
+            // ✅ REGISTRAR EVENTOS EN HISTORIAL
+            foreach ($cambios_registrados as $cambio) {
+                $descripcion = "Nota de '{$nombre_materia}' en Período {$cambio['periodo']} cambiada de {$cambio['nota_anterior']} a {$cambio['nota_nueva']} para {$nombre_completo}";
+                registrarEventoHistorial($pdo, $id_estudiante, 'nota_modificada', $descripcion, [
+                    'materia' => $nombre_materia,
+                    'periodo' => $cambio['periodo'],
+                    'nota_anterior' => $cambio['nota_anterior'],
+                    'nota_nueva' => $cambio['nota_nueva'],
+                    'nie' => $nie
+                ]);
+            }
+            
+            responder('success', 'editado', $isAjax);
             
         } catch (PDOException $e) {
-            responder('error', 'bd', $isAjax);
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            responder('error', 'bd: ' . $e->getMessage(), $isAjax);
+        }
+    }
+
+    // ==========================================
+    // OBTENER NOTAS DE UN ESTUDIANTE
+    // ==========================================
+    if ($accion === 'obtener_notas_estudiante') {
+        $id_estudiante = $_GET['id_estudiante'] ?? 0;
+        $id_materia    = $_GET['id_materia'] ?? null;
+        $anio          = date('Y');
+
+        if (empty($id_estudiante)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['notas' => []]);
+                exit;
+            }
+            exit;
+        }
+
+        try {
+            $sql = "SELECT periodo, nota FROM calificaciones WHERE id_estudiante = ? AND anio = ?";
+            $params = [$id_estudiante, $anio];
+            
+            if ($id_materia) {
+                $sql .= " AND id_materia = ?";
+                $params[] = $id_materia;
+            }
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $calificaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $notas = [
+                'periodo_1' => null,
+                'periodo_2' => null,
+                'periodo_3' => null,
+                'periodo_4' => null
+            ];
+
+            foreach ($calificaciones as $cal) {
+                $notas["periodo_{$cal['periodo']}"] = $cal['nota'];
+            }
+
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['notas' => $notas]);
+                exit;
+            }
+            
+        } catch (PDOException $e) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['notas' => []]);
+                exit;
+            }
         }
     }
 
@@ -282,6 +295,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                 echo json_encode([]);
                 exit;
             }
+            exit;
         }
 
         try {
@@ -312,56 +326,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     }
 
     // ==========================================
-    // OBTENER CALIFICACIONES DE UNA MATERIA ESPECÍFICA
-    // ==========================================
-    if ($accion === 'obtener_calificaciones_materia') {
-        $id_estudiante = $_GET['id_estudiante'] ?? 0;
-        $materia = $_GET['materia'] ?? '';
-
-        if (empty($id_estudiante) || empty($materia)) {
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode([]);
-                exit;
-            }
-        }
-
-        try {
-            $stmt = $pdo->prepare("SELECT 
-                                        c.id,
-                                        c.periodo,
-                                        c.nota,
-                                        m.nombre as materia
-                                    FROM calificaciones c
-                                    INNER JOIN materias m ON c.id_materia = m.id
-                                    WHERE c.id_estudiante = ? AND m.nombre = ?
-                                    ORDER BY c.periodo");
-            $stmt->execute([$id_estudiante, $materia]);
-            $calificaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode($calificaciones);
-                exit;
-            }
-            
-        } catch (PDOException $e) {
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode([]);
-                exit;
-            }
-        }
-    }
-
-    // ==========================================
-    // OBTENER CALIFICACIONES DE UN ESTUDIANTE
+    // OBTENER DETALLE DE CALIFICACIONES
     // ==========================================
     if ($accion === 'obtener_detalle') {
         $id_estudiante = $_GET['id_estudiante'] ?? 0;
 
         if (empty($id_estudiante)) {
-            responder('error', 'sin_estudiante', $isAjax);
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'sin_estudiante']);
+                exit;
+            }
+            exit;
         }
 
         try {
@@ -369,6 +345,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                                         c.id,
                                         c.periodo,
                                         c.nota,
+                                        m.id as id_materia,
                                         m.nombre as materia,
                                         s.nombre as seccion
                                     FROM calificaciones c
@@ -379,17 +356,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt->execute([$id_estudiante]);
             $calificaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            $materiasAgrupadas = [];
+            foreach ($calificaciones as $cal) {
+                $materia = $cal['materia'];
+                if (!isset($materiasAgrupadas[$materia])) {
+                    $materiasAgrupadas[$materia] = [
+                        'periodos' => [1 => null, 2 => null, 3 => null, 4 => null],
+                        'suma_total' => 0
+                    ];
+                }
+                $materiasAgrupadas[$materia]['periodos'][$cal['periodo']] = $cal['nota'];
+                $materiasAgrupadas[$materia]['suma_total'] += $cal['nota'];
+            }
+
+            foreach ($materiasAgrupadas as $materia => &$data) {
+                $data['promedio_final'] = round($data['suma_total'] / 4, 2);
+                $data['estado'] = $data['promedio_final'] >= 6 ? 'Aprobado' : 'Reprobado';
+            }
+
             if ($isAjax) {
                 header('Content-Type: application/json');
-                echo json_encode($calificaciones);
-                exit;
-            } else {
-                echo json_encode($calificaciones);
+                echo json_encode([
+                    'calificaciones' => $calificaciones,
+                    'materias_agrupadas' => $materiasAgrupadas
+                ]);
                 exit;
             }
             
         } catch (PDOException $e) {
-            responder('error', 'bd', $isAjax);
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Error en la base de datos']);
+                exit;
+            }
         }
     }
 }

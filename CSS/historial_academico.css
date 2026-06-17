@@ -741,3 +741,19 @@ body {
         margin: 20px;
     }
 }
+
+/* Badges de estado del estudiante */
+.badge.activo {
+    background: #e8f5e9;
+    color: #4CAF50;
+}
+
+.badge.inactivo {
+    background: #ffebee;
+    color: #f44336;
+}
+
+.badge.sin-notas {
+    background: #f5f5f5;
+    color: #757575;
+}

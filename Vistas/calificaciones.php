@@ -3,41 +3,76 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// ✅ Obtener calificaciones únicas agrupadas por estudiante (sin duplicados)
+// ✅ CORRECCIÓN: Calcular promedios con lógica Opción B (suma / 4)
+// Primero obtenemos todas las calificaciones individuales
 $query = "SELECT 
             e.id as id_estudiante,
             e.nie,
             CONCAT(e.nombres, ' ', e.apellidos) as nombre_estudiante,
             s.nombre as nombre_seccion,
-            COUNT(DISTINCT c.id) as total_calificaciones,
-            ROUND(AVG(c.nota), 2) as promedio_general,
-            CASE 
-                WHEN ROUND(AVG(c.nota), 2) >= 6 THEN 'Aprobado'
-                ELSE 'Reprobado'
-            END as estado
+            c.id_materia,
+            c.nota
           FROM estudiantes e
           INNER JOIN matriculas m ON e.id = m.id_estudiante
-          LEFT JOIN calificaciones c ON e.id = c.id_estudiante
-          LEFT JOIN secciones s ON m.id_seccion = s.id
+          INNER JOIN calificaciones c ON e.id = c.id_estudiante
+          INNER JOIN secciones s ON m.id_seccion = s.id
           WHERE e.estado = 'activo' AND m.estado = 'Activo'
-          GROUP BY e.id, e.nie, e.nombres, e.apellidos, s.nombre
-          HAVING COUNT(DISTINCT c.id) > 0
           ORDER BY e.nombres";
 
-$promediosEstudiantes = $pdo->query($query)->fetchAll();
+$calificaciones_raw = $pdo->query($query)->fetchAll();
+
+// ✅ Calcular promedios por estudiante usando lógica Opción B
+$promediosEstudiantes = [];
+
+foreach ($calificaciones_raw as $cal) {
+    $idEst = $cal['id_estudiante'];
+    $idMateria = $cal['id_materia'];
+    
+    if (!isset($promediosEstudiantes[$idEst])) {
+        $promediosEstudiantes[$idEst] = [
+            'nie' => $cal['nie'],
+            'nombre' => $cal['nombre_estudiante'],
+            'seccion' => $cal['nombre_seccion'],
+            'materias' => []
+        ];
+    }
+    
+    // Agrupar notas por materia
+    if (!isset($promediosEstudiantes[$idEst]['materias'][$idMateria])) {
+        $promediosEstudiantes[$idEst]['materias'][$idMateria] = [];
+    }
+    $promediosEstudiantes[$idEst]['materias'][$idMateria][] = $cal['nota'];
+}
+
+// ✅ Calcular promedio por materia (suma / 4) y promedio general
+foreach ($promediosEstudiantes as $idEst => &$est) {
+    $sumaTotal = 0;
+    $cantidadMaterias = count($est['materias']);
+    
+    foreach ($est['materias'] as $idMateria => $notas) {
+        // Promedio por materia = suma de notas / 4
+        $promedioMateria = array_sum($notas) / 4;
+        $sumaTotal += $promedioMateria;
+    }
+    
+    // Promedio general = promedio de los promedios por materia
+    $est['promedio_general'] = $cantidadMaterias > 0 ? round($sumaTotal / $cantidadMaterias, 2) : 0;
+    $est['estado'] = $est['promedio_general'] >= 6 ? 'Aprobado' : 'Reprobado';
+}
 
 // Estadísticas
+$totalRegistros = count($promediosEstudiantes);
 $totalAprobados = count(array_filter($promediosEstudiantes, fn($e) => $e['estado'] === 'Aprobado'));
 $totalReprobados = count(array_filter($promediosEstudiantes, fn($e) => $e['estado'] === 'Reprobado'));
-$promedioGeneral = count($promediosEstudiantes) > 0 
-    ? round(array_sum(array_column($promediosEstudiantes, 'promedio_general')) / count($promediosEstudiantes), 2) 
+$promedioGeneral = $totalRegistros > 0 
+    ? round(array_sum(array_column($promediosEstudiantes, 'promedio_general')) / $totalRegistros, 2) 
     : 0;
 
 // Datos para los filtros
 $materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetchAll();
 $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
 
-// ✅ Obtener estudiantes con sus matrículas activas (incluyendo sección, carrera y grado)
+// Obtener estudiantes con sus matrículas activas
 $estudiantes = $pdo->query("
     SELECT 
         e.id, 
@@ -57,7 +92,6 @@ $estudiantes = $pdo->query("
     ORDER BY e.nombres
 ")->fetchAll();
 
-// Pasar datos al JavaScript
 $estudiantesJSON = json_encode($estudiantes);
 ?>
 <!DOCTYPE html>
@@ -72,6 +106,64 @@ $estudiantesJSON = json_encode($estudiantes);
     <script>
         window.estudiantesData = <?php echo $estudiantesJSON; ?>;
     </script>
+    <style>
+        /* Estilos para autocomplete */
+        .autocomplete-container {
+            position: relative;
+        }
+        
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.2s;
+        }
+        
+        .autocomplete-item:hover {
+            background: #f0f4ff;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-item .nie {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .autocomplete-item .nombre {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        /* Estilos para períodos bloqueados */
+        .periodo-bloqueado {
+            background: #f3f4f6 !important;
+            cursor: not-allowed !important;
+            opacity: 0.5;
+        }
+        
+        .periodo-bloqueado:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -168,16 +260,16 @@ $estudiantesJSON = json_encode($estudiantes);
                     <?php if (empty($promediosEstudiantes)): ?>
                         <tr><td colspan="6" style="text-align:center; padding:40px;">No hay calificaciones registradas.</td></tr>
                     <?php else: ?>
-                        <?php foreach ($promediosEstudiantes as $est): ?>
-                            <tr data-id="<?php echo $est['id_estudiante']; ?>"
+                        <?php foreach ($promediosEstudiantes as $idEst => $est): ?>
+                            <tr data-id="<?php echo $idEst; ?>"
                                 data-nie="<?php echo htmlspecialchars($est['nie']); ?>"
-                                data-nombre="<?php echo htmlspecialchars($est['nombre_estudiante']); ?>"
-                                data-seccion="<?php echo htmlspecialchars($est['nombre_seccion']); ?>"
+                                data-nombre="<?php echo htmlspecialchars($est['nombre']); ?>"
+                                data-seccion="<?php echo htmlspecialchars($est['seccion']); ?>"
                                 data-promedio="<?php echo $est['promedio_general']; ?>"
                                 data-estado="<?php echo $est['estado']; ?>">
                                 <td><?php echo $est['nie']; ?></td>
-                                <td><?php echo $est['nombre_estudiante']; ?></td>
-                                <td><?php echo $est['nombre_seccion']; ?></td>
+                                <td><?php echo $est['nombre']; ?></td>
+                                <td><?php echo $est['seccion']; ?></td>
                                 <td class="promedio"><?php echo number_format($est['promedio_general'], 2); ?></td>
                                 <td>
                                     <?php if ($est['estado'] === 'Aprobado'): ?>
@@ -213,21 +305,17 @@ $estudiantesJSON = json_encode($estudiantes);
             <input type="hidden" name="calificacion_id" id="edit_calificacion_id">
             
             <label>Estudiante:</label>
-            <select id="nota_estudiante" name="id_estudiante" required onchange="actualizarDatosEstudiante()">
-                <option value="">Seleccione Estudiante</option>
-                <?php foreach ($estudiantes as $e): ?>
-                    <option value="<?php echo $e['id']; ?>" 
-                            data-seccion="<?php echo $e['id_seccion']; ?>"
-                            data-carrera="<?php echo $e['id_carrera']; ?>"
-                            data-grado="<?php echo $e['id_grado']; ?>"
-                            data-nombre-seccion="<?php echo htmlspecialchars($e['nombre_seccion']); ?>"
-                            data-nombre-carrera="<?php echo htmlspecialchars($e['nombre_carrera']); ?>">
-                        <?php echo htmlspecialchars($e['nombre_completo'] . ' (' . $e['nie'] . ')'); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <!-- ✅ Contenedor para mostrar estudiante en modo edición (readonly visual) -->
-            <div id="estudiante_readonly_display" style="display: none; padding: 10px 14px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; font-weight: 500; cursor: not-allowed; opacity: 0.8;"></div>
+            <div class="autocomplete-container">
+                <input type="text" id="buscador_estudiante" placeholder="Escribe el nombre o NIE del estudiante..." autocomplete="off">
+                <input type="hidden" id="nota_estudiante" name="id_estudiante">
+                <div class="autocomplete-results" id="autocomplete_results"></div>
+            </div>
+            <div id="estudiante_seleccionado" style="display: none; padding: 10px; background: #f0f4ff; border-radius: 8px; margin-top: 10px;">
+                <span id="estudiante_nombre"></span>
+                <button type="button" onclick="limpiarEstudiante()" style="float: right; background: none; border: none; color: #dc2626; cursor: pointer;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
             <label>Carrera:</label>
             <input type="text" id="nota_carrera_display" readonly placeholder="Se selecciona automáticamente" 
@@ -241,25 +329,33 @@ $estudiantesJSON = json_encode($estudiantes);
             <input type="hidden" id="nota_seccion" name="id_seccion">
 
             <label>Materia:</label>
-            <select id="nota_materia" name="id_materia" required onchange="buscarNotaExistente()">
+            <select id="nota_materia" name="id_materia" required>
                 <option value="">Seleccione Materia</option>
             </select>
             <small style="color: #6b7280; font-size: 12px;">
                 <i class="fa-solid fa-info-circle"></i> Solo se muestran las materias de la carrera y grado del estudiante
             </small>
 
-            <label>Período:</label>
-            <select id="nota_periodo" name="periodo" required onchange="buscarNotaExistente()">
-                <option value="">Seleccione Período</option>
-                <option value="1">Primer Período</option>
-                <option value="2">Segundo Período</option>
-                <option value="3">Tercer Período</option>
-                <option value="4">Cuarto Período</option>
-            </select>
-
-            <label>Calificación (0 - 10):</label>
-            <input type="number" id="nota_valor" name="nota" min="0" max="10" step="0.01" required placeholder="Ej: 8.50">
-            <small id="nota_estado_msg" style="color: #6b7280; font-size: 12px;">Nota mínima aprobatoria: 6.00</small>
+            <label>Períodos:</label>
+            <div id="contenedor_periodos" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                <div>
+                    <label style="font-size: 13px; color: #6b7280;">Período 1:</label>
+                    <input type="number" id="periodo_1" name="periodo_1" min="0" max="10" step="0.01" placeholder="Nota P1" onchange="verificarBloqueoPeriodos()">
+                </div>
+                <div>
+                    <label style="font-size: 13px; color: #6b7280;">Período 2:</label>
+                    <input type="number" id="periodo_2" name="periodo_2" min="0" max="10" step="0.01" placeholder="Nota P2" disabled class="periodo-bloqueado" onchange="verificarBloqueoPeriodos()">
+                </div>
+                <div>
+                    <label style="font-size: 13px; color: #6b7280;">Período 3:</label>
+                    <input type="number" id="periodo_3" name="periodo_3" min="0" max="10" step="0.01" placeholder="Nota P3" disabled class="periodo-bloqueado" onchange="verificarBloqueoPeriodos()">
+                </div>
+                <div>
+                    <label style="font-size: 13px; color: #6b7280;">Período 4:</label>
+                    <input type="number" id="periodo_4" name="periodo_4" min="0" max="10" step="0.01" placeholder="Nota P4" disabled class="periodo-bloqueado" onchange="verificarBloqueoPeriodos()">
+                </div>
+            </div>
+            <small id="nota_estado_msg" style="color: #6b7280; font-size: 12px; margin-top: 5px; display: block;">Complete los períodos en orden</small>
 
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="document.getElementById('modalNota').close()">Cancelar</button>

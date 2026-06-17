@@ -59,6 +59,38 @@ function validarDuiUnicoSistema($pdo, $dui, $tabla_actual = null, $id_excluir = 
     return null;
 }
 
+// ✅ FUNCIÓN: Registrar evento en historial académico
+function registrarEventoHistorial($pdo, $id_estudiante, $tipo_evento, $descripcion, $datos_adicionales = null) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO historial_academico (id_estudiante, tipo_evento, descripcion, datos_adicionales) VALUES (?, ?, ?, ?)");
+        $stmt->execute([
+            $id_estudiante, 
+            $tipo_evento, 
+            $descripcion, 
+            $datos_adicionales ? json_encode($datos_adicionales, JSON_UNESCAPED_UNICODE) : null
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        // Si falla el registro del historial, no rompemos la operación principal
+        error_log("Error al registrar evento en historial: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ✅ FUNCIÓN: Obtener datos del estudiante
+function obtenerDatosEstudiante($pdo, $id_estudiante) {
+    $stmt = $pdo->prepare("SELECT nombres, apellidos, nie FROM estudiantes WHERE id = ?");
+    $stmt->execute([$id_estudiante]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// ✅ FUNCIÓN: Obtener nombre de sección
+function obtenerNombreSeccion($pdo, $id_seccion) {
+    $stmt = $pdo->prepare("SELECT nombre FROM secciones WHERE id = ?");
+    $stmt->execute([$id_seccion]);
+    return $stmt->fetchColumn();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $accion = $_POST['accion'] ?? '';
     
@@ -68,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($accion === 'agregar') {
         $tipo_estudiante = $_POST['tipo_estudiante'] ?? '';
         $id_seccion = $_POST['id_seccion'] ?? 0;
-        $estado = 'activo'; // ✅ Siempre activo al agregar
+        $estado = 'activo';
         
         $resp_dui = trim($_POST['responsable_dui'] ?? '');
         $resp_nombres = trim($_POST['responsable_nombres'] ?? '');
@@ -86,7 +118,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("SELECT id_carrera, id_grado FROM secciones WHERE id = ?");
+            // ✅ CORRECCIÓN: Agregamos 'nombre' a la consulta
+            $stmt = $pdo->prepare("SELECT id_carrera, id_grado, nombre FROM secciones WHERE id = ?");
             $stmt->execute([$id_seccion]);
             $seccion_data = $stmt->fetch();
             
@@ -97,10 +130,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             $id_carrera = $seccion_data['id_carrera'];
             $id_grado = $seccion_data['id_grado'];
+            $nombre_seccion = $seccion_data['nombre']; // ✅ Guardamos el nombre de la sección
             
             // ==========================================
             // PROCESAR ESTUDIANTE
             // ==========================================
+            $estudiante_nuevo = false;
+            
             if ($tipo_estudiante === 'existente') {
                 $id_estudiante = $_POST['id_estudiante_existente'] ?? 0;
                 if (!$id_estudiante) {
@@ -108,6 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     responder('error', 'sin_estudiante', $isAjax);
                 }
             } else {
+                $estudiante_nuevo = true;
                 $nie = trim($_POST['nie'] ?? '');
                 $nombres = trim($_POST['nombres'] ?? '');
                 $apellidos = trim($_POST['apellidos'] ?? '');
@@ -118,7 +155,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $email = trim($_POST['email'] ?? '') ?: null;
                 $direccion = trim($_POST['direccion'] ?? '') ?: null;
 
-                // Validar NIE único
                 $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE nie = ?");
                 $stmt->execute([$nie]);
                 if ($stmt->fetch()) {
@@ -126,7 +162,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     responder('error', 'nie_duplicado', $isAjax);
                 }
 
-                // ✅ Validar DUI del estudiante en TODO el sistema
                 if ($dui) {
                     $error_dui = validarDuiUnicoSistema($pdo, $dui, 'estudiantes');
                     if ($error_dui) {
@@ -141,7 +176,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     }
                 }
 
-                // Validar teléfono
                 if ($telefono) {
                     $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE telefono = ?");
                     $stmt->execute([$telefono]);
@@ -160,7 +194,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // PROCESAR RESPONSABLE
             // ==========================================
             
-            // Validar DUI del responsable en TODO el sistema (excepto en responsables)
             if ($resp_dui) {
                 $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
                 $stmt->execute([$resp_dui]);
@@ -177,13 +210,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             
-            // Verificar si el responsable YA EXISTE por DUI
             $stmt = $pdo->prepare("SELECT id, dui, nombres, apellidos, ocupacion, parentesco, email, telefono, direccion FROM responsables WHERE dui = ? LIMIT 1");
             $stmt->execute([$resp_dui]);
             $responsable_existente = $stmt->fetch();
             
             if (!$responsable_existente) {
-                // SOLO validar unicidad de teléfono/email si es un responsable NUEVO
                 if ($resp_telefono) {
                     $stmt = $pdo->prepare("SELECT id FROM responsables WHERE telefono = ?");
                     $stmt->execute([$resp_telefono]);
@@ -243,6 +274,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $pdo->commit();
+            
+            // ✅ REGISTRAR EVENTO EN HISTORIAL (después del commit exitoso)
+            $datos_estudiante = obtenerDatosEstudiante($pdo, $id_estudiante);
+            $nombre_completo = ($datos_estudiante['nombres'] ?? '') . ' ' . ($datos_estudiante['apellidos'] ?? '');
+            
+            if ($estudiante_nuevo) {
+                $descripcion = "Estudiante nuevo '{$nombre_completo}' (NIE: " . ($datos_estudiante['nie'] ?? '') . ") matriculado en {$nombre_seccion}";
+            } else {
+                $descripcion = "Estudiante '{$nombre_completo}' matriculado en {$nombre_seccion}";
+            }
+            
+            registrarEventoHistorial($pdo, $id_estudiante, 'matricula_creada', $descripcion, [
+                'seccion' => $nombre_seccion,
+                'nie' => $datos_estudiante['nie'] ?? '',
+                'estudiante_nuevo' => $estudiante_nuevo
+            ]);
+            
             responder('success', 'Matrícula guardada exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -258,7 +306,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $matricula_id = $_POST['matricula_id'] ?? 0;
         $id_estudiante = $_POST['id_estudiante'] ?? 0;
         $id_seccion = $_POST['id_seccion'] ?? 0;
-        $estado = $_POST['estado'] ?? 'activo'; // ✅ Estado editable
+        $estado = $_POST['estado'] ?? 'activo';
         
         $resp_dui = trim($_POST['responsable_dui'] ?? '');
         $resp_nombres = trim($_POST['responsable_nombres'] ?? '');
@@ -276,19 +324,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("SELECT id_carrera, id_grado FROM secciones WHERE id = ?");
+            // ✅ OBTENER DATOS ANTERIORES PARA COMPARAR
+            $stmt = $pdo->prepare("SELECT id_seccion FROM matriculas WHERE id = ?");
+            $stmt->execute([$matricula_id]);
+            $matricula_anterior = $stmt->fetch();
+            $seccion_anterior_id = $matricula_anterior['id_seccion'] ?? 0;
+            $seccion_anterior_nombre = obtenerNombreSeccion($pdo, $seccion_anterior_id);
+            
+            // ✅ Obtener estado anterior del estudiante
+            $stmt = $pdo->prepare("SELECT estado FROM estudiantes WHERE id = ?");
+            $stmt->execute([$id_estudiante]);
+            $estado_anterior = $stmt->fetchColumn();
+            
+            $stmt = $pdo->prepare("SELECT id_carrera, id_grado, nombre FROM secciones WHERE id = ?");
             $stmt->execute([$id_seccion]);
             $seccion_data = $stmt->fetch();
             
             if ($seccion_data) {
                 $id_carrera = $seccion_data['id_carrera'];
                 $id_grado = $seccion_data['id_grado'];
+                $seccion_nueva_nombre = $seccion_data['nombre'];
             } else {
                 $pdo->rollBack();
                 responder('error', 'seccion_invalida', $isAjax);
             }
 
-            // Validar que el DUI del responsable no exista en estudiantes o profesores
             if ($resp_dui) {
                 $stmt = $pdo->prepare("SELECT id FROM estudiantes WHERE dui = ?");
                 $stmt->execute([$resp_dui]);
@@ -305,7 +365,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             
-            // ✅ Actualizar estado del estudiante en la tabla estudiantes
+            // Actualizar estado del estudiante
             $stmt = $pdo->prepare("UPDATE estudiantes SET estado=? WHERE id=?");
             $stmt->execute([$estado, $id_estudiante]);
 
@@ -318,6 +378,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->execute([$resp_dui, $resp_nombres, $resp_apellidos, $resp_ocupacion, $resp_parentesco, $resp_email, $resp_telefono, $resp_direccion, $matricula_id]);
 
             $pdo->commit();
+            
+            // ✅ REGISTRAR EVENTOS EN HISTORIAL
+            $datos_estudiante = obtenerDatosEstudiante($pdo, $id_estudiante);
+            $nombre_completo = ($datos_estudiante['nombres'] ?? '') . ' ' . ($datos_estudiante['apellidos'] ?? '');
+            
+            // ✅ Evento: Cambio de sección (si cambió)
+            if ($seccion_anterior_id != $id_seccion) {
+                $descripcion = "Sección de '{$nombre_completo}' cambiada de '{$seccion_anterior_nombre}' a '{$seccion_nueva_nombre}'";
+                registrarEventoHistorial($pdo, $id_estudiante, 'seccion_cambiada', $descripcion, [
+                    'seccion_anterior' => $seccion_anterior_nombre,
+                    'seccion_nueva' => $seccion_nueva_nombre
+                ]);
+            }
+            
+            // ✅ Evento: Cambio de estado (si cambió)
+            if (strtolower($estado_anterior) !== strtolower($estado)) {
+                $descripcion = "Estado de '{$nombre_completo}' cambiado de '" . ucfirst($estado_anterior) . "' a '" . ucfirst($estado) . "'";
+                registrarEventoHistorial($pdo, $id_estudiante, 'estado_cambiado', $descripcion, [
+                    'estado_anterior' => $estado_anterior,
+                    'estado_nuevo' => $estado
+                ]);
+            }
+            
+            // ✅ Evento: Matrícula modificada (evento general)
+            $descripcion = "Matrícula de '{$nombre_completo}' en '{$seccion_nueva_nombre}' modificada";
+            registrarEventoHistorial($pdo, $id_estudiante, 'matricula_modificada', $descripcion, [
+                'seccion' => $seccion_nueva_nombre,
+                'estado' => $estado
+            ]);
+            
             responder('success', 'Matrícula actualizada exitosamente', $isAjax);
             
         } catch (PDOException $e) {
@@ -336,9 +426,21 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'eliminar') {
     try {
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
         
-        $stmt = $pdo->prepare("SELECT id_estudiante FROM matriculas WHERE id = ?");
+        // ✅ OBTENER DATOS ANTES DE ELIMINAR (para el historial)
+        $stmt = $pdo->prepare("
+            SELECT m.id_estudiante, e.nombres, e.apellidos, e.nie, s.nombre as seccion_nombre
+            FROM matriculas m
+            INNER JOIN estudiantes e ON m.id_estudiante = e.id
+            INNER JOIN secciones s ON m.id_seccion = s.id
+            WHERE m.id = ?
+        ");
         $stmt->execute([$id]);
-        $id_estudiante = $stmt->fetchColumn();
+        $datos_eliminacion = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $id_estudiante = $datos_eliminacion['id_estudiante'] ?? null;
+        $nombre_completo = ($datos_eliminacion['nombres'] ?? '') . ' ' . ($datos_eliminacion['apellidos'] ?? '');
+        $seccion_nombre = $datos_eliminacion['seccion_nombre'] ?? '';
+        $nie = $datos_eliminacion['nie'] ?? '';
         
         $stmt = $pdo->prepare("DELETE FROM responsables WHERE id_matricula = ?");
         $stmt->execute([$id]);
@@ -352,6 +454,15 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'eliminar') {
         }
         
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+        
+        // ✅ REGISTRAR EVENTO EN HISTORIAL (después de eliminar)
+        if ($id_estudiante) {
+            $descripcion = "Matrícula del estudiante '{$nombre_completo}' (NIE: {$nie}) en '{$seccion_nombre}' fue eliminada";
+            registrarEventoHistorial($pdo, $id_estudiante, 'matricula_eliminada', $descripcion, [
+                'seccion' => $seccion_nombre,
+                'nie' => $nie
+            ]);
+        }
         
         header("Location: ../Vistas/matricula.php?success=eliminado");
         exit;

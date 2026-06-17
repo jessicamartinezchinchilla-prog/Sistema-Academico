@@ -15,9 +15,29 @@ function responder($tipo, $mensaje, $isAjax) {
     }
 }
 
+// ✅ FUNCIÓN: Registrar evento en historial académico
+function registrarEventoHistorial($pdo, $id_estudiante, $tipo_evento, $descripcion, $datos_adicionales = null) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO historial_academico (id_estudiante, tipo_evento, descripcion, datos_adicionales) VALUES (?, ?, ?, ?)");
+        $stmt->execute([
+            $id_estudiante, 
+            $tipo_evento, 
+            $descripcion, 
+            $datos_adicionales ? json_encode($datos_adicionales, JSON_UNESCAPED_UNICODE) : null
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        error_log("Error al registrar evento en historial: " . $e->getMessage());
+        return false;
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
+    // ==========================================
+    // AGREGAR ESTUDIANTE
+    // ==========================================
     if ($accion === 'agregar') {
         $nie = trim($_POST['nie']);
         $nombres = trim($_POST['nombres']);
@@ -27,6 +47,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         try {
             $stmt = $pdo->prepare("INSERT INTO estudiantes (nie, nombres, apellidos, estado) VALUES (?, ?, ?, ?)");
             $stmt->execute([$nie, $nombres, $apellidos, $estado]);
+            $id_estudiante = $pdo->lastInsertId();
+            
+            // ✅ REGISTRAR EVENTO EN HISTORIAL (si aplica)
+            // Solo si realmente se crean estudiantes desde este panel
+            $nombre_completo = $nombres . ' ' . $apellidos;
+            $descripcion = "Estudiante nuevo '{$nombre_completo}' (NIE: {$nie}) creado con estado '{$estado}'";
+            registrarEventoHistorial($pdo, $id_estudiante, 'estudiante_creado', $descripcion, [
+                'nie' => $nie,
+                'estado_inicial' => $estado
+            ]);
+            
             responder('success', '1', $isAjax);
         } catch (PDOException $e) {
             $msg = $e->getMessage();
@@ -35,6 +66,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         }
     }
 
+    // ==========================================
+    // EDITAR ESTUDIANTE
+    // ==========================================
     if ($accion === 'editar') {
         $id = $_POST['id_estudiante'];
         $nie = trim($_POST['nie']);
@@ -43,8 +77,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $estado = $_POST['estado'];
 
         try {
+            // ✅ Obtener datos ANTERIORES para comparar
+            $stmt = $pdo->prepare("SELECT estado FROM estudiantes WHERE id = ?");
+            $stmt->execute([$id]);
+            $estado_anterior = $stmt->fetchColumn();
+            
+            // Actualizar estudiante
             $stmt = $pdo->prepare("UPDATE estudiantes SET nie=?, nombres=?, apellidos=?, estado=? WHERE id=?");
             $stmt->execute([$nie, $nombres, $apellidos, $estado, $id]);
+            
+            // ✅ REGISTRAR EVENTO: Solo si cambió el estado
+            // (los cambios de nombre/NIE no son relevantes para el historial académico)
+            if (strtolower($estado_anterior) !== strtolower($estado)) {
+                $nombre_completo = $nombres . ' ' . $apellidos;
+                $descripcion = "Estado de '{$nombre_completo}' (NIE: {$nie}) cambiado de '" . ucfirst($estado_anterior) . "' a '" . ucfirst($estado) . "'";
+                registrarEventoHistorial($pdo, $id, 'estado_cambiado', $descripcion, [
+                    'nie' => $nie,
+                    'estado_anterior' => $estado_anterior,
+                    'estado_nuevo' => $estado
+                ]);
+            }
+            
             responder('success', 'editado', $isAjax);
         } catch (PDOException $e) {
             $msg = $e->getMessage();
@@ -53,9 +106,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         }
     }
 
+    // ==========================================
+    // ELIMINAR ESTUDIANTE
+    // ==========================================
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
+            // ❌ NO registrar evento de eliminación porque CASCADE lo borrará inmediatamente
+            // El historial académico se elimina junto con el estudiante
+            
             $pdo->beginTransaction();
             
             // Desactivar restricciones de claves foráneas temporalmente
@@ -69,7 +128,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt = $pdo->prepare("DELETE FROM matriculas WHERE id_estudiante = ?");
             $stmt->execute([$id]);
 
-            // 3. Borrar al estudiante
+            // 3. Borrar al estudiante (y sus calificaciones/historial por CASCADE)
             $stmt = $pdo->prepare("DELETE FROM estudiantes WHERE id = ?");
             $stmt->execute([$id]);
 

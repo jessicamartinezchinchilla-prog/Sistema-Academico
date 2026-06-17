@@ -1,48 +1,90 @@
 // JS/calificaciones.js
 
-document.addEventListener('DOMContentLoaded', () => {
-// ==========================================
-// VARIABLES GLOBALES
-// ==========================================
-let modoEdicion = false; // false = modo agregar, true = modo editar
+let modoEdicion = false;
+let estudianteSeleccionado = null;
 
+document.addEventListener('DOMContentLoaded', () => {
+    
     // ==========================================
-    // 1. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX)
+    // AUTOCOMPLETE DE ESTUDIANTES
+    // ==========================================
+    const buscadorEstudiante = document.getElementById('buscador_estudiante');
+    const autocompleteResults = document.getElementById('autocomplete_results');
+    
+    if (buscadorEstudiante) {
+        buscadorEstudiante.addEventListener('input', function() {
+            const texto = this.value.toLowerCase().trim();
+            if (texto.length < 2) {
+                autocompleteResults.style.display = 'none';
+                return;
+            }
+            
+            const estudiantes = window.estudiantesData || [];
+            const resultados = estudiantes.filter(e => 
+                e.nombre_completo.toLowerCase().includes(texto) || 
+                e.nie.toLowerCase().includes(texto)
+            );
+            
+            if (resultados.length === 0) {
+                autocompleteResults.innerHTML = '<div class="autocomplete-item">No se encontraron estudiantes</div>';
+                autocompleteResults.style.display = 'block';
+                return;
+            }
+            
+            autocompleteResults.innerHTML = resultados.map(e => `
+                <div class="autocomplete-item" onclick="seleccionarEstudiante(${e.id}, '${e.nombre_completo.replace(/'/g, "\\'")}', '${e.nie}', ${e.id_seccion}, ${e.id_carrera}, ${e.id_grado}, '${e.nombre_seccion.replace(/'/g, "\\'")}', '${e.nombre_carrera.replace(/'/g, "\\'")}')">
+                    <div class="nombre">${e.nombre_completo}</div>
+                    <div class="nie">NIE: ${e.nie} | ${e.nombre_seccion}</div>
+                </div>
+            `).join('');
+            
+            autocompleteResults.style.display = 'block';
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                autocompleteResults.style.display = 'none';
+            }
+        });
+    }
+
+    // ✅ NUEVO: Cargar notas al cambiar materia
+    const notaMateriaSelect = document.getElementById('nota_materia');
+    if (notaMateriaSelect) {
+        notaMateriaSelect.addEventListener('change', function() {
+            if (estudianteSeleccionado && this.value) {
+                cargarNotasExistentes(estudianteSeleccionado.id, this.value);
+            }
+        });
+    }
+    
+    // ==========================================
+    // INTERCEPTAR ENVÍO DE FORMULARIOS
     // ==========================================
     document.querySelectorAll('.modal-form').forEach(form => {
         form.addEventListener('submit', async function(e) {
             if (this.action.includes('generar_pdf.php')) return;
-            
             e.preventDefault();
-            
             if (!validarFormularioNota(this)) return;
 
             const formData = new FormData(this);
-            
             try {
                 const response = await fetch(this.action, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                
                 const result = await response.text();
-                
                 if (result.startsWith('ERROR:')) {
                     const errorType = result.split(':')[1];
                     let msg = '⚠️ Error al procesar la solicitud';
-                    
                     switch(errorType) {
-                        case 'campos_incompletos': msg = '⚠️ Todos los campos son obligatorios'; break;
-                        case 'sin_nota': msg = '⚠️ Debes ingresar una calificación'; break;
+                        case 'campos_incompletos': msg = '️ Todos los campos son obligatorios'; break;
+                        case 'sin_nota': msg = '️ Debes ingresar al menos una calificación'; break;
                         case 'nota_invalida': msg = '⚠️ La nota debe estar entre 0 y 10'; break;
-                        case 'periodo_invalido': msg = '⚠️ El período debe ser entre 1 y 4'; break;
-                        case 'duplicado': msg = '⚠️ Ya existe una calificación para este estudiante en esta materia, sección y período'; break;
-                        case 'materia_no_pertenece': msg = '⚠️ La materia seleccionada no pertenece a la carrera/grado del estudiante'; break;
-                        case 'sin_id': msg = '⚠️ No se pudo identificar la calificación'; break;
-                        case 'bd': msg = '⚠️ Error en la base de datos'; break;
+                        case 'materia_no_pertenece': msg = '⚠️ La materia no pertenece a la carrera/grado'; break;
+                        case 'bd': msg = '️ Error en la base de datos'; break;
                     }
-                    
                     alert(msg);
                 } else if (result.startsWith('SUCCESS:')) {
                     alert('✅ Calificación guardada exitosamente');
@@ -55,7 +97,7 @@ let modoEdicion = false; // false = modo agregar, true = modo editar
     });
 
     // ==========================================
-    // 2. FILTROS DE BÚSQUEDA
+    // FILTROS DE BÚSQUEDA
     // ==========================================
     const inputBuscar = document.getElementById('buscarCalificacion');
     const filtroMateria = document.getElementById('filtroMateria');
@@ -71,17 +113,14 @@ let modoEdicion = false; // false = modo agregar, true = modo editar
 
         filas.forEach(fila => {
             if (!fila.dataset.id) return;
-
             const nie = fila.dataset.nie || '';
             const nombre = fila.dataset.nombre || '';
             const seccionFila = fila.dataset.seccion || '';
             const estadoFila = fila.dataset.estado || '';
 
-            const coincideBusqueda = nie.toLowerCase().includes(texto) || nombre.toLowerCase().includes(texto);
-            const coincideSeccion = !seccion || seccionFila.toLowerCase() === seccion;
-            const coincideEstado = !estado || estadoFila.toLowerCase() === estado;
-
-            if (coincideBusqueda && coincideSeccion && coincideEstado) {
+            if ((nie.toLowerCase().includes(texto) || nombre.toLowerCase().includes(texto)) &&
+                (!seccion || seccionFila.toLowerCase() === seccion) &&
+                (!estado || estadoFila.toLowerCase() === estado)) {
                 fila.style.display = '';
             } else {
                 fila.style.display = 'none';
@@ -93,16 +132,63 @@ let modoEdicion = false; // false = modo agregar, true = modo editar
     if (filtroMateria) filtroMateria.addEventListener('change', filtrarCalificaciones);
     if (filtroSeccion) filtroSeccion.addEventListener('change', filtrarCalificaciones);
     if (filtroEstado) filtroEstado.addEventListener('change', filtrarCalificaciones);
-
-    // ==========================================
-    // 3. MENSAJES DE URL
-    // ==========================================
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('success') && urlParams.get('success') === 'eliminado') {
-        alert('🗑️ Calificación eliminada exitosamente');
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
 });
+
+// ==========================================
+// FUNCIONES DE AUTOCOMPLETE
+// ==========================================
+
+function seleccionarEstudiante(id, nombre, nie, idSeccion, idCarrera, idGrado, nombreSeccion, nombreCarrera) {
+    estudianteSeleccionado = { id, nombre, nie, idSeccion, idCarrera, idGrado, nombreSeccion, nombreCarrera };
+    
+    document.getElementById('buscador_estudiante').value = nombre;
+    document.getElementById('nota_estudiante').value = id;
+    document.getElementById('estudiante_nombre').textContent = `${nombre} (NIE: ${nie})`;
+    document.getElementById('estudiante_seleccionado').style.display = 'block';
+    document.getElementById('autocomplete_results').style.display = 'none';
+    
+    document.getElementById('nota_carrera_display').value = nombreCarrera;
+    document.getElementById('nota_seccion_display').value = nombreSeccion;
+    document.getElementById('nota_carrera').value = idCarrera;
+    document.getElementById('nota_seccion').value = idSeccion;
+    document.getElementById('nota_grado').value = idGrado;
+    
+    // Resetear materia y notas al cambiar estudiante
+    document.getElementById('nota_materia').innerHTML = '<option value="">Seleccione Materia</option>';
+    document.getElementById('nota_materia').value = '';
+    resetearPeriodos();
+    
+    filtrarMateriasPorCarrera(idCarrera, idGrado);
+}
+
+function limpiarEstudiante() {
+    estudianteSeleccionado = null;
+    document.getElementById('buscador_estudiante').value = '';
+    document.getElementById('nota_estudiante').value = '';
+    document.getElementById('estudiante_seleccionado').style.display = 'none';
+    document.getElementById('nota_carrera_display').value = '';
+    document.getElementById('nota_seccion_display').value = '';
+    document.getElementById('nota_carrera').value = '';
+    document.getElementById('nota_seccion').value = '';
+    document.getElementById('nota_grado').value = '';
+    document.getElementById('nota_materia').innerHTML = '<option value="">Seleccione Materia</option>';
+    resetearPeriodos();
+}
+
+function resetearPeriodos() {
+    for (let i = 1; i <= 4; i++) {
+        const input = document.getElementById(`periodo_${i}`);
+        input.value = '';
+        input.disabled = i > 1;
+        input.classList.toggle('periodo-bloqueado', i > 1);
+    }
+    document.getElementById('nota_estado_msg').textContent = 'Complete los períodos en orden';
+    document.getElementById('btn_guardar_nota').disabled = false;
+}
+
+// ==========================================
+// FUNCIONES DE MODALES
+// ==========================================
 
 function abrirModalNota(btn = null) {
     const form = document.getElementById('formNota');
@@ -110,50 +196,32 @@ function abrirModalNota(btn = null) {
     document.getElementById('edit_calificacion_id').value = '';
     document.getElementById('tituloModalNota').textContent = 'Agregar Nueva Calificación';
     document.getElementById('btn_guardar_nota').textContent = 'Guardar Calificación';
-    document.getElementById('nota_estado_msg').textContent = 'Nota mínima aprobatoria: 6.00';
-    document.getElementById('nota_estado_msg').style.color = '#6b7280';
     
-    // ✅ Resetear modo
+    limpiarEstudiante();
     modoEdicion = false;
     
-    // ✅ Limpiar campos de edición si existen
-    limpiarCamposEdicion();
-    
-    // ✅ Resetear modo edición visual
-    resetearModoEdicion();
-    
-    // Limpiar campos de carrera y sección
-    document.getElementById('nota_carrera_display').value = '';
-    document.getElementById('nota_seccion_display').value = '';
-    document.getElementById('nota_carrera').value = '';
-    document.getElementById('nota_seccion').value = '';
-    document.getElementById('nota_grado').value = '';
-    
-    // Limpiar select de materias
-    const selectMateria = document.getElementById('nota_materia');
-    selectMateria.innerHTML = '<option value="">Seleccione Materia</option>';
-    
-    // ✅ Habilitar input de nota y botón por defecto
-    const inputNota = document.getElementById('nota_valor');
-    inputNota.disabled = false;
-    inputNota.readOnly = false;
-    document.getElementById('btn_guardar_nota').disabled = false;
-    
-    // ✅ Si se llama desde el botón de editar en una fila → MODO EDICIÓN
     if (btn) {
         const fila = btn.closest('tr');
         const idEstudiante = fila.dataset.id;
         if (idEstudiante) {
-            document.getElementById('nota_estudiante').value = idEstudiante;
-            actualizarDatosEstudiante();
-            
-            // ✅ BLOQUEAR el select de estudiante (modo edición)
-            bloquearEstudiante();
-            
-            // ✅ Cambiar a modo edición
-            modoEdicion = true;
-            document.getElementById('tituloModalNota').textContent = 'Modificar/Editar Calificación';
-            document.getElementById('btn_guardar_nota').textContent = 'Actualizar Calificación';
+            const estudiante = window.estudiantesData.find(e => e.id == idEstudiante);
+            if (estudiante) {
+                seleccionarEstudiante(
+                    estudiante.id, estudiante.nombre_completo, estudiante.nie,
+                    estudiante.id_seccion, estudiante.id_carrera, estudiante.id_grado,
+                    estudiante.nombre_seccion, estudiante.nombre_carrera
+                );
+                
+                modoEdicion = true;
+                document.getElementById('tituloModalNota').textContent = 'Modificar/Editar Calificación';
+                document.getElementById('btn_guardar_nota').textContent = 'Actualizar Calificación';
+                
+                // En modo edición, cargar notas cuando se seleccione materia
+                const notaMateriaSelect = document.getElementById('nota_materia');
+                if (notaMateriaSelect.value) {
+                    cargarNotasExistentes(idEstudiante, notaMateriaSelect.value);
+                }
+            }
         }
     }
     
@@ -161,141 +229,118 @@ function abrirModalNota(btn = null) {
 }
 
 // ==========================================
-// ✅ NUEVAS FUNCIONES: MODO EDICIÓN
+// CARGAR NOTAS EXISTENTES (BLOQUEAR/DESBLOQUEAR)
 // ==========================================
 
-function bloquearEstudiante() {
-    const selectEstudiante = document.getElementById('nota_estudiante');
-    const displayReadonly = document.getElementById('estudiante_readonly_display');
-    
-    // Obtener el texto seleccionado
-    const option = selectEstudiante.options[selectEstudiante.selectedIndex];
-    const textoEstudiante = option.text;
-    
-    // Ocultar select, mostrar display readonly
-    selectEstudiante.style.display = 'none';
-    displayReadonly.textContent = textoEstudiante;
-    displayReadonly.style.display = 'block';
-}
-
-function resetearModoEdicion() {
-    const selectEstudiante = document.getElementById('nota_estudiante');
-    const displayReadonly = document.getElementById('estudiante_readonly_display');
-    
-    // Mostrar select, ocultar display
-    selectEstudiante.style.display = '';
-    displayReadonly.style.display = 'none';
-    displayReadonly.textContent = '';
-}
-
-// ==========================================
-// ✅ NUEVA FUNCIÓN: BUSCAR NOTA EXISTENTE
-// ==========================================
-async function buscarNotaExistente() {
-    const idEstudiante = document.getElementById('nota_estudiante').value;
-    const idMateria = document.getElementById('nota_materia').value;
-    const periodo = document.getElementById('nota_periodo').value;
-    const inputNota = document.getElementById('nota_valor');
-    const estadoMsg = document.getElementById('nota_estado_msg');
-    const accionForm = document.getElementById('accion_form');
-    const calificacionIdInput = document.getElementById('edit_calificacion_id');
-    const btnGuardar = document.getElementById('btn_guardar_nota');
-    
-    // Resetear estado
-    calificacionIdInput.value = '';
-    accionForm.value = 'agregar';
-    inputNota.value = '';
-    inputNota.disabled = false;
-    inputNota.readOnly = false;
-    estadoMsg.textContent = 'Nota mínima aprobatoria: 6.00';
-    estadoMsg.style.color = '#6b7280';
-    btnGuardar.disabled = false;
-    btnGuardar.textContent = modoEdicion ? 'Actualizar Calificación' : 'Guardar Calificación';
-    
-    // Solo buscar si hay estudiante, materia y período seleccionados
-    if (!idEstudiante || !idMateria || !periodo) {
-        return;
-    }
-    
+async function cargarNotasExistentes(idEstudiante, idMateria) {
+    if (!idEstudiante || !idMateria) return;
     try {
-        const response = await fetch(
-            `../actions/calificaciones_action.php?accion=obtener_nota_existente&id_estudiante=${idEstudiante}&id_materia=${idMateria}&periodo=${periodo}`,
-            { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
-        );
-        
+        const response = await fetch(`../actions/calificaciones_action.php?accion=obtener_notas_estudiante&id_estudiante=${idEstudiante}&id_materia=${idMateria}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
         const data = await response.json();
-        
-        if (data.existe) {
-            // ✅ Precargar la nota existente
-            inputNota.value = data.nota;
-            calificacionIdInput.value = data.id;
-            accionForm.value = 'editar';
-            
-            // ✅ SOLO EN MODO AGREGAR: Hacer solo lectura (no editable)
-            if (!modoEdicion) {
-                inputNota.readOnly = true;
-                inputNota.disabled = false; // No disabled, solo readOnly para que se vea el valor
-                estadoMsg.innerHTML = `<i class="fa-solid fa-lock"></i> Esta calificación ya existe. Para modificarla, usa el botón de editar (✏️) en la tabla.`;
-                estadoMsg.style.color = '#dc2626';
-                btnGuardar.textContent = 'No se puede guardar (usa el botón editar)';
-                btnGuardar.disabled = true;
-            } else {
-                // ✅ EN MODO EDICIÓN: Permitir modificar completamente
-                inputNota.readOnly = false;
-                inputNota.disabled = false;
-                estadoMsg.innerHTML = `<i class="fa-solid fa-pen"></i> Editando calificación existente (ID: ${data.id})`;
-                estadoMsg.style.color = '#2563eb';
-                btnGuardar.textContent = 'Actualizar Calificación';
-                btnGuardar.disabled = false;
+        const notas = data.notas || {periodo_1: null, periodo_2: null, periodo_3: null, periodo_4: null};
+
+        const msg = document.getElementById('nota_estado_msg');
+        const btn = document.getElementById('btn_guardar_nota');
+
+        if (modoEdicion) {
+            // ✅ MODO EDICIÓN: Solo permitir editar notas existentes
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById(`periodo_${i}`);
+                const val = notas[`periodo_${i}`];
+                
+                if (val !== null) {
+                    // Tiene nota → mostrarla y permitir editarla
+                    input.value = val;
+                    input.disabled = false;
+                    input.classList.remove('periodo-bloqueado');
+                } else {
+                    // No tiene nota → bloquear (no se pueden agregar nuevas en modo edición)
+                    input.value = '';
+                    input.disabled = true;
+                    input.classList.add('periodo-bloqueado');
+                }
             }
+            
+            msg.textContent = 'Edita solo las notas existentes';
+            btn.disabled = false;
+            btn.textContent = 'Actualizar Calificación';
+            
         } else {
-            // No existe, es una nota nueva
-            accionForm.value = 'agregar';
-            inputNota.readOnly = false;
-            inputNota.disabled = false;
-            
-            if (!modoEdicion) {
-                estadoMsg.textContent = '✨ Se creará una nueva calificación';
-                estadoMsg.style.color = '#16a34a';
-                btnGuardar.textContent = 'Guardar Calificación';
-            } else {
-                estadoMsg.textContent = 'Nueva calificación a crear';
-                estadoMsg.style.color = '#16a34a';
-                btnGuardar.textContent = 'Actualizar Calificación';
+            // ✅ MODO AGREGAR: Bloqueo secuencial estricto
+            let ultimoLleno = 0;
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById(`periodo_${i}`);
+                const val = notas[`periodo_${i}`];
+                
+                if (val !== null) {
+                    input.value = val;
+                    input.disabled = true;
+                    input.classList.add('periodo-bloqueado');
+                    ultimoLleno = i;
+                } else {
+                    input.value = '';
+                    input.disabled = false;
+                    input.classList.remove('periodo-bloqueado');
+                }
             }
-            btnGuardar.disabled = false;
+
+            // Aplicar bloqueo secuencial
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById(`periodo_${i}`);
+                if (i <= ultimoLleno) {
+                    input.disabled = true; // Bloquear existentes
+                } else if (i === ultimoLleno + 1) {
+                    input.disabled = false; // Desbloquear siguiente
+                } else {
+                    input.disabled = true; // Bloquear futuros
+                }
+                input.classList.toggle('periodo-bloqueado', input.disabled);
+            }
+
+            if (ultimoLleno === 4) {
+                msg.innerHTML = '✅ Todos los períodos están completos';
+                btn.disabled = true;
+                btn.textContent = 'Completo';
+            } else {
+                msg.textContent = 'Complete los períodos en orden';
+                btn.disabled = false;
+                btn.textContent = 'Guardar Calificación';
+            }
         }
-        
     } catch (error) {
-        console.error('Error al buscar nota:', error);
+        console.error('Error al cargar notas:', error);
     }
 }
 
-function abrirModalPDF() {
-    document.getElementById('modalPDF').showModal();
-}
-
 // ==========================================
-// ACTUALIZAR DATOS DEL ESTUDIANTE
+// VERIFICAR BLOQUEO DE PERÍODOS (TIEMPO REAL)
 // ==========================================
 
-function actualizarDatosEstudiante() {
-    const selectEstudiante = document.getElementById('nota_estudiante');
-    const option = selectEstudiante.options[selectEstudiante.selectedIndex];
+function verificarBloqueoPeriodos() {
+    if (modoEdicion) return;
     
-    const idSeccion = option.dataset.seccion;
-    const idCarrera = option.dataset.carrera;
-    const idGrado = option.dataset.grado;
-    const nombreSeccion = option.dataset.nombreSeccion;
-    const nombreCarrera = option.dataset.nombreCarrera;
-    
-    document.getElementById('nota_carrera_display').value = nombreCarrera || '';
-    document.getElementById('nota_seccion_display').value = nombreSeccion || '';
-    document.getElementById('nota_carrera').value = idCarrera || '';
-    document.getElementById('nota_seccion').value = idSeccion || '';
-    document.getElementById('nota_grado').value = idGrado || '';
-    
-    filtrarMateriasPorCarrera(idCarrera, idGrado);
+    let ultimoLleno = 0;
+    for (let i = 1; i <= 4; i++) {
+        const input = document.getElementById(`periodo_${i}`);
+        if (input.value.trim() !== '') {
+            ultimoLleno = i;
+        }
+    }
+
+    for (let i = 1; i <= 4; i++) {
+        const input = document.getElementById(`periodo_${i}`);
+        if (i <= ultimoLleno) {
+            input.disabled = false; // Permitir editar lo ya lleno en esta sesión
+        } else if (i === ultimoLleno + 1) {
+            input.disabled = false;
+        } else {
+            input.disabled = true;
+            input.value = ''; // Limpiar si se salta
+        }
+        input.classList.toggle('periodo-bloqueado', input.disabled);
+    }
 }
 
 // ==========================================
@@ -304,35 +349,27 @@ function actualizarDatosEstudiante() {
 
 async function filtrarMateriasPorCarrera(idCarrera, idGrado) {
     const selectMateria = document.getElementById('nota_materia');
-    
     selectMateria.innerHTML = '<option value="">Cargando materias...</option>';
-    
     if (!idCarrera || !idGrado) {
         selectMateria.innerHTML = '<option value="">Seleccione un estudiante primero</option>';
         return;
     }
-    
     try {
         const response = await fetch(`../actions/calificaciones_action.php?accion=obtener_materias_carrera&id_carrera=${idCarrera}&id_grado=${idGrado}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
         const materias = await response.json();
-        
         selectMateria.innerHTML = '<option value="">Seleccione Materia</option>';
-        
         if (materias.length === 0) {
             selectMateria.innerHTML = '<option value="">No hay materias para esta carrera y grado</option>';
             return;
         }
-        
         materias.forEach(materia => {
             const option = document.createElement('option');
             option.value = materia.id;
             option.textContent = materia.nombre;
             selectMateria.appendChild(option);
         });
-        
     } catch (error) {
         console.error('Error al cargar materias:', error);
         selectMateria.innerHTML = '<option value="">Error al cargar materias</option>';
@@ -340,152 +377,18 @@ async function filtrarMateriasPorCarrera(idCarrera, idGrado) {
 }
 
 // ==========================================
-// EDITAR CALIFICACIÓN POR MATERIA (desde modal detalle)
-// ==========================================
-
-async function editarCalificacionMateria(idEstudiante, nombreMateria) {
-    try {
-        const response = await fetch(`../actions/calificaciones_action.php?accion=obtener_calificaciones_materia&id_estudiante=${idEstudiante}&materia=${encodeURIComponent(nombreMateria)}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        
-        const calificaciones = await response.json();
-        
-        document.getElementById('modalDetalle').close();
-
-        const form = document.getElementById('formNota');
-        form.reset();
-        
-        document.getElementById('tituloModalNota').textContent = 'Editar Calificaciones - ' + nombreMateria;
-        document.querySelector('[name="accion"]').value = 'editar_multiples';
-        
-        document.getElementById('nota_estudiante').value = idEstudiante;
-        actualizarDatosEstudiante();
-        
-        setTimeout(() => {
-            const selectMateria = document.getElementById('nota_materia');
-            for (let option of selectMateria.options) {
-                if (option.text === nombreMateria) {
-                    selectMateria.value = option.value;
-                    break;
-                }
-            }
-            
-            mostrarCamposEdicion(calificaciones);
-            
-            document.getElementById('modalNota').showModal();
-        }, 300);
-        
-    } catch (error) {
-        console.error('Error al cargar calificaciones:', error);
-        alert('Error al cargar las calificaciones');
-    }
-}
-
-// ==========================================
-// MOSTRAR CAMPOS DE EDICIÓN PARA CADA PERÍODO
-// ==========================================
-
-function mostrarCamposEdicion(calificaciones) {
-    const form = document.getElementById('formNota');
-    
-    const labelPeriodo = form.querySelector('label:nth-of-type(5)');
-    const selectPeriodo = document.getElementById('nota_periodo');
-    const labelNota = form.querySelector('label:nth-of-type(6)');
-    const inputNota = document.getElementById('nota_valor');
-    const smallNota = document.getElementById('nota_estado_msg');
-    
-    if (labelPeriodo) labelPeriodo.style.display = 'none';
-    if (selectPeriodo) selectPeriodo.style.display = 'none';
-    if (labelNota) labelNota.style.display = 'none';
-    if (inputNota) inputNota.style.display = 'none';
-    if (smallNota) smallNota.style.display = 'none';
-    
-    let contenedor = document.getElementById('contenedor_edicion_periodos');
-    if (!contenedor) {
-        contenedor = document.createElement('div');
-        contenedor.id = 'contenedor_edicion_periodos';
-        contenedor.style.cssText = 'background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 10px;';
-        form.insertBefore(contenedor, form.querySelector('.modal-actions'));
-    }
-    
-    let html = '<h4 style="color: #2647B8; margin-bottom: 15px;">Editar notas por período</h4>';
-    
-    for (let periodo = 1; periodo <= 4; periodo++) {
-        const calif = calificaciones.find(c => c.periodo == periodo);
-        const nota = calif ? calif.nota : '';
-        const califId = calif ? calif.id : '';
-        
-        html += `
-            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: white; border-radius: 6px;">
-                <label style="min-width: 120px; font-weight: 600;">Período ${periodo}:</label>
-                <input type="hidden" name="calificacion_ids[]" value="${califId}">
-                <input type="hidden" name="periodos[]" value="${periodo}">
-                <input type="number" name="notas[]" min="0" max="10" step="0.01" value="${nota}" 
-                       placeholder="Sin calificación" 
-                       style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
-                ${calif ? '<span style="color: #16a34a; font-size: 12px;"><i class="fa-solid fa-check"></i> Existente</span>' : '<span style="color: #9ca3af; font-size: 12px;">Nueva</span>'}
-            </div>
-        `;
-    }
-    
-    contenedor.innerHTML = html;
-    
-    const btnSubmit = form.querySelector('.btn-save');
-    btnSubmit.textContent = 'Guardar Cambios';
-}
-
-// ==========================================
-// LIMPIAR CAMPOS DE EDICIÓN AL CERRAR MODAL
-// ==========================================
-
-function limpiarCamposEdicion() {
-    const form = document.getElementById('formNota');
-    
-    const labelPeriodo = form.querySelector('label:nth-of-type(5)');
-    const selectPeriodo = document.getElementById('nota_periodo');
-    const labelNota = form.querySelector('label:nth-of-type(6)');
-    const inputNota = document.getElementById('nota_valor');
-    const smallNota = document.getElementById('nota_estado_msg');
-    
-    if (labelPeriodo) labelPeriodo.style.display = '';
-    if (selectPeriodo) selectPeriodo.style.display = '';
-    if (labelNota) labelNota.style.display = '';
-    if (inputNota) inputNota.style.display = '';
-    if (smallNota) smallNota.style.display = '';
-    
-    const contenedor = document.getElementById('contenedor_edicion_periodos');
-    if (contenedor) contenedor.remove();
-    
-    document.querySelector('[name="accion"]').value = 'agregar';
-    
-    const btnSubmit = form.querySelector('.btn-save');
-    btnSubmit.textContent = 'Guardar Calificación';
-}
-
-// ==========================================
-// MOSTRAR/OCULTAR OPCIONES DEL PDF
+// PDF Y DETALLES (SIN CAMBIOS RELEVANTES)
 // ==========================================
 
 function mostrarOpcionesPDF() {
     const tipo = document.getElementById('pdf_tipo').value;
-    
     document.getElementById('opcion_individual').style.display = 'none';
     document.getElementById('opcion_multiples').style.display = 'none';
     document.getElementById('opcion_seccion').style.display = 'none';
-    
-    if (tipo === 'individual') {
-        document.getElementById('opcion_individual').style.display = 'block';
-    } else if (tipo === 'multiples') {
-        document.getElementById('opcion_multiples').style.display = 'block';
-    } else if (tipo === 'seccion') {
-        document.getElementById('opcion_seccion').style.display = 'block';
-    }
+    if (tipo === 'individual') document.getElementById('opcion_individual').style.display = 'block';
+    else if (tipo === 'multiples') document.getElementById('opcion_multiples').style.display = 'block';
+    else if (tipo === 'seccion') document.getElementById('opcion_seccion').style.display = 'block';
 }
-
-// ==========================================
-// VER DETALLE DEL ESTUDIANTE (AJAX)
-// ==========================================
 
 async function verDetalleEstudiante(btn) {
     const fila = btn.closest('tr');
@@ -496,103 +399,46 @@ async function verDetalleEstudiante(btn) {
     const estado = fila.dataset.estado;
 
     const contenedor = document.getElementById('detalleContenido');
-    contenedor.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #2F6FED;"></i>
-            <p style="margin-top: 10px; color: #6b7280;">Cargando calificaciones...</p>
-        </div>
-    `;
+    contenedor.innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #2F6FED;"></i><p style="margin-top: 10px; color: #6b7280;">Cargando...</p></div>`;
     document.getElementById('modalDetalle').showModal();
 
     try {
-        const response = await fetch(`../actions/calificaciones_action.php?accion=obtener_detalle&id_estudiante=${idEstudiante}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
+        const response = await fetch(`../actions/calificaciones_action.php?accion=obtener_detalle&id_estudiante=${idEstudiante}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await response.json();
+        const materiasAgrupadas = data.materias_agrupadas || {};
         
-        const calificaciones = await response.json();
-        
-        if (calificaciones.length === 0) {
-            contenedor.innerHTML = `
-                <div style="text-align: center; padding: 20px;">
-                    <i class="fa-solid fa-circle-exclamation" style="font-size: 32px; color: #f59e0b;"></i>
-                    <p style="margin-top: 10px; color: #6b7280;">No hay calificaciones registradas para este estudiante.</p>
-                </div>
-            `;
+        if (Object.keys(materiasAgrupadas).length === 0) {
+            contenedor.innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 32px; color: #f59e0b;"></i><p style="margin-top: 10px;">Sin registros.</p></div>`;
             return;
         }
 
-        const materiasAgrupadas = {};
-        calificaciones.forEach(cal => {
-            if (!materiasAgrupadas[cal.materia]) {
-                materiasAgrupadas[cal.materia] = { 1: null, 2: null, 3: null, 4: null };
-            }
-            materiasAgrupadas[cal.materia][cal.periodo] = cal.nota;
-        });
+        let html = `<div style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 10px;">
+            <h4 style="color: #2647B8; margin-bottom: 8px;">${nombreEstudiante}</h4>
+            <p style="font-size: 14px; color: #6b7280; margin: 0;"><strong>Sección:</strong> ${seccion} | <strong>Promedio:</strong> ${parseFloat(promedio).toFixed(2)} | <strong>Estado:</strong> <span class="${estado === 'Aprobado' ? 'estado-aprobado' : 'estado-reprobado'}">${estado}</span></p>
+        </div><table style="width: 100%; border-collapse: collapse; font-size: 14px;"><thead><tr style="background: #2647B8; color: white;">
+            <th style="padding: 10px; text-align: left;">Materia</th><th style="padding: 10px; text-align: center;">P1</th><th style="padding: 10px; text-align: center;">P2</th><th style="padding: 10px; text-align: center;">P3</th><th style="padding: 10px; text-align: center;">P4</th><th style="padding: 10px; text-align: center;">Promedio Final</th><th style="padding: 10px; text-align: center;">Estado</th>
+        </tr></thead><tbody>`;
 
-        // ✅ SIN COLUMNA DE ACCIONES (más limpio)
-        let html = `
-            <div style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 10px;">
-                <h4 style="color: #2647B8; margin-bottom: 8px;">${nombreEstudiante}</h4>
-                <p style="font-size: 14px; color: #6b7280; margin: 0;">
-                    <strong>Sección:</strong> ${seccion} | 
-                    <strong>Promedio General:</strong> <span style="color: #2F6FED; font-weight: 700;">${parseFloat(promedio).toFixed(2)}</span> | 
-                    <strong>Estado:</strong> 
-                    <span class="${estado === 'Aprobado' ? 'estado-aprobado' : 'estado-reprobado'}">${estado}</span>
-                </p>
-            </div>
-            
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr style="background: #2647B8; color: white;">
-                        <th style="padding: 10px; text-align: left;">Materia</th>
-                        <th style="padding: 10px; text-align: center;">P1</th>
-                        <th style="padding: 10px; text-align: center;">P2</th>
-                        <th style="padding: 10px; text-align: center;">P3</th>
-                        <th style="padding: 10px; text-align: center;">P4</th>
-                        <th style="padding: 10px; text-align: center;">Promedio</th>
-                        <th style="padding: 10px; text-align: center;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        for (const [materia, periodos] of Object.entries(materiasAgrupadas)) {
-            const notas = Object.values(periodos).filter(n => n !== null);
-            const promedioMateria = notas.length > 0 
-                ? (notas.reduce((a, b) => a + parseFloat(b), 0) / notas.length) 
-                : 0;
-            const estadoMateria = promedioMateria >= 6 ? 'Aprobado' : 'Reprobado';
-
-            html += `
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px; font-weight: 500;">${materia}</td>
-                    <td style="padding: 10px; text-align: center;">${periodos[1] !== null ? parseFloat(periodos[1]).toFixed(2) : '-'}</td>
-                    <td style="padding: 10px; text-align: center;">${periodos[2] !== null ? parseFloat(periodos[2]).toFixed(2) : '-'}</td>
-                    <td style="padding: 10px; text-align: center;">${periodos[3] !== null ? parseFloat(periodos[3]).toFixed(2) : '-'}</td>
-                    <td style="padding: 10px; text-align: center;">${periodos[4] !== null ? parseFloat(periodos[4]).toFixed(2) : '-'}</td>
-                    <td style="padding: 10px; text-align: center; font-weight: 700; color: #2F6FED;">${promedioMateria.toFixed(2)}</td>
-                    <td style="padding: 10px; text-align: center;">
-                        <span class="${estadoMateria === 'Aprobado' ? 'estado-aprobado' : 'estado-reprobado'}">${estadoMateria}</span>
-                    </td>
-                </tr>
-            `;
+        for (const [materia, d] of Object.entries(materiasAgrupadas)) {
+            html += `<tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 10px; font-weight: 500;">${materia}</td>
+                <td style="padding: 10px; text-align: center;">${d.periodos[1] !== null ? parseFloat(d.periodos[1]).toFixed(2) : '-'}</td>
+                <td style="padding: 10px; text-align: center;">${d.periodos[2] !== null ? parseFloat(d.periodos[2]).toFixed(2) : '-'}</td>
+                <td style="padding: 10px; text-align: center;">${d.periodos[3] !== null ? parseFloat(d.periodos[3]).toFixed(2) : '-'}</td>
+                <td style="padding: 10px; text-align: center;">${d.periodos[4] !== null ? parseFloat(d.periodos[4]).toFixed(2) : '-'}</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700; color: #2F6FED;">${d.promedio_final.toFixed(2)}</td>
+                <td style="padding: 10px; text-align: center;"><span class="${d.estado === 'Aprobado' ? 'estado-aprobado' : 'estado-reprobado'}">${d.estado}</span></td>
+            </tr>`;
         }
-
         html += `</tbody></table>`;
         contenedor.innerHTML = html;
-        
     } catch (error) {
-        contenedor.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: #dc2626;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size: 32px;"></i>
-                <p style="margin-top: 10px;">Error al cargar las calificaciones</p>
-            </div>
-        `;
+        contenedor.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc2626;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 32px;"></i><p>Error al cargar.</p></div>`;
     }
 }
 
 // ==========================================
-// VALIDACIÓN DEL FORMULARIO DE NOTA
+// VALIDACIÓN
 // ==========================================
 
 function validarFormularioNota(form) {
@@ -601,23 +447,24 @@ function validarFormularioNota(form) {
     const seccion = form.querySelector('[name="id_seccion"]')?.value;
     const carrera = form.querySelector('[name="id_carrera"]')?.value;
     const grado = form.querySelector('[name="id_grado"]')?.value;
-    const periodo = form.querySelector('[name="periodo"]')?.value;
-    const notaInput = form.querySelector('[name="nota"]');
     
-    if (!estudiante) { alert('⚠️ Debes seleccionar un estudiante'); return false; }
-    if (!carrera) { alert('⚠️ El estudiante no tiene una carrera asignada'); return false; }
-    if (!grado) { alert('⚠️ El estudiante no tiene un grado asignado'); return false; }
-    if (!seccion) { alert('⚠️ El estudiante no tiene una sección asignada'); return false; }
-    if (!materia) { alert('⚠️ Debes seleccionar una materia'); return false; }
-    if (!periodo) { alert('⚠️ Debes seleccionar un período'); return false; }
+    if (!estudiante) { alert('️ Selecciona un estudiante'); return false; }
+    if (!carrera || !grado || !seccion) { alert('⚠️ Datos del estudiante incompletos'); return false; }
+    if (!materia) { alert('⚠️ Selecciona una materia'); return false; }
     
-    if (notaInput) {
-        const nota = parseFloat(notaInput.value);
-        if (isNaN(nota) || nota < 0 || nota > 10) {
-            alert('⚠️ La calificación debe estar entre 0 y 10');
-            return false;
+    let tieneNota = false;
+    for (let i = 1; i <= 4; i++) {
+        const input = document.getElementById(`periodo_${i}`);
+        if (input && input.value.trim() !== '') {
+            tieneNota = true;
+            const nota = parseFloat(input.value);
+            if (isNaN(nota) || nota < 0 || nota > 10) {
+                alert(`️ La nota del período ${i} debe estar entre 0 y 10`);
+                return false;
+            }
         }
     }
     
+    if (!tieneNota) { alert('⚠️ Ingresa al menos una calificación'); return false; }
     return true;
 }

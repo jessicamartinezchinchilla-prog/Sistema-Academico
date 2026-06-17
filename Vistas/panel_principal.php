@@ -1,7 +1,7 @@
 <?php
 // Vistas/panel_principal.php
-require_once '../includes/auth_check.php'; // Protegemos la página
-require_once '../config/database.php';     // Conectamos a la BD
+require_once '../includes/auth_check.php';
+require_once '../config/database.php';
 
 // 1. Consultas para las tarjetas (Conteos)
 $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn();
@@ -11,22 +11,26 @@ $estudiantesActivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado
 $estudiantesInactivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado = 'inactivo'")->fetchColumn();
 $totalSecciones = $pdo->query("SELECT COUNT(*) FROM secciones")->fetchColumn();
 
-// 2. Consulta para Gráfica 1: Promedio por materia
-$stmtChart1 = $pdo->query("SELECT m.nombre, COALESCE(ROUND(AVG(c.nota), 2), 0) as promedio 
-                           FROM materias m 
-                           LEFT JOIN calificaciones c ON m.id = c.id_materia 
-                           GROUP BY m.id");
+// 2. Consulta para Gráfica 1: Promedio por materia (SOLO estudiantes activos)
+$stmtChart1 = $pdo->query("
+    SELECT m.nombre, COALESCE(ROUND(AVG(c.nota), 2), 0) as promedio 
+    FROM materias m 
+    LEFT JOIN calificaciones c ON m.id = c.id_materia 
+    INNER JOIN estudiantes e ON c.id_estudiante = e.id AND e.estado = 'activo'
+    GROUP BY m.id
+");
 $chart1Data = $stmtChart1->fetchAll();
 
-// 3. Consulta para Gráfica 2: Estudiantes Aprobados vs Reprobados (promedio >= 6.0)
+// 3. Consulta para Gráfica 2: Estudiantes Aprobados vs Reprobados (SOLO activos)
 $stmtChart2 = $pdo->query("
     SELECT 
         SUM(CASE WHEN promedio >= 6.0 THEN 1 ELSE 0 END) as aprobados,
         SUM(CASE WHEN promedio < 6.0 THEN 1 ELSE 0 END) as reprobados
     FROM (
-        SELECT id_estudiante, AVG(nota) as promedio 
-        FROM calificaciones 
-        GROUP BY id_estudiante
+        SELECT c.id_estudiante, AVG(c.nota) as promedio 
+        FROM calificaciones c
+        INNER JOIN estudiantes e ON c.id_estudiante = e.id AND e.estado = 'activo'
+        GROUP BY c.id_estudiante
     ) as promedios_estudiantes
 ");
 $chart2Data = $stmtChart2->fetch();
@@ -42,14 +46,12 @@ $chart2Data = $stmtChart2->fetch();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Dashboard - Sistema Académico</title>
     
-    <!-- Pasamos los datos de PHP a JavaScript para las gráficas -->
     <script>
         const nombresMaterias = <?php echo json_encode(array_column($chart1Data, 'nombre')); ?>;
         const promediosMaterias = <?php echo json_encode(array_column($chart1Data, 'promedio')); ?>;
         const totalAprobados = <?php echo $chart2Data['aprobados'] ?? 0; ?>;
         const totalReprobados = <?php echo $chart2Data['reprobados'] ?? 0; ?>;
     </script>
-    <!-- Cargamos tu JS después de pasar las variables -->
     <script src="../JS/panel_principal.js" defer></script>
 </head>
 
@@ -70,7 +72,6 @@ $chart2Data = $stmtChart2->fetch();
                 <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
                 <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
                 
-                <!-- Botón de Cerrar Sesión -->
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>
@@ -136,13 +137,11 @@ $chart2Data = $stmtChart2->fetch();
 
         <section class="panel">
             <h3>Rendimiento académico por materia:</h3>
-            <!-- Contenedor para la gráfica de barras -->
             <div class="chart-wrapper chart-barras">
                 <canvas id="grafica_barras1"></canvas>
             </div>
 
             <h3>Porcentaje de aprobación general:</h3>
-            <!-- Contenedor para la gráfica de pastel -->
             <div class="chart-wrapper chart-pastel">
                 <canvas id="grafica_pastel"></canvas>
             </div>
