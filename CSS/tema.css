@@ -1,0 +1,132 @@
+/* CSS/tema.css - Estilos globales para el tema dinámico */
+
+/* Variables por defecto (se sobrescriben desde PHP) */
+:root {
+    --color-primario: #2F6FED;
+}
+
+/* ==========================================
+   MODO OSCURO GLOBAL
+========================================== */
+body.modo-oscuro {
+    background: #1a1a2e;
+    color: #e0e0e0;
+}
+
+body.modo-oscuro .main-content h2,
+body.modo-oscuro .main-content > p,
+body.modo-oscuro h3,
+body.modo-oscuro th {
+    color: #e0e0e0 !important;
+}
+
+body.modo-oscuro .card,
+body.modo-oscuro .panel,
+body.modo-oscuro .data-table,
+body.modo-oscuro .modal,
+body.modo-oscuro .config-section,
+body.modo-oscuro .stat-item,
+body.modo-oscuro .chart-container,
+body.modo-oscuro .subjects-grid,
+body.modo-oscuro .subject-card,
+body.modo-oscuro .filters-bar,
+body.modo-oscuro .table-container,
+body.modo-oscuro .actions-bar,
+body.modo-oscuro .info-item,
+body.modo-oscuro .period-item,
+body.modo-oscuro .footer {
+    background: #16213e !important;
+    color: #e0e0e0 !important;
+    border-color: #0f3460 !important;
+}
+
+body.modo-oscuro input,
+body.modo-oscuro select,
+body.modo-oscuro textarea {
+    background: #0f3460 !important;
+    color: #e0e0e0 !important;
+    border-color: #1a4d7a !important;
+}
+
+body.modo-oscuro .badge,
+body.modo-oscuro .stat-box-label,
+body.modo-oscuro .section-students,
+body.modo-oscuro .stat-label {
+    color: #b0b0b0 !important;
+}
+
+body.modo-oscuro .data-table td {
+    color: #d0d0d0 !important;
+    border-top-color: #0f3460 !important;
+}
+
+/* Corregir encabezados de tabla en modo oscuro */
+body.modo-oscuro .data-table th {
+    background: #0f3460 !important;
+    color: #e0e0e0 !important;
+    border-bottom-color: #1a4d7a !important;
+}
+/* ==========================================
+   GRÁFICAS EN MODO OSCURO (Dashboard)
+========================================== */
+body.modo-oscuro .panel {
+    background: #16213e !important;
+}
+
+body.modo-oscuro .panel h3 {
+    color: #e0e0e0 !important;
+}
+
+body.modo-oscuro .chart-wrapper {
+    background: #0f3460 !important;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+/* ==========================================
+   CORRECCIONES ESPECÍFICAS - ESTUDIANTES
+========================================== */
+
+/* Filas de la tabla de estudiantes */
+body.modo-oscuro .data-table tbody tr {
+    background: #16213e !important;
+}
+
+body.modo-oscuro .data-table tbody tr:hover {
+    background: #1f4068 !important;
+}
+
+/* Contenedor de la sección "Estudiantes por Sección" */
+body.modo-oscuro .section-grid,
+body.modo-oscuro .students-by-section {
+    background: #0f1a2e !important; /* Más oscuro que el fondo general */
+    border: 1px solid #1a3a5c !important;
+}
+
+/* Tarjetas de estudiantes por sección - MÁS CLARAS para resaltar */
+body.modo-oscuro .section-card,
+body.modo-oscuro .stat-card {
+    background: #1e3a5f !important; /* Azul más claro y visible */
+    color: #e0e0e0 !important;
+    border: 1px solid #2a5a8f !important; /* Borde sutil */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important; /* Sombra para profundidad */
+}
+
+body.modo-oscuro .section-card:hover,
+body.modo-oscuro .stat-card:hover {
+    background: #2a4a6f !important; /* Aún más claro al hacer hover */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Números en las tarjetas */
+body.modo-oscuro .stat-number {
+    color: #ffffff !important; /* Blanco puro para máximo contraste */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Texto de las secciones */
+body.modo-oscuro .section-card span,
+body.modo-oscuro .stat-card span {
+    color: #d0d0d0 !important;
+}

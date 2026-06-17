@@ -45,7 +45,6 @@ $chart2Data = $stmtChart2->fetch();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Dashboard - Sistema Académico</title>
-    
     <script>
         const nombresMaterias = <?php echo json_encode(array_column($chart1Data, 'nombre')); ?>;
         const promediosMaterias = <?php echo json_encode(array_column($chart1Data, 'promedio')); ?>;
@@ -53,9 +52,10 @@ $chart2Data = $stmtChart2->fetch();
         const totalReprobados = <?php echo $chart2Data['reprobados'] ?? 0; ?>;
     </script>
     <script src="../JS/panel_principal.js" defer></script>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
 
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>
