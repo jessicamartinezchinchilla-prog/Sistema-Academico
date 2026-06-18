@@ -117,8 +117,9 @@ $aniosJSON = json_encode(array_column($anios, 'anio'));
         window.seccionesData = <?php echo $seccionesJSON; ?>;
         window.aniosData = <?php echo $aniosJSON; ?>;
     </script>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>

@@ -164,8 +164,9 @@ $estudiantesJSON = json_encode($estudiantes);
             cursor: not-allowed;
         }
     </style>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>

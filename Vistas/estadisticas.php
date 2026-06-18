@@ -143,8 +143,9 @@ $materiasJSON = json_encode($materiasProcesadas);
         const materiasData = <?php echo $materiasJSON; ?>;
     </script>
     <script src="../JS/estadisticas.js" defer></script>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>

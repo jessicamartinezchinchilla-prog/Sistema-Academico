@@ -130,3 +130,207 @@ body.modo-oscuro .section-card span,
 body.modo-oscuro .stat-card span {
     color: #d0d0d0 !important;
 }
+
+/* ==========================================
+   CORRECCIONES ESPECÍFICAS - MATRÍCULAS
+========================================== */
+
+/* Quitar bordes blancos en celdas de acciones */
+body.modo-oscuro .data-table td {
+    border-bottom: 1px solid #0f3460 !important;
+}
+
+/* Si hay separadores <hr> en las acciones */
+body.modo-oscuro .data-table hr {
+    border-color: #0f3460 !important;
+    background: transparent !important;
+}
+
+/* Contenedores de botones de acción */
+body.modo-oscuro .action-buttons,
+body.modo-oscuro .btn-actions {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Líneas separadoras en general */
+body.modo-oscuro .separator,
+body.modo-oscuro .divider {
+    background: #0f3460 !important;
+}
+
+/* ==========================================
+   CORRECCIÓN COMPLETA - TABLA DE MATRÍCULAS
+   (Elimina TODAS las líneas grises/azules raras)
+========================================== */
+
+/* Resetear TODOS los bordes en modo oscuro */
+body.modo-oscuro .data-table th,
+body.modo-oscuro .data-table td {
+    border-color: #0f3460 !important;
+}
+
+/* Eliminar bordes de info-row (líneas entre datos) */
+body.modo-oscuro .info-row {
+    border-bottom-color: #1a4d7a !important;
+}
+
+/* Modal header border */
+body.modo-oscuro .modal-header {
+    border-bottom-color: #1a4d7a !important;
+}
+
+/* Form actions border */
+body.modo-oscuro .form-actions {
+    border-top-color: #1a4d7a !important;
+}
+
+/* Divider/separator */
+body.modo-oscuro .divider,
+body.modo-oscuro hr {
+    border-color: #1a4d7a !important;
+    background: transparent !important;
+}
+
+/* Profesor tags */
+body.modo-oscuro .profesor-tag {
+    background: #0f3460 !important;
+    border-color: #1a4d7a !important;
+    color: #e0e0e0 !important;
+}
+
+/* Detalles items */
+body.modo-oscuro .detalles-item {
+    background: #0f3460 !important;
+    border-left-color: #2a5a8f !important;
+}
+
+body.modo-oscuro .detalles-label {
+    color: #b0b0b0 !important;
+}
+
+body.modo-oscuro .detalles-value {
+    color: #e0e0e0 !important;
+}
+
+/* Profesores section */
+body.modo-oscuro .profesores-section {
+    background: #0f3460 !important;
+}
+
+body.modo-oscuro .detalles-subtitle {
+    color: #e0e0e0 !important;
+}
+
+/* Checkbox group */
+body.modo-oscuro .checkbox-group {
+    background: #0f3460 !important;
+    border-color: #1a4d7a !important;
+}
+
+body.modo-oscuro .checkbox-group label {
+    color: #e0e0e0 !important;
+}
+
+body.modo-oscuro .checkbox-group label:hover {
+    background: #1a4d7a !important;
+}
+
+/* Form hint */
+body.modo-oscuro .form-hint {
+    color: #b0b0b0 !important;
+}
+
+/* Badge seccion */
+body.modo-oscuro .badge-seccion {
+    background: #2563eb !important;
+    color: white !important;
+}
+
+/* No profesores message */
+body.modo-oscuro .no-profesores {
+    color: #94a3b8 !important;
+}
+
+/* Footer en modo oscuro */
+body.modo-oscuro .footer {
+    background: #16213e !important;
+    border-top-color: #0f3460 !important;
+    color: #b0b0b0 !important;
+}
+
+/* ==========================================
+   CORRECCIONES ESPECÍFICAS - MATERIAS
+========================================== */
+
+/* Etiquetas de código de materia (MAT001, etc.) */
+body.modo-oscuro .badge,
+body.modo-oscuro .codigo-materia,
+body.modo-oscuro [class*="badge"],
+body.modo-oscuro [class*="codigo"] {
+    background: #0f3460 !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #1a4d7a !important;
+}
+
+/* Botones de acción en tarjetas de materia */
+body.modo-oscuro .subject-card .btn-action,
+body.modo-oscuro .subject-card .btn-action.see,
+body.modo-oscuro .subject-card .btn-action.edit,
+body.modo-oscuro .subject-card .btn-action.delete {
+    background: #0f3460 !important;
+    border: 1px solid #1a4d7a !important;
+    color: #e0e0e0 !important;
+}
+
+body.modo-oscuro .subject-card .btn-action:hover {
+    background: #1a4d7a !important;
+}
+
+/* Íconos de sección y profesores */
+body.modo-oscuro .subject-card .fa-users,
+body.modo-oscuro .subject-card .fa-chalkboard-teacher {
+    color: #60a5fa !important;
+}
+
+/* Texto de secciones y profesores */
+body.modo-oscuro .subject-card .info-row span {
+    color: #d0d0d0 !important;
+}
+
+/* Separadores en tarjetas */
+body.modo-oscuro .subject-card hr,
+body.modo-oscuro .subject-card .divider {
+    border-color: #1a4d7a !important;
+    background: transparent !important;
+}
+
+/* Título de materia */
+body.modo-oscuro .subject-card h3 {
+    color: #ffffff !important;
+}
+
+/* Subtítulo */
+body.modo-oscuro .subject-card .subtitle {
+    color: #b0b0b0 !important;
+}
+
+/* Círculo con número */
+body.modo-oscuro .circle {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Profesores info box */
+body.modo-oscuro .profesores-info {
+    background: #0f3460 !important;
+    border-left-color: #3b82f6 !important;
+}
+
+body.modo-oscuro .profesores-info span:first-child {
+    color: #b0b0b0 !important;
+}
+
+body.modo-oscuro .profesores-info span:last-child {
+    color: #60a5fa !important;
+}

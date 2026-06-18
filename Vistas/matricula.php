@@ -65,8 +65,9 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
     <link rel="stylesheet" href="../CSS/matricula.css">
     <script src="../JS/matricula.js" defer></script>
     <title>Gestión de Matrículas - Sistema Académico</title>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>

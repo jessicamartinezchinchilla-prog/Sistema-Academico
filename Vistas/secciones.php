@@ -45,9 +45,10 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
     <script src="../JS/secciones.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Gestión de Secciones</title>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
 
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>

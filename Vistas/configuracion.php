@@ -36,6 +36,7 @@ $userNombre = $userData['usuario'] ?? 'Usuario';
             --color-primario: <?php echo $config['visual_color_primario'] ?? '#2F6FED'; ?>;
         }
     </style>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
 <body class="<?php echo ($config['visual_modo_oscuro'] ?? '0') === '1' ? 'modo-oscuro' : ''; ?>">
     <header class="header">

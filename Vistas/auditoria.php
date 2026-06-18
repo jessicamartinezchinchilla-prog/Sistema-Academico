@@ -31,8 +31,9 @@ $usuariosUnicos = $pdo->query("SELECT DISTINCT usuario FROM auditoria ORDER BY u
     <link rel="stylesheet" href="../CSS/auditoria.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <title>Auditoría - Sistema Académico</title>
+    <?php require_once '../includes/theme.php'; ?>
 </head>
-<body>
+<body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
         <nav>
