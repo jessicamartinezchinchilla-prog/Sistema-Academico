@@ -44,8 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (errorType === 'correo_duplicado') msg = '⚠️ El correo ya está registrado';
                     else if (errorType === 'telefono_duplicado') msg = '⚠️ El teléfono ingresado ya está registrado';
                     else if (errorType === 'sin_materias') msg = '⚠️ Debe seleccionar al menos una materia';
+                    else if (errorType === 'dui_requerido') msg = '⚠️ El DUI es obligatorio';
+                    else if (errorType === 'nip_requerido') msg = '⚠️ El NIP es obligatorio';
+                    else if (errorType === 'telefono_requerido') msg = '⚠️ El teléfono es obligatorio';
+                    else if (errorType === 'telefono_invalido') msg = '⚠️ El teléfono debe tener el formato 0000-0000';
                     else if (errorType === 'duplicado') msg = '⚠️ Ya existen datos duplicados';
                     else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
+                    
+                    alert(msg);
+                } else if (result.startsWith('INFO:')) {
+                    // ✅ NUEVO: Manejar mensajes informativos
+                    const infoType = result.split(':')[1];
+                    let msg = 'ℹ️ Información';
+                    
+                    if (infoType === 'sin_cambios') msg = 'ℹ️ No has realizado ningún cambio';
                     
                     alert(msg);
                 } else if (result.startsWith('SUCCESS:')) {
@@ -172,14 +184,42 @@ function configurarValidacionEmail(idInput) {
 function validarFormulario(form) {
     const nombresInput = form.querySelector('[name="nombres"]');
     const apellidosInput = form.querySelector('[name="apellidos"]');
+    const duiInput = form.querySelector('[name="dui"]');
+    const nipInput = form.querySelector('[name="nip"]');
+    const telefonoInput = form.querySelector('[name="telefono"]');
     const emailInput = form.querySelector('[name="email"]');
     const materiasCheckboxes = form.querySelectorAll('input[name="id_materias[]"]:checked');
     
     const nombres = nombresInput.value.trim().split(' ');
     const apellidos = apellidosInput.value.trim().split(' ');
 
+    // ✅ NUEVO: Validaciones obligatorias
     if (nombres.length < 2) { alert('⚠️ Debe ingresar al menos dos nombres.'); return false; }
     if (apellidos.length < 2) { alert('⚠️ Debe ingresar al menos dos apellidos.'); return false; }
+    
+    // ✅ NUEVO: Validar DUI obligatorio
+    if (!duiInput.value.trim()) { 
+        alert('⚠️ El DUI es obligatorio'); 
+        return false; 
+    }
+    
+    // ✅ NUEVO: Validar NIP obligatorio
+    if (!nipInput.value.trim()) { 
+        alert('⚠️ El NIP es obligatorio'); 
+        return false; 
+    }
+    
+    // ✅ NUEVO: Validar teléfono obligatorio y formato
+    if (!telefonoInput.value.trim()) { 
+        alert('⚠️ El teléfono es obligatorio'); 
+        return false; 
+    }
+    
+    const telefonoRegex = /^\d{4}-\d{4}$/;
+    if (!telefonoRegex.test(telefonoInput.value.trim())) { 
+        alert('⚠️ El teléfono debe tener el formato 0000-0000'); 
+        return false; 
+    }
     
     if (materiasCheckboxes.length === 0) { 
         alert('⚠️ Debe seleccionar al menos una materia'); 

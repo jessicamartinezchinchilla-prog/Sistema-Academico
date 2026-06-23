@@ -157,11 +157,11 @@ $materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>DUI:</label>
-                    <input type="text" id="prof_dui" name="dui" maxlength="10" placeholder="00000000-0">
+                    <input type="text" id="prof_dui" name="dui" required maxlength="10" placeholder="00000000-0" pattern="\d{8}-\d" title="Formato: 00000000-0">
                 </div>
                 <div class="form-col">
                     <label>NIP:</label>
-                    <input type="text" id="prof_nip" name="nip" maxlength="10" placeholder="Número de Identificación Profesional">
+                    <input type="text" id="prof_nip" name="nip" required maxlength="10" placeholder="Número de Identificación Profesional">
                 </div>
             </div>
 
@@ -172,7 +172,7 @@ $materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Teléfono:</label>
-                    <input type="tel" id="prof_telefono" name="telefono" required maxlength="9" placeholder="0000-0000">
+                    <input type="tel" id="prof_telefono" name="telefono" required maxlength="9" placeholder="0000-0000" pattern="\d{4}-\d{4}" title="Formato: 0000-0000">
                 </div>
                 <div class="form-col">
                     <label>Email (Solo Gmail):</label>
@@ -245,11 +245,11 @@ $materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>DUI:</label>
-                    <input type="text" id="edit_dui" name="dui" maxlength="10">
+                    <input type="text" id="edit_dui" name="dui" required maxlength="10" pattern="\d{8}-\d" title="Formato: 00000000-0">
                 </div>
                 <div class="form-col">
                     <label>NIP:</label>
-                    <input type="text" id="edit_nip" name="nip" maxlength="10">
+                    <input type="text" id="edit_nip" name="nip" required maxlength="10">
                 </div>
             </div>
 
@@ -260,7 +260,7 @@ $materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetc
             <div class="form-row">
                 <div class="form-col">
                     <label>Teléfono:</label>
-                    <input type="tel" id="edit_telefono" name="telefono" required maxlength="9">
+                    <input type="tel" id="edit_telefono" name="telefono" required maxlength="9" pattern="\d{4}-\d{4}" title="Formato: 0000-0000">
                 </div>
                 <div class="form-col">
                     <label>Email:</label>
