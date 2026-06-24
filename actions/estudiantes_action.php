@@ -2,7 +2,7 @@
 // actions/estudiantes_action.php
 session_start();
 require_once '../config/database.php';
-require_once '../includes/audit.php'; // ✅ AUDITORÍA
+require_once '../includes/audit.php';
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -16,7 +16,6 @@ function responder($tipo, $mensaje, $isAjax) {
     }
 }
 
-// ✅ FUNCIÓN: Registrar evento en historial académico
 function registrarEventoHistorial($pdo, $id_estudiante, $tipo_evento, $descripcion, $datos_adicionales = null) {
     try {
         $stmt = $pdo->prepare("INSERT INTO historial_academico (id_estudiante, tipo_evento, descripcion, datos_adicionales) VALUES (?, ?, ?, ?)");
@@ -31,6 +30,16 @@ function registrarEventoHistorial($pdo, $id_estudiante, $tipo_evento, $descripci
         error_log("Error al registrar evento en historial: " . $e->getMessage());
         return false;
     }
+}
+
+function validarGmail($correo) {
+    if (empty($correo)) return true;
+    return preg_match('/^[a-zA-Z0-9._%+-]+@gmail\.com$/i', $correo);
+}
+
+function validarTelefono($telefono) {
+    if (empty($telefono)) return true;
+    return preg_match('/^\d{4}-\d{4}$/', $telefono);
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
@@ -50,7 +59,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt->execute([$nie, $nombres, $apellidos, $estado]);
             $id_estudiante = $pdo->lastInsertId();
             
-            // ✅ REGISTRAR EVENTO EN HISTORIAL
             $nombre_completo = $nombres . ' ' . $apellidos;
             $descripcion = "Estudiante nuevo '{$nombre_completo}' (NIE: {$nie}) creado con estado '{$estado}'";
             registrarEventoHistorial($pdo, $id_estudiante, 'estudiante_creado', $descripcion, [
@@ -58,7 +66,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                 'estado_inicial' => $estado
             ]);
             
-            // ✅ AUDITORÍA
             registrarAuditoria($pdo, 'creacion', 'estudiantes', "Se creó el estudiante '{$nombre_completo}' (NIE: {$nie}) con estado '{$estado}'");
             
             responder('success', '1', $isAjax);
@@ -77,22 +84,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $nie = trim($_POST['nie']);
         $nombres = trim($_POST['nombres']);
         $apellidos = trim($_POST['apellidos']);
+        $dui = trim($_POST['dui'] ?? '') ?: null;
+        $telefono = trim($_POST['telefono'] ?? '') ?: null;
+        $email = trim($_POST['email'] ?? '') ?: null;
+        $direccion = trim($_POST['direccion'] ?? '') ?: null;
         $estado = $_POST['estado'];
 
+        // Validaciones
+        if (!validarTelefono($telefono)) {
+            responder('error', 'telefono_invalido', $isAjax);
+        }
+
+        if (!empty($email) && !validarGmail($email)) {
+            responder('error', 'gmail', $isAjax);
+        }
+
         try {
-            // ✅ Obtener datos ANTERIORES para comparar
-            $stmt = $pdo->prepare("SELECT nie, nombres, apellidos, estado FROM estudiantes WHERE id = ?");
+            // Obtener datos ANTERIORES para comparar
+            $stmt = $pdo->prepare("SELECT nie, nombres, apellidos, dui, telefono, email, direccion, estado FROM estudiantes WHERE id = ?");
             $stmt->execute([$id]);
             $datos_anteriores = $stmt->fetch(PDO::FETCH_ASSOC);
             $estado_anterior = $datos_anteriores['estado'] ?? '';
             $nombre_anterior = ($datos_anteriores['nombres'] ?? '') . ' ' . ($datos_anteriores['apellidos'] ?? '');
             $nie_anterior = $datos_anteriores['nie'] ?? '';
             
-            // Actualizar estudiante
-            $stmt = $pdo->prepare("UPDATE estudiantes SET nie=?, nombres=?, apellidos=?, estado=? WHERE id=?");
-            $stmt->execute([$nie, $nombres, $apellidos, $estado, $id]);
+            // Detectar si hay cambios reales
+            $hay_cambios = (
+                $datos_anteriores['nie'] !== $nie ||
+                $datos_anteriores['nombres'] !== $nombres ||
+                $datos_anteriores['apellidos'] !== $apellidos ||
+                $datos_anteriores['dui'] !== $dui ||
+                $datos_anteriores['telefono'] !== $telefono ||
+                $datos_anteriores['email'] !== $email ||
+                $datos_anteriores['direccion'] !== $direccion ||
+                $datos_anteriores['estado'] !== $estado
+            );
+
+            if (!$hay_cambios) {
+                responder('info', 'sin_cambios', $isAjax);
+            }
             
-            // ✅ REGISTRAR EVENTOS EN HISTORIAL (solo si hubo cambios)
+            // Actualizar estudiante con todos los campos
+            $stmt = $pdo->prepare("UPDATE estudiantes SET nie=?, nombres=?, apellidos=?, dui=?, telefono=?, email=?, direccion=?, estado=? WHERE id=?");
+            $stmt->execute([$nie, $nombres, $apellidos, $dui, $telefono, $email, $direccion, $estado, $id]);
+            
             $nombre_completo = $nombres . ' ' . $apellidos;
             
             // Si cambió el estado
@@ -120,7 +155,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                 registrarEventoHistorial($pdo, $id, 'matricula_modificada', $descripcion, $cambios);
             }
             
-            // ✅ AUDITORÍA
             registrarAuditoria($pdo, 'modificacion', 'estudiantes', "Se modificó el estudiante '{$nombre_completo}' (NIE: {$nie})");
             
             responder('success', 'editado', $isAjax);
@@ -137,7 +171,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     if ($accion === 'eliminar') {
         $id = $_GET['id'] ?? 0;
         try {
-            // ✅ Obtener datos ANTES de eliminar (para el historial)
             $stmt = $pdo->prepare("SELECT nie, nombres, apellidos, estado FROM estudiantes WHERE id = ?");
             $stmt->execute([$id]);
             $datos_estudiante = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -146,35 +179,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
                 $nombre_completo = $datos_estudiante['nombres'] . ' ' . $datos_estudiante['apellidos'];
                 $nie = $datos_estudiante['nie'];
                 
-                // ✅ Registrar evento ANTES de eliminar
                 $descripcion = "Estudiante '{$nombre_completo}' (NIE: {$nie}) fue eliminado del sistema";
                 registrarEventoHistorial($pdo, $id, 'estudiante_eliminado', $descripcion, [
                     'nie' => $nie,
                     'estado_al_eliminar' => $datos_estudiante['estado']
                 ]);
                 
-                // ✅ AUDITORÍA
                 registrarAuditoria($pdo, 'eliminacion', 'estudiantes', "Se eliminó al estudiante '{$nombre_completo}' (NIE: {$nie})");
             }
             
             $pdo->beginTransaction();
             
-            // Desactivar restricciones de claves foráneas temporalmente
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
 
-            // 1. Borrar responsables asociados a las matrículas del estudiante
             $stmt = $pdo->prepare("DELETE r FROM responsables r INNER JOIN matriculas m ON r.id_matricula = m.id WHERE m.id_estudiante = ?");
             $stmt->execute([$id]);
 
-            // 2. Borrar matrículas del estudiante
             $stmt = $pdo->prepare("DELETE FROM matriculas WHERE id_estudiante = ?");
             $stmt->execute([$id]);
 
-            // 3. Borrar al estudiante (y sus calificaciones por CASCADE)
             $stmt = $pdo->prepare("DELETE FROM estudiantes WHERE id = ?");
             $stmt->execute([$id]);
 
-            // Reactivar restricciones
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             
             $pdo->commit();

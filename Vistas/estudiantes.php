@@ -80,7 +80,7 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
             </article>
         </section>
 
-        <!-- BARRA DE BÚSQUEDA Y FILTROS (Estilo Profesores) -->
+        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
         <section class="filters-bar">
             <div class="busqueda">
                 <input type="search" id="buscador-estudiantes" placeholder="Buscar por NIE, nombre o apellido..." />
@@ -191,16 +191,16 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
     </dialog>
 
     <!-- MODAL EDITAR ESTUDIANTE -->
-    <dialog id="modalEditarEstudiante" class="modal">
+    <dialog id="modalEditarEstudiante" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
         </form>
         <h3>Editar Estudiante</h3>
-        <form class="modal-form" method="POST" action="../actions/estudiantes_action.php" onsubmit="return validarFormularioEstudiante(this)">
+        <form class="modal-form" method="POST" action="../actions/estudiantes_action.php">
             <input type="hidden" name="id_estudiante" id="edit_id">
             <input type="hidden" name="accion" value="editar">
             
-            <h4>Datos personales</h4>
+            <h4><i class="fa-solid fa-user"></i> Datos personales</h4>
             <div class="form-row">
                 <div class="form-col">
                     <label>NIE (máx. 10 dígitos):</label>
@@ -217,28 +217,51 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
                     <input type="text" name="apellidos" id="edit_apellidos" class="input-nombre" required placeholder="Ej: Pérez López" />
                 </div>
                 <div class="form-col">
-                    <label>Estado:</label>
-                    <select name="estado" id="edit_estado" required>
-                        <option value="activo">Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                    </select>
+                    <label>DUI:</label>
+                    <input type="text" name="dui" id="edit_dui" maxlength="10" placeholder="00000000-0" pattern="\d{8}-\d" title="Formato: 00000000-0" />
                 </div>
             </div>
-
-            <h4>Información Académica</h4>
             <div class="form-row">
+                <div class="form-col">
+                    <label>Estado Actual:</label>
+                    <input type="text" id="edit_estado_display" readonly 
+                        style="background: #f3f4f6; color: #6b7280; cursor: not-allowed; opacity: 0.7; font-weight: 600;" 
+                        placeholder="Activo" />
+                    <input type="hidden" name="estado" id="edit_estado" value="activo">
+                </div>
                 <div class="form-col">
                     <label>Sección Actual:</label>
                     <input type="text" id="edit_seccion_display" readonly 
                         style="background: #f3f4f6; color: #6b7280; cursor: not-allowed; opacity: 0.7;" 
                         placeholder="Sin matrícula" />
                 </div>
-                <div class="form-col">
-                    <label style="visibility: hidden;">Espacio</label>
-                    <p style="font-size: 12px; color: #6b7280; margin-top: 12px;">
+            </div>
+            <div class="form-row">
+                <div class="form-col" style="grid-column: 1 / -1;">
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
                         <i class="fa-solid fa-info-circle"></i> 
-                        Para cambiar la sección, ve al panel de Matrículas
+                        Para cambiar el estado o la sección, ve al panel de <strong>Matrículas</strong>
                     </p>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <h4><i class="fa-solid fa-address-book"></i> Contacto</h4>
+            <div class="form-row">
+                <div class="form-col">
+                    <label>Teléfono:</label>
+                    <input type="tel" name="telefono" id="edit_telefono" maxlength="9" placeholder="0000-0000" pattern="\d{4}-\d{4}" title="Formato: 0000-0000" />
+                </div>
+                <div class="form-col">
+                    <label>Email (Solo Gmail):</label>
+                    <input type="email" name="email" id="edit_email" placeholder="estudiante@gmail.com" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col" style="grid-column: 1 / -1;">
+                    <label>Dirección:</label>
+                    <input type="text" name="direccion" id="edit_direccion" placeholder="Dirección del estudiante" />
                 </div>
             </div>
 

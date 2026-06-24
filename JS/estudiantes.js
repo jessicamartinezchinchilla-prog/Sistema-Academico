@@ -3,8 +3,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. VALIDACIONES Y FORMATEO AUTOMÁTICO ---
     configurarFormateo('edit_nie', 'nie');
+    configurarFormateoDUI('edit_dui');
+    configurarFormateoTelefono('edit_telefono');
     configurarNombres('edit_nombres');
     configurarNombres('edit_apellidos');
+    configurarValidacionEmail('edit_email');
 
     // --- 2. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX) ---
     document.querySelectorAll('.modal-form').forEach(form => {
@@ -29,7 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     let msg = '⚠️ Error al procesar la solicitud';
                     
                     if (errorType === 'nie_duplicado') msg = '⚠️ El NIE ingresado ya está registrado';
+                    else if (errorType === 'telefono_invalido') msg = '⚠️ El teléfono debe tener el formato 0000-0000';
+                    else if (errorType === 'gmail') msg = '⚠️ El correo debe ser obligatoriamente @gmail.com';
                     else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
+                    
+                    alert(msg);
+                } else if (result.startsWith('INFO:')) {
+                    const infoType = result.split(':')[1];
+                    let msg = 'ℹ️ Información';
+                    
+                    if (infoType === 'sin_cambios') msg = 'ℹ️ No has realizado ningún cambio';
                     
                     alert(msg);
                 } else if (result.startsWith('SUCCESS:')) {
@@ -101,7 +113,30 @@ function configurarFormateo(idInput, tipo) {
     });
 }
 
-// ✅ CAMBIO: ahora usa 'input' en vez de 'blur' (tiempo real)
+function configurarFormateoDUI(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 8) val = val.slice(0, 8) + '-' + val.slice(8, 9);
+        val = val.slice(0, 10);
+        e.target.value = val;
+    });
+}
+
+function configurarFormateoTelefono(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 4) val = val.slice(0, 4) + '-' + val.slice(4, 8);
+        val = val.slice(0, 9);
+        e.target.value = val;
+    });
+}
+
 function configurarNombres(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
@@ -123,6 +158,29 @@ function configurarNombres(idInput) {
         if (valor !== formateado) {
             e.target.value = formateado;
             e.target.setSelectionRange(cursorPos, cursorPos);
+        }
+    });
+}
+
+function configurarValidacionEmail(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+        const valor = e.target.value;
+        const emailRegex = /^[a-zA-Z0-9._%+-]*@gmail\.com$/;
+        
+        if (valor === '') {
+            e.target.style.borderColor = '';
+            return;
+        }
+        
+        if (emailRegex.test(valor)) {
+            e.target.style.borderColor = '#16a34a';
+        } else if (valor.includes('@')) {
+            e.target.style.borderColor = '#dc2626';
+        } else {
+            e.target.style.borderColor = '';
         }
     });
 }
@@ -153,6 +211,26 @@ function validarFormularioEstudiante(form) {
         const apellidos = apellidosInput.value.trim().split(/\s+/);
         if (apellidos.length < 2) {
             alert('⚠️ Debe ingresar al menos dos apellidos.');
+            return false;
+        }
+    }
+
+    // Validar teléfono si está lleno
+    const telefonoInput = form.querySelector('[name="telefono"]');
+    if (telefonoInput && telefonoInput.value.trim()) {
+        const telefonoRegex = /^\d{4}-\d{4}$/;
+        if (!telefonoRegex.test(telefonoInput.value.trim())) {
+            alert('⚠️ El teléfono debe tener el formato 0000-0000');
+            return false;
+        }
+    }
+
+    // Validar email si está lleno
+    const emailInput = form.querySelector('[name="email"]');
+    if (emailInput && emailInput.value.trim()) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+        if (!emailRegex.test(emailInput.value.trim())) {
+            alert('⚠️ El correo debe ser obligatoriamente @gmail.com');
             return false;
         }
     }
@@ -199,6 +277,19 @@ function editarEstudiante(btn) {
     document.getElementById('edit_nie').value = d.nie;
     document.getElementById('edit_nombres').value = d.nombres;
     document.getElementById('edit_apellidos').value = d.apellidos;
+    document.getElementById('edit_dui').value = d.dui || '';
+    document.getElementById('edit_telefono').value = d.telefono || '';
+    document.getElementById('edit_email').value = d.email || '';
+    document.getElementById('edit_direccion').value = d.direccion || '';
+    
+    // Mostrar estado en el campo readonly con color
+    const estadoDisplay = document.getElementById('edit_estado_display');
+    if (estadoDisplay) {
+        estadoDisplay.value = d.estado === 'activo' ? 'Activo' : 'Inactivo';
+        estadoDisplay.style.color = d.estado === 'activo' ? '#16a34a' : '#dc2626';
+        estadoDisplay.style.fontWeight = '600';
+    }
+    // Mantener el valor oculto para el formulario
     document.getElementById('edit_estado').value = d.estado;
     
     document.getElementById('edit_seccion_display').value = d.seccion || 'Sin matrícula';
