@@ -12,20 +12,33 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarCapitalizacionNombre('edit_resp_nombres');
     configurarCapitalizacionNombre('edit_resp_apellidos');
 
-    // ==========================================
+        // ==========================================
     // 1. INTERCEPTAR ENVÍO DE FORMULARIOS (AJAX)
     // ==========================================
     document.querySelectorAll('.modal-form').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (this.action.includes('generar_pdf.php')) return;
+            // ✅ PREVENIR DOBLE ENVÍO
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const textoOriginal = submitBtn ? submitBtn.innerHTML : 'Guardar';
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            }
+
+            if (this.action.includes('generar_pdf.php')) {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = textoOriginal; }
+                return;
+            }
             
             const formData = new FormData(this);
             const esFormMatricula = this.id === 'formMatricula' || this.id === 'formEditar';
             
             if (esFormMatricula) {
                 if (!validarFormularioMatricula(this, false)) {
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = textoOriginal; }
                     return;
                 }
             }
@@ -45,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     switch(errorType) {
                         case 'campos_incompletos': msg = 'Todos los campos obligatorios deben estar llenos'; break;
-                        case 'gmail': msg = 'El correo debe ser @gmail.com'; break;
+                        case 'gmail': msg = 'El correo del responsable debe ser @gmail.com'; break;
                         case 'nie_duplicado': msg = 'Ya existe un estudiante con ese NIE'; break;
                         case 'dui_estudiante_duplicado': msg = 'Ya existe un estudiante con ese DUI'; break;
                         case 'dui_responsable_existe_estudiante': msg = 'El DUI del responsable ya está registrado como estudiante'; break;
@@ -63,13 +76,45 @@ document.addEventListener('DOMContentLoaded', () => {
                         case 'email_existe_responsable': msg = 'El correo del estudiante ya está registrado en un responsable'; break;
                         case 'email_responsable_duplicado': msg = 'Ya existe un responsable con ese correo electrónico'; break;
                         case 'email_existe_estudiante': msg = 'El correo del responsable ya está registrado en un estudiante'; break;
+                        case 'telefono_invalido': msg = 'El teléfono del estudiante debe tener el formato 0000-0000'; break;
+                        case 'email_estudiante_invalido': msg = 'El correo del estudiante debe ser @gmail.com'; break;
                         case 'sin_estudiante': msg = 'Debes seleccionar un estudiante existente'; break;
                         case 'seccion_invalida': msg = 'La sección seleccionada no es válida'; break;
-                        case 'bd': msg = 'Error en la base de datos'; break;
-                        default: msg = errorType;
+                        case 'matricula_duplicada': msg = 'El estudiante ya está matriculado en esta sección'; break;
+                        case 'grado_no_superior': msg = 'La sección seleccionada no es válida. Si el estudiante está repitiendo año, marque la opción correspondiente.'; break;
+                        case 'grado_diferente_editar': msg = 'Solo puedes cambiar a secciones del mismo año académico.'; break;
+                        
+                        default:
+                            if (errorType.startsWith('ya_matriculado:')) {
+                                const seccionActual = errorType.split(':')[1] || 'otra sección';
+                                msg = `El estudiante ya tiene una matrícula activa en: ${seccionActual}. Si desea cambiar de sección, use la opción de editar matrícula.`;
+                            } else {
+                                msg = errorType;
+                            }
+                            break;
                     }
                     
                     alert('⚠️ ' + msg);
+                    
+                    // ✅ Reactivar botón si hubo error
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = textoOriginal;
+                    }
+                } else if (result.startsWith('INFO:')) {
+                    const infoType = result.replace('INFO:', '').trim();
+                    let msg = 'Información';
+                    
+                    if (infoType === 'sin_cambios') {
+                        msg = 'No has realizado ningún cambio en la matrícula';
+                    }
+                    
+                    alert('️ ' + msg);
+                    
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = textoOriginal;
+                    }
                 } else if (result.startsWith('SUCCESS:')) {
                     alert('✅ Matrícula guardada exitosamente');
                     window.location.reload();
@@ -77,6 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error de conexión con el servidor');
+                
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = textoOriginal;
+                }
             }
         });
     });
@@ -165,13 +215,19 @@ document.addEventListener('DOMContentLoaded', () => {
             edad--;
         }
 
+        if (edad < 14 || edad > 22) {
+            alert('⚠️ La edad debe estar entre 14 y 22 años');
+            inputFechaNac.value = '';
+            if (inputEdad) {
+                inputEdad.value = '';
+                inputEdad.removeAttribute('data-edad-calculada');
+            }
+            return;
+        }
+
         if (inputEdad) {
             inputEdad.value = edad;
             inputEdad.setAttribute('data-edad-calculada', edad);
-        }
-
-        if (edad < 14 || edad > 22) {
-            alert('⚠️ La edad debe estar entre 14 y 22 años');
         }
 
         if (inputDui) {
@@ -326,31 +382,133 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 9. CAMBIO DE ESTUDIANTE EXISTENTE
+    // 9. CAMBIO DE ESTUDIANTE EXISTENTE (CON FILTRO DE GRADO)
     // ==========================================
     const selectEstudianteExistente = document.getElementById('select_estudiante_existente');
+    const checkboxRepite = document.getElementById('checkbox_repite');
+    const contenedorCheckboxRepite = document.getElementById('contenedor_checkbox_repite');
+    const infoGradoActual = document.getElementById('info_grado_actual');
+    const selectSeccionAgregar = document.querySelector('#paso1 select[name="id_seccion"]');
+
+    let ultimoGradoEstudiante = null;
+
     if (selectEstudianteExistente) {
         selectEstudianteExistente.addEventListener('change', async function() {
             const idEstudiante = this.value;
+            
+            // Resetear estados
+            if (contenedorCheckboxRepite) contenedorCheckboxRepite.style.display = 'none';
+            if (checkboxRepite) {
+                checkboxRepite.checked = false;
+                checkboxRepite.disabled = true;
+            }
+            if (infoGradoActual) infoGradoActual.textContent = '';
+            ultimoGradoEstudiante = null;
+            
             if (!idEstudiante) return;
             
             try {
-                const response = await fetch(`../actions/buscar_responsable_por_estudiante.php?id_estudiante=${idEstudiante}`);
-                const data = await response.json();
+                // ✅ Buscar último grado del estudiante
+                const responseGrado = await fetch(`../actions/obtener_ultimo_grado.php?id_estudiante=${idEstudiante}`);
+                const dataGrado = await responseGrado.json();
                 
-                if (data.encontrado) {
-                    document.querySelector('[name="responsable_nombres"]').value = data.datos.nombres || '';
-                    document.querySelector('[name="responsable_apellidos"]').value = data.datos.apellidos || '';
-                    document.querySelector('[name="responsable_ocupacion"]').value = data.datos.ocupacion || '';
-                    document.querySelector('[name="responsable_parentesco"]').value = data.datos.parentesco || '';
-                    document.querySelector('[name="responsable_email"]').value = data.datos.email || '';
-                    document.querySelector('[name="responsable_telefono"]').value = data.datos.telefono || '';
-                    document.querySelector('[name="responsable_dui"]').value = data.datos.dui || '';
-                    document.querySelector('[name="responsable_direccion"]').value = data.datos.direccion || '';
+                if (dataGrado.encontrado) {
+                    ultimoGradoEstudiante = dataGrado.id_grado;
+                    
+                    // Mostrar el checkbox y habilitarlo
+                    if (contenedorCheckboxRepite) contenedorCheckboxRepite.style.display = 'block';
+                    if (checkboxRepite) checkboxRepite.disabled = false;
+                    
+                    // Mostrar información del grado actual
+                    if (infoGradoActual) {
+                        infoGradoActual.textContent = ` Grado actual del estudiante: ${dataGrado.nombre_grado}`;
+                    }
+                    
+                    // Filtrar secciones para mostrar solo las de grado superior
+                    await actualizarSeccionesAgregar(false);
+                } else {
+                    // Si no tiene grado previo, mostrar todas las secciones
+                    await actualizarSeccionesAgregar(true);
+                }
+                
+                // ✅ Buscar responsable
+                const responseResp = await fetch(`../actions/buscar_responsable_por_estudiante.php?id_estudiante=${idEstudiante}`);
+                const dataResp = await responseResp.json();
+                
+                if (dataResp.encontrado) {
+                    document.querySelector('[name="responsable_nombres"]').value = dataResp.datos.nombres || '';
+                    document.querySelector('[name="responsable_apellidos"]').value = dataResp.datos.apellidos || '';
+                    document.querySelector('[name="responsable_ocupacion"]').value = dataResp.datos.ocupacion || '';
+                    document.querySelector('[name="responsable_parentesco"]').value = dataResp.datos.parentesco || '';
+                    document.querySelector('[name="responsable_email"]').value = dataResp.datos.email || '';
+                    document.querySelector('[name="responsable_telefono"]').value = dataResp.datos.telefono || '';
+                    document.querySelector('[name="responsable_dui"]').value = dataResp.datos.dui || '';
+                    document.querySelector('[name="responsable_direccion"]').value = dataResp.datos.direccion || '';
                 }
             } catch (error) {
-                console.error('Error buscando responsable:', error);
+                console.error('Error buscando datos:', error);
             }
+        });
+    }
+
+    // ✅ Función para actualizar el dropdown de secciones en AGREGAR
+    async function actualizarSeccionesAgregar(mostrarTodas) {
+        if (!selectSeccionAgregar) return;
+        
+        const seleccionActual = selectSeccionAgregar.value;
+        selectSeccionAgregar.innerHTML = '<option value="">-- Seleccione una sección --</option>';
+        
+        try {
+            let url;
+            
+            if (ultimoGradoEstudiante !== null) {
+                if (mostrarTodas) {
+                    // ✅ Repite año: mostrar secciones del MISMO grado
+                    url = `../actions/obtener_secciones_filtradas.php?id_grado=${ultimoGradoEstudiante}&mostrar_todas=0`;
+                } else {
+                    // ✅ Sube de año: mostrar secciones del grado superior
+                    const gradoSuperior = ultimoGradoEstudiante + 1;
+                    url = `../actions/obtener_secciones_filtradas.php?id_grado=${gradoSuperior}&mostrar_todas=0`;
+                }
+            } else {
+                // Sin grado previo: mostrar todas
+                url = '../actions/obtener_secciones_filtradas.php?mostrar_todas=1';
+            }
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.secciones && data.secciones.length > 0) {
+                data.secciones.forEach(seccion => {
+                    const option = document.createElement('option');
+                    option.value = seccion.id;
+                    option.textContent = seccion.nombre;
+                    selectSeccionAgregar.appendChild(option);
+                });
+                
+                if (seleccionActual) {
+                    const optionExiste = selectSeccionAgregar.querySelector(`option[value="${seleccionActual}"]`);
+                    if (optionExiste) {
+                        selectSeccionAgregar.value = seleccionActual;
+                    }
+                }
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = mostrarTodas ? 'No hay secciones del mismo año disponibles' : 'No hay secciones de año superior disponibles';
+                option.disabled = true;
+                selectSeccionAgregar.appendChild(option);
+            }
+        } catch (error) {
+            console.error('Error cargando secciones:', error);
+        }
+    }
+
+    // ✅ Evento del checkbox "Repite año"
+    if (checkboxRepite) {
+        checkboxRepite.addEventListener('change', async function() {
+            const mostrarTodas = this.checked;
+            await actualizarSeccionesAgregar(mostrarTodas);
         });
     }
 
@@ -386,6 +544,33 @@ document.addEventListener('DOMContentLoaded', () => {
     window.siguientePaso = siguientePaso;
     window.pasoAnterior = pasoAnterior;
     window.mostrarPasoEditar = mostrarPasoEditar;
+
+    // ==========================================
+    // 11. FORMATEAR CAMPOS DE CONTACTO EN EDICIÓN
+    // ==========================================
+    const editDuiInput = document.getElementById('edit_est_dui');
+    if (editDuiInput) {
+        editDuiInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 9);
+            if (valor.length > 8) {
+                valor = valor.substring(0, 8) + '-' + valor.substring(8, 9);
+            }
+            e.target.value = valor;
+        });
+    }
+
+    const editTelInput = document.getElementById('edit_est_telefono');
+    if (editTelInput) {
+        editTelInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.substring(0, 8);
+            if (valor.length > 4) {
+                valor = valor.substring(0, 4) + '-' + valor.substring(4, 8);
+            }
+            e.target.value = valor;
+        });
+    }
 });
 
 // ==========================================
@@ -450,6 +635,19 @@ function abrirModalAgregar() {
     const form = document.getElementById('formMatricula');
     if (form) form.reset();
     
+    // ✅ Resetear estados del checkbox de repite año
+    const contenedorCheckboxRepite = document.getElementById('contenedor_checkbox_repite');
+    const checkboxRepite = document.getElementById('checkbox_repite');
+    const infoGradoActual = document.getElementById('info_grado_actual');
+    
+    if (contenedorCheckboxRepite) contenedorCheckboxRepite.style.display = 'none';
+    if (checkboxRepite) {
+        checkboxRepite.checked = false;
+        checkboxRepite.disabled = true;
+    }
+    if (infoGradoActual) infoGradoActual.textContent = '';
+    ultimoGradoEstudiante = null;
+    
     const inputEdad = document.getElementById('mat_edad');
     const inputDui = document.getElementById('mat_dui');
     const inputFechaNac = document.getElementById('mat_fecha_nacimiento');
@@ -491,9 +689,14 @@ function abrirModalEditar(btn) {
     
     document.getElementById('edit_matricula_id').value = d.id;
     document.getElementById('edit_estudiante').value = d.idEstudiante;
-    document.getElementById('edit_id_estudiante_hidden').value = d.idEstudiante; // ✅ AGREGAR
+    document.getElementById('edit_id_estudiante_hidden').value = d.idEstudiante;
     document.getElementById('edit_seccion').value = d.idSeccion;
     document.getElementById('edit_estado').value = d.estado || 'activo';
+    
+    document.getElementById('edit_est_dui').value = d.dui || '';
+    document.getElementById('edit_est_telefono').value = d.telefono || '';
+    document.getElementById('edit_est_email').value = d.email || '';
+    document.getElementById('edit_est_direccion').value = d.direccion || '';
     
     document.getElementById('edit_resp_dui').value = d.respDui || '';
     document.getElementById('edit_resp_nombres').value = d.respNombres || '';
@@ -507,7 +710,48 @@ function abrirModalEditar(btn) {
     document.getElementById('edit_paso1').style.display = 'block';
     document.getElementById('edit_paso2').style.display = 'none';
     
+    // ✅ Filtrar secciones por mismo grado
+    filtrarSeccionesEditar(d.idSeccion);
+    
     document.getElementById('modalEditar').showModal();
+}
+
+// ✅ Función para filtrar secciones en EDITAR (mismo grado)
+async function filtrarSeccionesEditar(idSeccionActual) {
+    const selectSeccionEditar = document.getElementById('edit_seccion');
+    const infoFiltro = document.getElementById('info_filtro_seccion');
+    
+    if (!selectSeccionEditar) return;
+    
+    if (infoFiltro) infoFiltro.style.display = 'block';
+    
+    try {
+        const responseGrado = await fetch(`../actions/obtener_grado_seccion.php?id_seccion=${idSeccionActual}`);
+        const dataGrado = await responseGrado.json();
+        
+        if (!dataGrado.encontrado) return;
+        
+        const idGradoActual = dataGrado.id_grado;
+        
+        const responseSecciones = await fetch(`../actions/obtener_secciones_filtradas.php?id_grado=${idGradoActual}&mostrar_todas=0`);
+        const dataSecciones = await responseSecciones.json();
+        
+        selectSeccionEditar.innerHTML = '';
+        
+        if (dataSecciones.secciones && dataSecciones.secciones.length > 0) {
+            dataSecciones.secciones.forEach(seccion => {
+                const option = document.createElement('option');
+                option.value = seccion.id;
+                option.textContent = seccion.nombre;
+                if (seccion.id == idSeccionActual) {
+                    option.selected = true;
+                }
+                selectSeccionEditar.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error filtrando secciones:', error);
+    }
 }
 
 function eliminarMatricula(id) {
@@ -561,7 +805,6 @@ function verMatricula(btn) {
 // ==========================================
 
 function validarFormularioMatricula(form, soloPaso1 = false) {
-    // ✅ Validar que el formulario de editar tenga estudiante seleccionado
     if (form.id === 'formEditar') {
         const estudianteEdit = form.querySelector('[name="id_estudiante"]');
         if (estudianteEdit && !estudianteEdit.value) {
@@ -582,7 +825,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         if (nieInput) {
             const nie = nieInput.value.trim();
             if (nie.length === 0 || nie.length > 10 || !/^\d+$/.test(nie)) {
-                alert('⚠️ El NIE debe contener entre 1 y 10 dígitos numéricos.');
+                alert('️ El NIE debe contener entre 1 y 10 dígitos numéricos.');
                 return false;
             }
         }
@@ -620,7 +863,7 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
                 if (duiInput) {
                     const dui = duiInput.value.trim();
                     if (!dui || dui.length < 10) {
-                        alert('⚠️ Al tener 18 años o más, el DUI es obligatorio (formato: 00000000-0)');
+                        alert('️ Al tener 18 años o más, el DUI es obligatorio (formato: 00000000-0)');
                         return false;
                     }
                 }
@@ -631,19 +874,15 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
     if (soloPaso1) {
         const seccion = form.querySelector('[name="id_seccion"]')?.value;
         if (!seccion) {
-            alert('⚠️ Debes seleccionar una sección');
+            alert('️ Debes seleccionar una sección');
             return false;
         }
         return true;
     }
 
-    // ✅ VALIDACIÓN DEL PASO 2 (RESPONSABLE) - Solo para modal de AGREGAR
-    // Para modal de EDITAR, los campos del responsable son opcionales
-    
     const esModalEditar = form.id === 'formEditar';
     
     if (!esModalEditar) {
-        // Solo validar campos obligatorios del responsable si es modal de AGREGAR
         const respNombresInput = form.querySelector('[name="responsable_nombres"]');
         if (respNombresInput && respNombresInput.value.trim() === '') {
             alert('⚠️ Los nombres del responsable son obligatorios.');
@@ -669,19 +908,37 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         }
     }
 
-    // Validar formato de email si tiene valor
+    if (esModalEditar) {
+        const estEmailInput = form.querySelector('[name="est_email"]');
+        if (estEmailInput && estEmailInput.value.trim()) {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+            if (!emailRegex.test(estEmailInput.value.trim())) {
+                alert('⚠️ El correo del estudiante debe ser @gmail.com');
+                return false;
+            }
+        }
+        
+        const estTelefonoInput = form.querySelector('[name="est_telefono"]');
+        if (estTelefonoInput && estTelefonoInput.value.trim()) {
+            const telefono = estTelefonoInput.value.trim().replace(/-/g, '');
+            if (telefono.length !== 8 || !/^\d+$/.test(telefono)) {
+                alert('⚠️ El teléfono del estudiante debe tener 8 dígitos (formato: 0000-0000)');
+                return false;
+            }
+        }
+    }
+
     const emailInputs = form.querySelectorAll('[name="responsable_email"]');
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     
     for (let input of emailInputs) {
         const email = input.value.trim();
         if (email && !emailRegex.test(email)) {
-            alert('⚠️ El correo debe ser @gmail.com');
+            alert('⚠️ El correo del responsable debe ser @gmail.com');
             return false;
         }
     }
 
-    // Validar formato de nombres del responsable si tiene valor
     const respNombresInput = form.querySelector('[name="responsable_nombres"]');
     if (respNombresInput && respNombresInput.value.trim() !== '') {
         const respNombres = respNombresInput.value.trim().split(/\s+/);
@@ -691,7 +948,6 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         }
     }
 
-    // Validar formato de apellidos del responsable si tiene valor
     const respApellidosInput = form.querySelector('[name="responsable_apellidos"]');
     if (respApellidosInput && respApellidosInput.value.trim() !== '') {
         const respApellidos = respApellidosInput.value.trim().split(/\s+/);
@@ -701,7 +957,6 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         }
     }
 
-    // Validar formato de teléfono del responsable si tiene valor
     const respTelefonoInput = form.querySelector('[name="responsable_telefono"]');
     if (respTelefonoInput && respTelefonoInput.value.trim() !== '') {
         const telefono = respTelefonoInput.value.trim().replace(/-/g, '');
@@ -711,12 +966,11 @@ function validarFormularioMatricula(form, soloPaso1 = false) {
         }
     }
 
-    // Validar formato de DUI del responsable si tiene valor
     const respDuiInput = form.querySelector('[name="responsable_dui"]');
     if (respDuiInput && respDuiInput.value.trim() !== '') {
         const dui = respDuiInput.value.trim();
         if (!/^\d{8}-\d$/.test(dui)) {
-            alert('⚠️ El DUI del responsable debe tener el formato: 00000000-0');
+            alert('️ El DUI del responsable debe tener el formato: 00000000-0');
             return false;
         }
     }

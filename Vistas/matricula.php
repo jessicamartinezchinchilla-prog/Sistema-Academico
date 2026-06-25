@@ -34,23 +34,38 @@ $query = "SELECT
           INNER JOIN estudiantes e ON m.id_estudiante = e.id
           INNER JOIN secciones s ON m.id_seccion = s.id
           LEFT JOIN responsables r ON m.id = r.id_matricula
+          WHERE m.estado = 'Activo'
           ORDER BY m.fecha_registro DESC";
 $matriculas = $pdo->query($query)->fetchAll();
 
-// Estadísticas
+// Estadísticas (con los mismos JOINs que la tabla para consistencia)
 $totalMatriculas = count($matriculas);
-$matriculasActivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado = 'Activo'")->fetchColumn();
-$matriculasInactivas = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE estado = 'Inactivo'")->fetchColumn();
-$matriculasAnio = $pdo->query("SELECT COUNT(*) FROM matriculas WHERE anio = YEAR(CURRENT_DATE)")->fetchColumn();
+$matriculasActivas = $pdo->query("
+    SELECT COUNT(*) FROM matriculas m
+    INNER JOIN estudiantes e ON m.id_estudiante = e.id
+    INNER JOIN secciones s ON m.id_seccion = s.id
+    WHERE m.estado = 'Activo'
+")->fetchColumn();
+$matriculasInactivas = $pdo->query("
+    SELECT COUNT(*) FROM matriculas m
+    INNER JOIN estudiantes e ON m.id_estudiante = e.id
+    INNER JOIN secciones s ON m.id_seccion = s.id
+    WHERE m.estado = 'Inactivo'
+")->fetchColumn();
+$matriculasAnio = $pdo->query("
+    SELECT COUNT(*) FROM matriculas m
+    INNER JOIN estudiantes e ON m.id_estudiante = e.id
+    INNER JOIN secciones s ON m.id_seccion = s.id
+    WHERE m.anio = YEAR(CURRENT_DATE)
+")->fetchColumn();
 
 // Obtener estudiantes existentes (solo los que tienen matrículas activas)
 $estudiantes = $pdo->query("
-    SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos, ' (', e.nie, ')') as nombre_completo, e.nie 
+    SELECT DISTINCT e.id, CONCAT(e.nombres, ' ', e.apellidos, ' (', e.nie, ')') as nombre_completo, e.nie 
     FROM estudiantes e
     INNER JOIN matriculas m ON e.id = m.id_estudiante
     WHERE e.estado = 'activo' AND m.estado = 'Activo'
-    GROUP BY e.id
-    ORDER BY e.nombres
+    ORDER BY nombre_completo
 ")->fetchAll();
 
 // Obtener secciones completas
@@ -244,6 +259,18 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    
+                    <!-- ✅ Checkbox para estudiante que repite año -->
+                    <div id="contenedor_checkbox_repite" style="display: none; margin-top: 12px; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="checkbox_repite" name="repite_anio" disabled style="width: 16px; height: 16px;">
+                            <span style="font-weight: 500; color: #92400e;">El estudiante está repitiendo año</span>
+                        </label>
+                        <p style="font-size: 11px; color: #78350f; margin-top: 6px; margin-bottom: 0;">
+                            <i class="fa-solid fa-info-circle"></i> Marque esta opción si el estudiante está repitiendo el año académico. Esto permitirá seleccionar cualquier sección disponible.
+                        </p>
+                        <p id="info_grado_actual" style="font-size: 12px; color: #92400e; margin-top: 8px; margin-bottom: 0; font-weight: 600;"></p>
+                    </div>
                 </div>
 
                 <!-- CAMPOS: ESTUDIANTE NUEVO -->
@@ -257,7 +284,7 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                         </div>
                         <div class="form-col">
                             <label>Fecha de Nacimiento:</label>
-                            <input type="date" id="mat_fecha_nacimiento" name="fecha_nacimiento" max="2012-12-31">
+                            <input type="date" id="mat_fecha_nacimiento" name="fecha_nacimiento" min="2004-01-01" max="2012-12-31">
                         </div>
                     </div>
 
@@ -449,6 +476,9 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                         <option value="<?php echo $s['id']; ?>"><?php echo $s['nombre']; ?></option>
                     <?php endforeach; ?>
                 </select>
+                <p id="info_filtro_seccion" style="font-size: 12px; color: #2563eb; margin-top: 6px; display: none;">
+                    <i class="fa-solid fa-info-circle"></i> Solo puedes cambiar a secciones del mismo año académico
+                </p>
 
                 <label>Estado del Estudiante:</label>
                 <select id="edit_estado" name="estado" required style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-weight: 600;">
@@ -458,6 +488,30 @@ $secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fe
                 <p style="font-size: 11px; color: #6b7280; margin-top: 5px;">
                     <i class="fa-solid fa-info-circle"></i> Este cambio se reflejará también en el panel de Estudiantes
                 </p>
+
+                <hr class="divider">
+
+                <h4><i class="fa-solid fa-address-book"></i> Contacto del Estudiante</h4>
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>DUI:</label>
+                        <input type="text" id="edit_est_dui" name="est_dui" maxlength="10" placeholder="00000000-0" pattern="\d{8}-\d">
+                    </div>
+                    <div class="form-col">
+                        <label>Teléfono:</label>
+                        <input type="tel" id="edit_est_telefono" name="est_telefono" maxlength="9" placeholder="0000-0000" pattern="\d{4}-\d{4}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Email (Solo Gmail):</label>
+                        <input type="email" id="edit_est_email" name="est_email" placeholder="estudiante@gmail.com">
+                    </div>
+                    <div class="form-col">
+                        <label>Dirección:</label>
+                        <input type="text" id="edit_est_direccion" name="est_direccion" placeholder="Dirección del estudiante">
+                    </div>
+                </div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').close()">Cancelar</button>
