@@ -11,7 +11,7 @@ $totalMaterias = $pdo->query("SELECT COUNT(*) FROM materias")->fetchColumn();
 $totalSecciones = $pdo->query("SELECT COUNT(*) FROM secciones")->fetchColumn();
 
 // ==========================================
-// 2. PROMEDIO GENERAL (Lógica Opción B: suma / 4)
+// 2. PROMEDIO GENERAL (CORREGIDO: dividir entre número real de notas)
 // ==========================================
 $queryPromedios = "
     SELECT c.id_estudiante, c.id_materia, c.nota
@@ -34,12 +34,13 @@ foreach ($calificacionesRaw as $cal) {
     $estudiantesMaterias[$idEst][$idMat][] = floatval($cal['nota']);
 }
 
-// Calcular promedio general (promedio de promedios por materia / 4)
+// ✅ CORREGIDO: Calcular promedio general usando el número real de notas
 $promediosEstudiantes = [];
 foreach ($estudiantesMaterias as $idEst => $materias) {
     $sumaPromedios = 0;
     foreach ($materias as $notas) {
-        $sumaPromedios += array_sum($notas) / 4;
+        // ✅ CORREGIDO: Dividir entre count($notas) en lugar de 4
+        $sumaPromedios += count($notas) > 0 ? array_sum($notas) / count($notas) : 0;
     }
     $promediosEstudiantes[] = count($materias) > 0 ? $sumaPromedios / count($materias) : 0;
 }
@@ -49,7 +50,7 @@ $promedioGeneral = count($promediosEstudiantes) > 0
     : 0;
 
 // ==========================================
-// 3. RENDIMIENTO POR MATERIA (para gráfica y tarjetas)
+// 3. RENDIMIENTO POR MATERIA (CORREGIDO)
 // ==========================================
 $queryMaterias = "
     SELECT 
@@ -79,12 +80,12 @@ foreach ($datosMateriasRaw as $row) {
     $materiasData[$idMat]['estudiantes'][$row['id_estudiante']] = true;
 }
 
-// Calcular promedios y aprobados/reprobados por materia
+// ✅ CORREGIDO: Calcular promedios y aprobados/reprobados por materia
 $materiasProcesadas = [];
 foreach ($materiasData as $idMat => $data) {
-    // Promedio por materia = suma de notas / 4 (Opción B)
+    // ✅ CORREGIDO: Promedio por materia = suma de notas / número real de notas
     $promedioMateria = count($data['notas']) > 0 
-        ? round(array_sum($data['notas']) / 4, 2) 
+        ? round(array_sum($data['notas']) / count($data['notas']), 2) 
         : 0;
     
     // Para contar aprobados/reprobados, necesitamos promedios por estudiante en esta materia
@@ -102,7 +103,8 @@ foreach ($materiasData as $idMat => $data) {
     $aprobados = 0;
     $reprobados = 0;
     foreach ($estudiantesEnMateria as $notasEst) {
-        $promedioEst = array_sum($notasEst) / 4;
+        // ✅ CORREGIDO: Dividir entre count($notasEst) en lugar de 4
+        $promedioEst = count($notasEst) > 0 ? array_sum($notasEst) / count($notasEst) : 0;
         if ($promedioEst >= 6) {
             $aprobados++;
         } else {
@@ -151,16 +153,51 @@ $materiasJSON = json_encode($materiasProcesadas);
         <nav>
             <ul class="list">
                 <li><a href="panel_principal.php"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="estadisticas.php" class="active"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                
+                <?php if (puedeVerPanel('profesores')): ?>
+                    <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estudiantes')): ?>
+                    <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('matricula')): ?>
+                    <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('materias')): ?>
+                    <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('calificaciones')): ?>
+                    <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('secciones')): ?>
+                    <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('historial_academico')): ?>
+                    <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estadisticas')): ?>
+                    <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('auditoria')): ?>
+                    <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <?php endif; ?>
+                
+                <?php if (esAdmin()): ?>
+                    <li><a href="usuarios.php"><i class="fa-solid fa-users-gear"></i> Usuarios</a></li>
+                <?php endif; ?>
+
+                <?php if (puedeVerPanel('configuracion')): ?>
+                    <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                <?php endif; ?>
+
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>

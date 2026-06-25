@@ -3,8 +3,11 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// ✅ MODIFICADO: Obtener profesores desde AMBAS fuentes (asignaciones + profesor_asignacion)
-$query = "SELECT 
+// ==========================================
+// CONSULTA DE SECCIONES (CON FILTRO DOCENTE)
+// ==========================================
+
+$sqlSecciones = "SELECT 
             s.id,
             s.nombre,
             s.letra,
@@ -14,25 +17,35 @@ $query = "SELECT
             c.id as id_carrera,
             g.nombre as grado,
             g.id as id_grado,
-            COUNT(DISTINCT m.id_estudiante) as total_estudiantes,
-            GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ') as profesores_nombres
+            (SELECT COUNT(DISTINCT m.id_estudiante) 
+             FROM matriculas m 
+             WHERE m.id_seccion = s.id AND m.estado = 'Activo') as total_estudiantes,
+            (SELECT GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ')
+             FROM asignaciones a
+             LEFT JOIN profesores p ON a.id_profesor = p.id
+             WHERE a.id_seccion = s.id) as profesores_nombres
           FROM secciones s
           INNER JOIN carreras c ON s.id_carrera = c.id
-          INNER JOIN grados g ON s.id_grado = g.id
-          LEFT JOIN matriculas m ON s.id = m.id_seccion AND m.estado = 'Activo'
-          LEFT JOIN (
-              -- Profesores desde asignaciones (materias)
-              SELECT DISTINCT id_seccion, id_profesor FROM asignaciones
-              UNION
-              -- Profesores desde profesor_asignacion
-              SELECT DISTINCT id_seccion, id_profesor FROM profesor_asignacion
-          ) pa ON s.id = pa.id_seccion
-          LEFT JOIN profesores p ON pa.id_profesor = p.id
-          GROUP BY s.id
-          ORDER BY c.nombre, g.id, s.letra";
-$secciones = $pdo->query($query)->fetchAll();
+          INNER JOIN grados g ON s.id_grado = g.id";
 
-// Contar profesores únicos por sección
+// ✅ FILTRO PARA DOCENTES
+if (esDocente()) {
+    $seccionesIds = getSeccionesDocente($pdo);
+    if (!empty($seccionesIds)) {
+        $idsSeguros = array_map('intval', $seccionesIds);
+        $idsStr = implode(',', $idsSeguros);
+        $sqlSecciones .= " WHERE s.id IN ($idsStr)";
+    } else {
+        $sqlSecciones .= " WHERE 1=0"; // Sin secciones asignadas
+    }
+}
+
+$sqlSecciones .= " ORDER BY c.nombre, g.id, s.letra";
+
+// Ejecutar consulta
+$secciones = $pdo->query($sqlSecciones)->fetchAll();
+
+// Contar profesores únicos por sección (ya viene del GROUP_CONCAT, pero por seguridad)
 foreach ($secciones as &$sec) {
     if (!empty($sec['profesores_nombres'])) {
         $profesores_array = array_unique(array_map('trim', explode(', ', $sec['profesores_nombres'])));
@@ -66,16 +79,51 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
         <nav>
             <ul class="list">
                 <li><a href="panel_principal.php"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="secciones.php" class="active"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                
+                <?php if (puedeVerPanel('profesores')): ?>
+                    <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estudiantes')): ?>
+                    <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('matricula')): ?>
+                    <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('materias')): ?>
+                    <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('calificaciones')): ?>
+                    <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('secciones')): ?>
+                    <li><a href="secciones.php" class="active"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('historial_academico')): ?>
+                    <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estadisticas')): ?>
+                    <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('auditoria')): ?>
+                    <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <?php endif; ?>
+                
+                <?php if (esAdmin()): ?>
+                    <li><a href="usuarios.php"><i class="fa-solid fa-users-gear"></i> Usuarios</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('configuracion')): ?>
+                    <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                <?php endif; ?>
+
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>
@@ -96,9 +144,11 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
                     <span id="contadorSecciones"><?php echo $totalSecciones; ?> Secciones</span>
                 </div>
                 
-                <button class="btn-primary" onclick="abrirModalAgregar()">
-                    <i class="fa-solid fa-plus"></i> Añadir sección
-                </button>
+                <?php if (!esDocente()): ?>
+                    <button class="btn-primary" onclick="abrirModalAgregar()">
+                        <i class="fa-solid fa-plus"></i> Añadir sección
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -108,7 +158,11 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
                 <div class="empty-grid-message">
                     <i class="fa-solid fa-school"></i>
                     <p>No hay secciones registradas en el sistema aún.</p>
-                    <p style="font-size: 14px; margin-top: 10px;">Haz clic en "Añadir sección" para crear la primera.</p>
+                    <?php if (!esDocente()): ?>
+                        <p style="font-size: 14px; margin-top: 10px;">Haz clic en "Añadir sección" para crear la primera.</p>
+                    <?php else: ?>
+                        <p style="font-size: 14px; margin-top: 10px;">No tienes secciones asignadas.</p>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <?php foreach ($secciones as $sec): ?>
@@ -159,7 +213,8 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
         </section>
     </main>
 
-    <!-- MODAL AÑADIR SECCIÓN -->
+    <?php if (!esDocente()): ?>
+    <!-- MODAL AÑADIR SECCIÓN (SOLO NO DOCENTES) -->
     <dialog id="modalSeccion" class="modal">
         <div class="modal-content">
             <h2>Añadir Nueva Sección</h2>
@@ -216,6 +271,7 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
             </form>
         </div>
     </dialog>
+    <?php endif; ?>
 
     <!-- MODAL VER DETALLES -->
     <dialog id="modalDetalles" class="modal modal-large">
@@ -223,12 +279,14 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
             <div class="modal-header">
                 <h2 id="detallesTitulo">Detalles de la Sección</h2>
                 <div class="modal-actions-header">
-                    <button type="button" onclick="editarSeccion()" class="btn-edit">
-                        <i class="fa-solid fa-pen-to-square"></i> Editar
-                    </button>
-                    <button type="button" onclick="eliminarSeccion()" class="btn-delete">
-                        <i class="fa-solid fa-trash"></i> Eliminar
-                    </button>
+                    <?php if (!esDocente()): ?>
+                        <button type="button" onclick="editarSeccion()" class="btn-edit">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                        </button>
+                        <button type="button" onclick="eliminarSeccion()" class="btn-delete">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                    <?php endif; ?>
                     <button type="button" onclick="cerrarModalDetalles()" class="btn-close-modal" title="Cerrar">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -286,7 +344,8 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
         </div>
     </dialog>
 
-    <!-- MODAL EDITAR SECCIÓN -->
+    <?php if (!esDocente()): ?>
+    <!-- MODAL EDITAR SECCIÓN (SOLO NO DOCENTES) -->
     <dialog id="modalEditar" class="modal">
         <div class="modal-content">
             <h2>Editar Sección</h2>
@@ -343,6 +402,7 @@ $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
             </form>
         </div>
     </dialog>
+    <?php endif; ?>
 
     <footer class="footer">
         <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>

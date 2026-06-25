@@ -3,9 +3,23 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// Obtener todas las materias SIN duplicados
+// Obtener materias (Filtradas si es docente)
 $materias = [];
-$query = $pdo->query("SELECT id, codigo, nombre, descripcion FROM materias ORDER BY nombre");
+$sqlMaterias = "SELECT id, codigo, nombre, descripcion FROM materias";
+
+if (esDocente()) {
+    $materiasIds = getMateriasDocente($pdo);
+    if (!empty($materiasIds)) {
+        $idsSeguros = array_map('intval', $materiasIds);
+        $idsStr = implode(',', $idsSeguros);
+        $sqlMaterias .= " WHERE id IN ($idsStr)";
+    } else {
+        $sqlMaterias .= " WHERE 1=0";
+    }
+}
+
+$sqlMaterias .= " ORDER BY nombre";
+$query = $pdo->query($sqlMaterias);
 while ($mat = $query->fetch()) {
     $id_materia = $mat['id'];
     
@@ -46,18 +60,43 @@ while ($mat = $query->fetch()) {
         $profesores = array_merge($profesores, explode(', ', $prof_asignaciones['profesores']));
     }
     if (!empty($prof_materias['profesores'])) {
-        $profesores = array_merge($profesores, explode(', ', $prof_materias['profesores']));
+        $profesores = array_merge($profesores, explode(', ', $prof_materias['prof_materias']));
     }
     
-    // Eliminar duplicados y unir
     $profesores = array_unique($profesores);
     $mat['profesores_nombres'] = !empty($profesores) ? implode(', ', $profesores) : null;
     
     $materias[] = $mat;
 }
 
-// Datos para los selects
-$secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
+// ✅ Datos para los selects (FILTRADOS si es docente)
+$sqlSecciones = "SELECT id, nombre FROM secciones";
+if (esDocente()) {
+    $seccionesIds = getSeccionesDocente($pdo);
+    if (!empty($seccionesIds)) {
+        $idsSeguros = array_map('intval', $seccionesIds);
+        $idsStr = implode(',', $idsSeguros);
+        $sqlSecciones .= " WHERE id IN ($idsStr)";
+    } else {
+        $sqlSecciones .= " WHERE 1=0";
+    }
+}
+$sqlSecciones .= " ORDER BY nombre";
+$secciones = $pdo->query($sqlSecciones)->fetchAll();
+
+// ✅ Profesores disponibles (filtrados si es docente)
+$sqlProfesores = "SELECT id, CONCAT(nombres, ' ', apellidos) as nombre_completo FROM profesores";
+if (esDocente()) {
+    $idProf = getIdProfesorUsuario();
+    if ($idProf) {
+        $sqlProfesores .= " WHERE id = " . intval($idProf);
+    } else {
+        $sqlProfesores .= " WHERE 1=0";
+    }
+}
+$sqlProfesores .= " ORDER BY nombres";
+$profesoresLista = $pdo->query($sqlProfesores)->fetchAll();
+
 $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn();
 ?>
 <!doctype html>
@@ -74,19 +113,54 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
 <body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
-        <nav>
+                <nav>
             <ul class="list">
                 <li><a href="panel_principal.php"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="materias.php" class="active"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                
+                <?php if (puedeVerPanel('profesores')): ?>
+                    <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estudiantes')): ?>
+                    <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('matricula')): ?>
+                    <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('materias')): ?>
+                    <li><a href="materias.php" class="active"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('calificaciones')): ?>
+                    <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('secciones')): ?>
+                    <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('historial_academico')): ?>
+                    <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estadisticas')): ?>
+                    <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('auditoria')): ?>
+                    <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <?php endif; ?>
+                
+                <?php if (esAdmin()): ?>
+                    <li><a href="usuarios.php"><i class="fa-solid fa-users-gear"></i> Usuarios</a></li>
+                <?php endif; ?>
+
+                <?php if (puedeVerPanel('configuracion')): ?>
+                    <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                <?php endif; ?>
+
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>
@@ -102,9 +176,11 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
             <button type="button" class="button btn-secondary" onclick="document.getElementById('modalPromedios').showModal()">
                 <i class="fa-solid fa-chart-line"></i> Ver promedios
             </button>
-            <button type="button" class="button btn-primary" onclick="abrirModalAgregar()">
-                <i class="fa-solid fa-plus"></i> Añadir materia
-            </button>
+            <?php if (!esDocente()): ?>
+                <button type="button" class="button btn-primary" onclick="abrirModalAgregar()">
+                    <i class="fa-solid fa-plus"></i> Añadir materia
+                </button>
+            <?php endif; ?>
         </section>
 
         <section class="stats-summary">
@@ -123,7 +199,11 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
                 <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: white; border-radius: 16px; border: 2px dashed #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
                     <i class="fa-solid fa-book-open" style="font-size: 48px; color: #9ca3af; margin-bottom: 16px; display: block;"></i>
                     <p style="font-size: 18px; color: #6b7280; font-weight: 600; margin: 0;">No hay materias registradas</p>
-                    <p style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Haz clic en "Añadir materia" para crear la primera</p>
+                    <?php if (!esDocente()): ?>
+                        <p style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Haz clic en "Añadir materia" para crear la primera</p>
+                    <?php else: ?>
+                        <p style="font-size: 14px; color: #9ca3af; margin-top: 8px;">No tienes materias asignadas</p>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <?php foreach ($materias as $mat): ?>
@@ -155,8 +235,10 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
                         
                         <div class="card-actions">
                             <button class="btn-card btn-view" onclick="verMateria(this)"><i class="fa-solid fa-eye"></i></button>
-                            <button class="btn-card btn-edit" onclick="editarMateria(this)"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button class="btn-card btn-delete" onclick="eliminarMateria(<?php echo $mat['id']; ?>)"><i class="fa-solid fa-trash"></i></button>
+                            <?php if (!esDocente()): ?>
+                                <button class="btn-card btn-edit" onclick="editarMateria(this)"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button class="btn-card btn-delete" onclick="eliminarMateria(<?php echo $mat['id']; ?>)"><i class="fa-solid fa-trash"></i></button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -164,7 +246,8 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
         </section>
     </main>
 
-    <!-- MODAL AÑADIR -->
+    <?php if (!esDocente()): ?>
+    <!-- MODAL AÑADIR (SOLO NO DOCENTES) -->
     <dialog id="modalMateria" class="modal">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
@@ -198,9 +281,7 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
 
             <label>Docentes (opcional - selecciona uno o más):</label>
             <div style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 150px; overflow-y: auto; padding: 10px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px;">
-                <?php 
-                $profesoresLista = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos) as nombre_completo FROM profesores ORDER BY nombres")->fetchAll();
-                if (empty($profesoresLista)): ?>
+                <?php if (empty($profesoresLista)): ?>
                     <p style="text-align: center; color: #9ca3af; padding: 20px;">No hay docentes registrados</p>
                 <?php else: ?>
                     <?php foreach ($profesoresLista as $p): ?>
@@ -222,7 +303,7 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
         </form>
     </dialog>
 
-    <!-- MODAL EDITAR -->
+    <!-- MODAL EDITAR (SOLO NO DOCENTES) -->
     <dialog id="modalEditar" class="modal">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
@@ -270,8 +351,9 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
             </div>
         </form>
     </dialog>
+    <?php endif; ?>
 
-    <!-- MODAL VER -->
+    <!-- MODAL VER (PARA TODOS) -->
     <dialog id="modalVer" class="modal">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>

@@ -2,25 +2,90 @@
 // Vistas/estudiantes.php
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
+require_once '../includes/permisos.php';
 
-// Obtener estudiantes con su sección desde matriculas
-$query = "SELECT 
+// ==========================================
+// CONSULTA DE ESTUDIANTES (CON FILTRO DOCENTE)
+// ==========================================
+
+// ✅ Obtener secciones del docente primero
+$seccionesDocenteIds = [];
+if (esDocente()) {
+    $seccionesDocenteIds = getSeccionesDocente($pdo);
+}
+
+// Construir consulta base con DISTINCT para evitar duplicados
+$sqlEstudiantes = "SELECT DISTINCT
             e.id, e.nie, e.nombres, e.apellidos, e.dui, e.edad, e.fecha_nacimiento,
             e.telefono, e.direccion, e.email, e.estado,
-            s.nombre as seccion_nombre
+            s.nombre as seccion_nombre, s.id as id_seccion
           FROM estudiantes e
-          LEFT JOIN matriculas m ON e.id = m.id_estudiante
-          LEFT JOIN secciones s ON m.id_seccion = s.id
-          ORDER BY e.nombres";
-$estudiantes = $pdo->query($query)->fetchAll();
+          INNER JOIN matriculas m ON e.id = m.id_estudiante AND m.estado = 'Activo'
+          INNER JOIN secciones s ON m.id_seccion = s.id";
+
+// ✅ FILTRO PARA DOCENTES: Solo estudiantes de sus secciones
+if (esDocente() && !empty($seccionesDocenteIds)) {
+    $idsSeguros = array_map('intval', $seccionesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $sqlEstudiantes .= " WHERE s.id IN ($idsStr)";
+    // DEBUG: Descomenta esto si quieres ver la consulta
+    // echo "<!-- SQL: $sqlEstudiantes -->";
+} else if (esDocente()) {
+    // Docente sin secciones asignadas
+    $sqlEstudiantes .= " WHERE 1=0";
+}
+
+$sqlEstudiantes .= " ORDER BY e.nombres";
+
+// DEBUG: Ver consulta ejecutada
+// echo "<pre>SQL: $sqlEstudiantes</pre>"; exit;
+
+$estudiantes = $pdo->query($sqlEstudiantes)->fetchAll();
+
+// DEBUG: Ver resultados
+// echo "<pre>Resultados: "; print_r($estudiantes); echo "</pre>"; exit;
 
 $totalEstudiantes = count($estudiantes);
-$estudiantesActivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado = 'activo'")->fetchColumn();
-$estudiantesInactivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado = 'inactivo'")->fetchColumn();
-$totalSecciones = $pdo->query("SELECT COUNT(DISTINCT id_seccion) FROM matriculas")->fetchColumn();
 
-// Obtener secciones para el modal (solo para visualización)
-$secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
+// ✅ Estadísticas filtradas para docentes
+if (esDocente() && !empty($seccionesDocenteIds)) {
+    $idsSeguros = array_map('intval', $seccionesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    
+    $estudiantesActivos = $pdo->query("
+        SELECT COUNT(DISTINCT e.id) FROM estudiantes e
+        INNER JOIN matriculas m ON e.id = m.id_estudiante AND m.estado = 'Activo'
+        WHERE m.id_seccion IN ($idsStr) AND e.estado = 'activo'
+    ")->fetchColumn();
+    
+    $estudiantesInactivos = $pdo->query("
+        SELECT COUNT(DISTINCT e.id) FROM estudiantes e
+        INNER JOIN matriculas m ON e.id = m.id_estudiante AND m.estado = 'Activo'
+        WHERE m.id_seccion IN ($idsStr) AND e.estado = 'inactivo'
+    ")->fetchColumn();
+    
+    $totalSecciones = count($seccionesDocenteIds);
+} else if (esDocente()) {
+    $estudiantesActivos = 0;
+    $estudiantesInactivos = 0;
+    $totalSecciones = 0;
+} else {
+    $estudiantesActivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado = 'activo'")->fetchColumn();
+    $estudiantesInactivos = $pdo->query("SELECT COUNT(*) FROM estudiantes WHERE estado = 'inactivo'")->fetchColumn();
+    $totalSecciones = $pdo->query("SELECT COUNT(DISTINCT id_seccion) FROM matriculas")->fetchColumn();
+}
+
+// Obtener secciones para el filtro (filtradas si es docente)
+$sqlSecciones = "SELECT * FROM secciones";
+if (esDocente() && !empty($seccionesDocenteIds)) {
+    $idsSeguros = array_map('intval', $seccionesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $sqlSecciones .= " WHERE id IN ($idsStr)";
+} else if (esDocente()) {
+    $sqlSecciones .= " WHERE 1=0";
+}
+$sqlSecciones .= " ORDER BY nombre";
+$secciones = $pdo->query($sqlSecciones)->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -39,16 +104,51 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
         <nav>
             <ul class="list">
                 <li><a href="panel_principal.php"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="estudiantes.php" class="active"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                
+                <?php if (puedeVerPanel('profesores')): ?>
+                    <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estudiantes')): ?>
+                    <li><a href="estudiantes.php" class="active"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('matricula')): ?>
+                    <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('materias')): ?>
+                    <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('calificaciones')): ?>
+                    <li><a href="calificaciones.php"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('secciones')): ?>
+                    <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('historial_academico')): ?>
+                    <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estadisticas')): ?>
+                    <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('auditoria')): ?>
+                    <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <?php endif; ?>
+                
+                <?php if (esAdmin()): ?>
+                    <li><a href="usuarios.php"><i class="fa-solid fa-users-gear"></i> Usuarios</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('configuracion')): ?>
+                    <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                <?php endif; ?>
+
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>
@@ -143,8 +243,10 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
                                 </td>
                                 <td class="actions-cell">
                                     <button type="button" class="btn-action see" onclick="verEstudiante(this)" title="Ver detalles"><i class="fa-solid fa-eye"></i></button>
-                                    <button type="button" class="btn-action edit" onclick="editarEstudiante(this)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <a href="../actions/estudiantes_action.php?accion=eliminar&id=<?php echo $est['id']; ?>" class="btn-action delete" onclick="return confirm('¿Estás seguro de eliminar a este estudiante?')" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                                    <?php if (!esDocente()): ?>
+                                        <button type="button" class="btn-action edit" onclick="editarEstudiante(this)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <a href="../actions/estudiantes_action.php?accion=eliminar&id=<?php echo $est['id']; ?>" class="btn-action delete" onclick="return confirm('¿Estás seguro de eliminar a este estudiante?')" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -158,14 +260,26 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
             <h2>Estudiantes por Sección</h2>
             <div class="section-grid">
                 <?php 
-                $queryDesglose = "SELECT 
+                // ✅ Consulta filtrada para docentes
+                $sqlDesglose = "SELECT 
                                     s.nombre as seccion,
                                     COUNT(m.id_estudiante) as total
                                   FROM secciones s
-                                  LEFT JOIN matriculas m ON s.id = m.id_seccion
-                                  GROUP BY s.id
-                                  ORDER BY s.nombre";
-                $desgloseSecciones = $pdo->query($queryDesglose)->fetchAll();
+                                  LEFT JOIN matriculas m ON s.id = m.id_seccion AND m.estado = 'Activo'";
+                
+                if (esDocente()) {
+                    $seccionesIds = getSeccionesDocente($pdo);
+                    if (!empty($seccionesIds)) {
+                        $idsSeguros = array_map('intval', $seccionesIds);
+                        $idsStr = implode(',', $idsSeguros);
+                        $sqlDesglose .= " WHERE s.id IN ($idsStr)";
+                    } else {
+                        $sqlDesglose .= " WHERE 1=0";
+                    }
+                }
+                
+                $sqlDesglose .= " GROUP BY s.id ORDER BY s.nombre";
+                $desgloseSecciones = $pdo->query($sqlDesglose)->fetchAll();
                 
                 if (empty($desgloseSecciones)): ?>
                     <p class="empty-state">Aún no hay secciones creadas para mostrar el desglose.</p>
@@ -190,7 +304,8 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
         <div class="modal-form" id="contenidoVerEstudiante"></div>
     </dialog>
 
-    <!-- MODAL EDITAR ESTUDIANTE -->
+    <?php if (!esDocente()): ?>
+    <!-- MODAL EDITAR ESTUDIANTE (SOLO NO DOCENTES) -->
     <dialog id="modalEditarEstudiante" class="modal modal-large">
         <form method="dialog" class="modal-header">
             <button type="submit" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
@@ -271,6 +386,7 @@ $secciones = $pdo->query("SELECT * FROM secciones ORDER BY nombre")->fetchAll();
             </div>
         </form>
     </dialog>
+    <?php endif; ?>
 
     <footer class="footer">
         <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>

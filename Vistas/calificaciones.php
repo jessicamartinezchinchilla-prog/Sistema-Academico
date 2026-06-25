@@ -3,6 +3,30 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
+// ==========================================
+// FILTROS PARA DOCENTES
+// ==========================================
+$seccionesDocenteIds = [];
+$materiasDocenteIds = [];
+$estudiantesDocenteIds = [];
+
+if (esDocente()) {
+    $seccionesDocenteIds = getSeccionesDocente($pdo);
+    $materiasDocenteIds = getMateriasDocente($pdo);
+    
+    // Obtener IDs de estudiantes de las secciones del docente
+    if (!empty($seccionesDocenteIds)) {
+        $idsSeguros = array_map('intval', $seccionesDocenteIds);
+        $idsStr = implode(',', $idsSeguros);
+        $estudiantesDocenteIds = $pdo->query("
+            SELECT DISTINCT e.id 
+            FROM estudiantes e
+            INNER JOIN matriculas m ON e.id = m.id_estudiante AND m.estado = 'Activo'
+            WHERE m.id_seccion IN ($idsStr)
+        ")->fetchAll(PDO::FETCH_COLUMN);
+    }
+}
+
 // ✅ CORRECCIÓN: Calcular promedios con lógica Opción B (suma / 4)
 // Primero obtenemos todas las calificaciones individuales
 $query = "SELECT 
@@ -16,8 +40,18 @@ $query = "SELECT
           INNER JOIN matriculas m ON e.id = m.id_estudiante
           INNER JOIN calificaciones c ON e.id = c.id_estudiante
           INNER JOIN secciones s ON m.id_seccion = s.id
-          WHERE e.estado = 'activo' AND m.estado = 'Activo'
-          ORDER BY e.nombres";
+          WHERE e.estado = 'activo' AND m.estado = 'Activo'";
+
+// ✅ FILTRO PARA DOCENTES
+if (esDocente() && !empty($estudiantesDocenteIds)) {
+    $idsSeguros = array_map('intval', $estudiantesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $query .= " AND e.id IN ($idsStr)";
+} else if (esDocente()) {
+    $query .= " AND 1=0";
+}
+
+$query .= " ORDER BY e.nombres";
 
 $calificaciones_raw = $pdo->query($query)->fetchAll();
 
@@ -37,7 +71,6 @@ foreach ($calificaciones_raw as $cal) {
         ];
     }
     
-    // Agrupar notas por materia
     if (!isset($promediosEstudiantes[$idEst]['materias'][$idMateria])) {
         $promediosEstudiantes[$idEst]['materias'][$idMateria] = [];
     }
@@ -50,12 +83,10 @@ foreach ($promediosEstudiantes as $idEst => &$est) {
     $cantidadMaterias = count($est['materias']);
     
     foreach ($est['materias'] as $idMateria => $notas) {
-        // Promedio por materia = suma de notas / 4
         $promedioMateria = array_sum($notas) / 4;
         $sumaTotal += $promedioMateria;
     }
     
-    // Promedio general = promedio de los promedios por materia
     $est['promedio_general'] = $cantidadMaterias > 0 ? round($sumaTotal / $cantidadMaterias, 2) : 0;
     $est['estado'] = $est['promedio_general'] >= 6 ? 'Aprobado' : 'Reprobado';
 }
@@ -68,12 +99,31 @@ $promedioGeneral = $totalRegistros > 0
     ? round(array_sum(array_column($promediosEstudiantes, 'promedio_general')) / $totalRegistros, 2) 
     : 0;
 
-// Datos para los filtros
-$materias = $pdo->query("SELECT id, nombre FROM materias ORDER BY nombre")->fetchAll();
-$secciones = $pdo->query("SELECT id, nombre FROM secciones ORDER BY nombre")->fetchAll();
+// ✅ Datos para los filtros (FILTRADOS si es docente)
+$sqlMaterias = "SELECT id, nombre FROM materias";
+if (esDocente() && !empty($materiasDocenteIds)) {
+    $idsSeguros = array_map('intval', $materiasDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $sqlMaterias .= " WHERE id IN ($idsStr)";
+} else if (esDocente()) {
+    $sqlMaterias .= " WHERE 1=0";
+}
+$sqlMaterias .= " ORDER BY nombre";
+$materias = $pdo->query($sqlMaterias)->fetchAll();
 
-// Obtener estudiantes con sus matrículas activas
-$estudiantes = $pdo->query("
+$sqlSecciones = "SELECT id, nombre FROM secciones";
+if (esDocente() && !empty($seccionesDocenteIds)) {
+    $idsSeguros = array_map('intval', $seccionesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $sqlSecciones .= " WHERE id IN ($idsStr)";
+} else if (esDocente()) {
+    $sqlSecciones .= " WHERE 1=0";
+}
+$sqlSecciones .= " ORDER BY nombre";
+$secciones = $pdo->query($sqlSecciones)->fetchAll();
+
+// ✅ Obtener estudiantes con sus matrículas activas (FILTRADOS si es docente)
+$sqlEstudiantes = "
     SELECT 
         e.id, 
         e.nie, 
@@ -88,9 +138,18 @@ $estudiantes = $pdo->query("
     INNER JOIN matriculas m ON e.id = m.id_estudiante
     INNER JOIN secciones s ON m.id_seccion = s.id
     INNER JOIN carreras c ON s.id_carrera = c.id
-    WHERE e.estado = 'activo' AND m.estado = 'Activo'
-    ORDER BY e.nombres
-")->fetchAll();
+    WHERE e.estado = 'activo' AND m.estado = 'Activo'";
+
+if (esDocente() && !empty($estudiantesDocenteIds)) {
+    $idsSeguros = array_map('intval', $estudiantesDocenteIds);
+    $idsStr = implode(',', $idsSeguros);
+    $sqlEstudiantes .= " AND e.id IN ($idsStr)";
+} else if (esDocente()) {
+    $sqlEstudiantes .= " AND 1=0";
+}
+
+$sqlEstudiantes .= " ORDER BY e.nombres";
+$estudiantes = $pdo->query($sqlEstudiantes)->fetchAll();
 
 $estudiantesJSON = json_encode($estudiantes);
 ?>
@@ -107,7 +166,6 @@ $estudiantesJSON = json_encode($estudiantes);
         window.estudiantesData = <?php echo $estudiantesJSON; ?>;
     </script>
     <style>
-        /* Estilos para autocomplete */
         .autocomplete-container {
             position: relative;
         }
@@ -152,7 +210,6 @@ $estudiantesJSON = json_encode($estudiantes);
             color: #374151;
         }
         
-        /* Estilos para períodos bloqueados */
         .periodo-bloqueado {
             background: #f3f4f6 !important;
             cursor: not-allowed !important;
@@ -169,19 +226,54 @@ $estudiantesJSON = json_encode($estudiantes);
 <body class="<?php echo $modo_oscuro ? 'modo-oscuro' : ''; ?>">
     <header class="header">
         <h1>Sistema Académico</h1>
-        <nav>
+                <nav>
             <ul class="list">
                 <li><a href="panel_principal.php"><i class="fa-solid fa-house"></i> Panel principal</a></li>
-                <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
-                <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
-                <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
-                <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
-                <li><a href="calificaciones.php" class="active"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
-                <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
-                <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
-                <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
-                <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
-                <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                
+                <?php if (puedeVerPanel('profesores')): ?>
+                    <li><a href="profesores.php"><i class="fa-solid fa-user"></i> Profesores</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estudiantes')): ?>
+                    <li><a href="estudiantes.php"><i class="fa-solid fa-children"></i> Estudiantes</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('matricula')): ?>
+                    <li><a href="matricula.php"><i class="fa-solid fa-user-graduate"></i> Matrículas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('materias')): ?>
+                    <li><a href="materias.php"><i class="fa-solid fa-book-open"></i> Materias</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('calificaciones')): ?>
+                    <li><a href="calificaciones.php" class="active"><i class="fa-solid fa-award"></i> Calificaciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('secciones')): ?>
+                    <li><a href="secciones.php"><i class="fa-solid fa-school"></i> Secciones</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('historial_academico')): ?>
+                    <li><a href="historial_academico.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial académico</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('estadisticas')): ?>
+                    <li><a href="estadisticas.php"><i class="fa-solid fa-chart-column"></i> Estadísticas</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('auditoria')): ?>
+                    <li><a href="auditoria.php"><i class="fa-solid fa-clipboard-list"></i> Auditoría</a></li>
+                <?php endif; ?>
+                
+                <?php if (esAdmin()): ?>
+                    <li><a href="usuarios.php"><i class="fa-solid fa-users-gear"></i> Usuarios</a></li>
+                <?php endif; ?>
+                
+                <?php if (puedeVerPanel('configuracion')): ?>
+                    <li><a href="configuracion.php"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                <?php endif; ?>
+
                 <li style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 15px;">
                     <a href="../actions/logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
                 </li>
@@ -197,9 +289,11 @@ $estudiantesJSON = json_encode($estudiantes);
             <button type="button" class="button btn-secondary" onclick="abrirModalPDF()">
                 <i class="fa-solid fa-file-pdf"></i> Generar PDF
             </button>
+            <?php if (puedeModificarCalificaciones()): ?>
             <button type="button" class="button btn-primary" onclick="abrirModalNota()">
                 <i class="fa-solid fa-plus"></i> Agregar nota
             </button>
+            <?php endif; ?>
         </section>
 
         <section class="stats-summary">
@@ -283,9 +377,11 @@ $estudiantesJSON = json_encode($estudiantes);
                                     <button type="button" class="btn-action see" onclick="verDetalleEstudiante(this)" title="Ver detalle por materia">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
+                                    <?php if (puedeModificarCalificaciones()): ?>
                                     <button type="button" class="btn-action edit" onclick="abrirModalNota(this)" title="Modificar/Editar calificación">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
