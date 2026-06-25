@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!validarFormularioSeccion(this)) return;
 
+            // ✅ PREVENIR DOBLE ENVÍO
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const textoOriginal = submitBtn ? submitBtn.innerHTML : 'Guardar';
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            }
+
             const formData = new FormData(this);
             
             try {
@@ -31,12 +40,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (errorType === 'bd') msg = '⚠️ Error en la base de datos';
                     
                     alert(msg);
+                    
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = textoOriginal;
+                    }
                 } else if (result.startsWith('SUCCESS:')) {
                     alert('✅ Operación realizada con éxito');
                     window.location.reload();
                 }
             } catch (error) {
                 alert('Error de conexión con el servidor');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = textoOriginal;
+                }
             }
         });
     });
@@ -92,6 +110,7 @@ function validarFormularioSeccion(form) {
     const carrera = form.querySelector('[name="carrera"]').value.trim();
     const letra = form.querySelector('[name="letra"]').value.trim();
     const idGrado = form.querySelector('[name="id_grado"]').value;
+    const limiteAlumnos = form.querySelector('[name="limite_alumnos"]')?.value;
     
     if (carrera.length === 0) {
         alert('⚠️ El nombre de la carrera es obligatorio');
@@ -105,6 +124,11 @@ function validarFormularioSeccion(form) {
     
     if (!idGrado) {
         alert('⚠️ Debes seleccionar un grado');
+        return false;
+    }
+    
+    if (limiteAlumnos && (limiteAlumnos < 1 || limiteAlumnos > 100)) {
+        alert('⚠️ El límite de alumnos debe estar entre 1 y 100');
         return false;
     }
     
@@ -126,7 +150,8 @@ function verSeccion(btn) {
     document.getElementById('detallesCarrera').textContent = d.carrera;
     document.getElementById('detallesGrado').textContent = d.grado;
     document.getElementById('detallesLetra').textContent = d.letra;
-    document.getElementById('detallesEstudiantes').textContent = d.totalEstudiantes;
+    document.getElementById('detallesEstudiantes').textContent = `${d.totalEstudiantes} / ${d.limiteAlumnos || 40}`;
+    document.getElementById('detallesLimiteAlumnos').textContent = d.limiteAlumnos || 40;
     document.getElementById('detallesTotalProfesores').textContent = d.totalProfesores;
     
     // Mostrar profesores como tags
@@ -162,19 +187,7 @@ function editarSeccion() {
     document.getElementById('edit_letra').value = d.letra;
     document.getElementById('edit_grado').value = d.gradoId;
     document.getElementById('edit_descripcion').value = d.descripcion || '';
-    
-    // Marcar los profesores asignados
-    const profesoresAsignados = d.profesoresNombres ? d.profesoresNombres.split(',').map(p => p.trim()) : [];
-    const checkboxes = document.querySelectorAll('.edit_profesor_check');
-    
-    checkboxes.forEach(checkbox => {
-        const profesorNombre = checkbox.parentElement.textContent.trim();
-        if (profesoresAsignados.includes(profesorNombre)) {
-            checkbox.checked = true;
-        } else {
-            checkbox.checked = false;
-        }
-    });
+    document.getElementById('edit_limite_alumnos').value = d.limiteAlumnos || 40;
     
     document.getElementById('modalDetalles').close();
     document.getElementById('modalEditar').showModal();

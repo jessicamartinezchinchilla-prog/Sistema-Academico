@@ -3,38 +3,50 @@
 require_once '../includes/auth_check.php';
 require_once '../config/database.php';
 
-// Obtener todas las secciones con información completa
+// ✅ MODIFICADO: Obtener profesores desde AMBAS fuentes (asignaciones + profesor_asignacion)
 $query = "SELECT 
             s.id,
             s.nombre,
             s.letra,
             s.descripcion,
+            s.limite_alumnos,
             c.nombre as carrera,
             c.id as id_carrera,
             g.nombre as grado,
             g.id as id_grado,
             COUNT(DISTINCT m.id_estudiante) as total_estudiantes,
-            COUNT(DISTINCT pa.id_profesor) as total_profesores,
             GROUP_CONCAT(DISTINCT CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ') as profesores_nombres
           FROM secciones s
           INNER JOIN carreras c ON s.id_carrera = c.id
           INNER JOIN grados g ON s.id_grado = g.id
-          LEFT JOIN matriculas m ON s.id = m.id_seccion
-          LEFT JOIN profesor_asignacion pa ON s.id = pa.id_seccion
+          LEFT JOIN matriculas m ON s.id = m.id_seccion AND m.estado = 'Activo'
+          LEFT JOIN (
+              -- Profesores desde asignaciones (materias)
+              SELECT DISTINCT id_seccion, id_profesor FROM asignaciones
+              UNION
+              -- Profesores desde profesor_asignacion
+              SELECT DISTINCT id_seccion, id_profesor FROM profesor_asignacion
+          ) pa ON s.id = pa.id_seccion
           LEFT JOIN profesores p ON pa.id_profesor = p.id
           GROUP BY s.id
           ORDER BY c.nombre, g.id, s.letra";
 $secciones = $pdo->query($query)->fetchAll();
+
+// Contar profesores únicos por sección
+foreach ($secciones as &$sec) {
+    if (!empty($sec['profesores_nombres'])) {
+        $profesores_array = array_unique(array_map('trim', explode(', ', $sec['profesores_nombres'])));
+        $sec['total_profesores'] = count($profesores_array);
+    } else {
+        $sec['total_profesores'] = 0;
+    }
+}
 
 // Estadísticas
 $totalSecciones = count($secciones);
 
 // Obtener datos para los selects
 $grados = $pdo->query("SELECT * FROM grados ORDER BY id")->fetchAll();
-$profesores = $pdo->query("SELECT id, CONCAT(nombres, ' ', apellidos) as nombre_completo FROM profesores ORDER BY nombres")->fetchAll();
-
-// Obtener asignaciones existentes para el modal de editar
-$asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profesor) as profesores_ids FROM profesor_asignacion GROUP BY id_seccion")->fetchAll(PDO::FETCH_KEY_PAIR);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -109,6 +121,7 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                          data-grado-id="<?php echo $sec['id_grado']; ?>"
                          data-letra="<?php echo htmlspecialchars($sec['letra']); ?>"
                          data-descripcion="<?php echo htmlspecialchars($sec['descripcion'] ?? ''); ?>"
+                         data-limite-alumnos="<?php echo $sec['limite_alumnos'] ?? 40; ?>"
                          data-total-estudiantes="<?php echo $sec['total_estudiantes']; ?>"
                          data-total-profesores="<?php echo $sec['total_profesores']; ?>"
                          data-profesores-nombres="<?php echo htmlspecialchars($sec['profesores_nombres'] ?? ''); ?>">
@@ -122,7 +135,7 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                         
                         <div class="info-row">
                             <span><i class="fa-solid fa-children"></i> Estudiantes</span>
-                            <span><?php echo $sec['total_estudiantes']; ?></span>
+                            <span><?php echo $sec['total_estudiantes']; ?> / <?php echo $sec['limite_alumnos'] ?? 40; ?></span>
                         </div>
                         
                         <div class="info-row">
@@ -183,24 +196,16 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="descripcion">Descripción (opcional)</label>
-                    <input type="text" id="descripcion" name="descripcion" placeholder="Descripción breve de la sección">
-                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="descripcion">Descripción (opcional)</label>
+                        <input type="text" id="descripcion" name="descripcion" placeholder="Descripción breve de la sección">
+                    </div>
 
-                <div class="form-group">
-                    <label>Profesores Asignados (selecciona uno o más):</label>
-                    <div class="checkbox-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; max-height: 200px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px;">
-                        <?php if (empty($profesores)): ?>
-                            <p style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 20px;">No hay profesores registrados</p>
-                        <?php else: ?>
-                            <?php foreach ($profesores as $p): ?>
-                                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer;">
-                                    <input type="checkbox" name="profesores[]" value="<?php echo $p['id']; ?>">
-                                    <?php echo htmlspecialchars($p['nombre_completo']); ?>
-                                </label>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                    <div class="form-group">
+                        <label for="limite_alumnos">Límite de Alumnos</label>
+                        <input type="number" id="limite_alumnos" name="limite_alumnos" value="40" min="1" max="100" required>
+                        <small class="form-hint">Cantidad máxima de estudiantes en la sección</small>
                     </div>
                 </div>
 
@@ -255,6 +260,11 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                     <div class="detalles-item">
                         <span class="detalles-label">Estudiantes:</span>
                         <span class="detalles-value" id="detallesEstudiantes">0</span>
+                    </div>
+                    
+                    <div class="detalles-item">
+                        <span class="detalles-label">Límite de Alumnos:</span>
+                        <span class="detalles-value" id="detallesLimiteAlumnos">40</span>
                     </div>
                     
                     <div class="detalles-item">
@@ -313,20 +323,16 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Descripción (opcional)</label>
-                    <input type="text" id="edit_descripcion" name="descripcion">
-                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Descripción (opcional)</label>
+                        <input type="text" id="edit_descripcion" name="descripcion">
+                    </div>
 
-                <div class="form-group">
-                    <label>Profesores Asignados (selecciona uno o más):</label>
-                    <div class="checkbox-group" id="edit_profesores_container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; max-height: 200px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px;">
-                        <?php foreach ($profesores as $p): ?>
-                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer;">
-                                <input type="checkbox" name="profesores[]" value="<?php echo $p['id']; ?>" class="edit_profesor_check">
-                                <?php echo htmlspecialchars($p['nombre_completo']); ?>
-                            </label>
-                        <?php endforeach; ?>
+                    <div class="form-group">
+                        <label>Límite de Alumnos</label>
+                        <input type="number" id="edit_limite_alumnos" name="limite_alumnos" min="1" max="100" required>
+                        <small class="form-hint">Cantidad máxima de estudiantes en la sección</small>
                     </div>
                 </div>
 
@@ -341,10 +347,5 @@ $asignacionesProfesores = $pdo->query("SELECT id_seccion, GROUP_CONCAT(id_profes
     <footer class="footer">
         <p>&copy; 2026 Sistema Académico. Todos los derechos reservados.</p>
     </footer>
-
-    <script>
-        // Inyectamos las asignaciones de profesores para el modal de edición
-        window.asignacionesProfesores = <?php echo json_encode($asignacionesProfesores); ?>;
-    </script>
 </body>
 </html>

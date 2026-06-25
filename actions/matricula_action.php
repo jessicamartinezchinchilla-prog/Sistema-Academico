@@ -117,13 +117,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("SELECT id_carrera, id_grado, nombre FROM secciones WHERE id = ?");
+            // ✅ MODIFICADO: Obtener también limite_alumnos
+            $stmt = $pdo->prepare("SELECT id_carrera, id_grado, nombre, limite_alumnos FROM secciones WHERE id = ?");
             $stmt->execute([$id_seccion]);
             $seccion_data = $stmt->fetch();
             
             if (!$seccion_data) {
                 $pdo->rollBack();
                 responder('error', 'seccion_invalida', $isAjax);
+            }
+            
+            // ✅ NUEVA VALIDACIÓN: Verificar límite de alumnos
+            $limite_alumnos = $seccion_data['limite_alumnos'] ?? 40;
+            
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) 
+                FROM matriculas 
+                WHERE id_seccion = ? 
+                AND estado = 'Activo'
+            ");
+            $stmt->execute([$id_seccion]);
+            $total_estudiantes_actuales = $stmt->fetchColumn();
+            
+            if ($total_estudiantes_actuales >= $limite_alumnos) {
+                $pdo->rollBack();
+                responder('error', 'seccion_llena:' . $limite_alumnos, $isAjax);
             }
             
             $id_carrera = $seccion_data['id_carrera'];

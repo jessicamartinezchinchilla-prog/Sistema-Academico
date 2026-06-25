@@ -2,7 +2,7 @@
 // actions/secciones_action.php
 session_start();
 require_once '../config/database.php';
-require_once '../includes/audit.php'; // ✅ AUDITORÍA
+require_once '../includes/audit.php';
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $letra = strtoupper(trim($_POST['letra']));
         $id_grado = $_POST['id_grado'];
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $profesores = $_POST['profesores'] ?? [];
+        $limite_alumnos = intval($_POST['limite_alumnos'] ?? 40);
 
         if (empty($nombreCarrera)) {
             responder('error', 'sin_carrera', $isAjax);
@@ -52,26 +52,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             // Generar nombre de la sección
             $nombreSeccion = "{$nombreCarrera} - {$nombreGrado} - {$letra}";
             
-            // Insertar sección
-            $stmt = $pdo->prepare("INSERT INTO secciones (nombre, letra, id_carrera, id_grado, descripcion) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion]);
+            // ✅ MODIFICADO: Insertar sección con límite de alumnos
+            $stmt = $pdo->prepare("INSERT INTO secciones (nombre, letra, id_carrera, id_grado, descripcion, limite_alumnos) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion, $limite_alumnos]);
             $id_seccion = $pdo->lastInsertId();
-
-            // Insertar asignaciones de profesores
-            if (!empty($profesores)) {
-                $stmt = $pdo->prepare("INSERT INTO profesor_asignacion (id_profesor, id_seccion) VALUES (?, ?)");
-                foreach ($profesores as $id_profesor) {
-                    $stmt->execute([$id_profesor, $id_seccion]);
-                }
-            }
 
             $pdo->commit();
             
             // ✅ AUDITORÍA
-            $descripcionAuditoria = "Se creó la sección '{$nombreSeccion}'";
-            if (!empty($profesores)) {
-                $descripcionAuditoria .= " con " . count($profesores) . " profesor(es) asignado(s)";
-            }
+            $descripcionAuditoria = "Se creó la sección '{$nombreSeccion}' con límite de {$limite_alumnos} alumnos";
             registrarAuditoria($pdo, 'creacion', 'secciones', $descripcionAuditoria);
             
             responder('success', '1', $isAjax);
@@ -93,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
         $letra = strtoupper(trim($_POST['letra']));
         $id_grado = $_POST['id_grado'];
         $descripcion = trim($_POST['descripcion'] ?? '');
-        $profesores = $_POST['profesores'] ?? [];
+        $limite_alumnos = intval($_POST['limite_alumnos'] ?? 40);
 
         if (empty($nombreCarrera)) {
             responder('error', 'sin_carrera', $isAjax);
@@ -121,29 +110,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             // Generar nombre de la sección
             $nombreSeccion = "{$nombreCarrera} - {$nombreGrado} - {$letra}";
             
-            // Actualizar sección
-            $stmt = $pdo->prepare("UPDATE secciones SET nombre=?, letra=?, id_carrera=?, id_grado=?, descripcion=? WHERE id=?");
-            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion, $id]);
-
-            // Eliminar asignaciones anteriores
-            $stmt = $pdo->prepare("DELETE FROM profesor_asignacion WHERE id_seccion = ?");
-            $stmt->execute([$id]);
-
-            // Insertar nuevas asignaciones
-            if (!empty($profesores)) {
-                $stmt = $pdo->prepare("INSERT INTO profesor_asignacion (id_profesor, id_seccion) VALUES (?, ?)");
-                foreach ($profesores as $id_profesor) {
-                    $stmt->execute([$id_profesor, $id]);
-                }
-            }
+            // ✅ MODIFICADO: Actualizar sección con límite de alumnos
+            $stmt = $pdo->prepare("UPDATE secciones SET nombre=?, letra=?, id_carrera=?, id_grado=?, descripcion=?, limite_alumnos=? WHERE id=?");
+            $stmt->execute([$nombreSeccion, $letra, $id_carrera, $id_grado, $descripcion, $limite_alumnos, $id]);
 
             $pdo->commit();
             
             // ✅ AUDITORÍA
-            $descripcionAuditoria = "Se modificó la sección '{$nombreSeccion}'";
-            if (!empty($profesores)) {
-                $descripcionAuditoria .= " con " . count($profesores) . " profesor(es) asignado(s)";
-            }
+            $descripcionAuditoria = "Se modificó la sección '{$nombreSeccion}' (límite: {$limite_alumnos} alumnos)";
             registrarAuditoria($pdo, 'modificacion', 'secciones', $descripcionAuditoria);
             
             responder('success', 'editado', $isAjax);
@@ -175,15 +149,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
             $stmt->execute([$id]);
             $id_carrera = $stmt->fetchColumn();
             
-            // 2. Eliminar asignaciones de profesores
-            $stmt = $pdo->prepare("DELETE FROM profesor_asignacion WHERE id_seccion = ?");
-            $stmt->execute([$id]);
-            
-            // 3. Eliminar la sección
+            // 2. Eliminar la sección
             $stmt = $pdo->prepare("DELETE FROM secciones WHERE id = ?");
             $stmt->execute([$id]);
             
-            // 4. Verificar si la carrera ya no tiene secciones
+            // 3. Verificar si la carrera ya no tiene secciones
             if ($id_carrera) {
                 $stmt = $pdo->prepare("SELECT COUNT(*) FROM secciones WHERE id_carrera = ?");
                 $stmt->execute([$id_carrera]);
