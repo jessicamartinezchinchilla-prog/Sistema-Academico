@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config/database.php';
-require_once '../includes/audit.php'; // ✅ AUDITORÍA
+require_once '../includes/audit.php';
 
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
@@ -15,11 +15,30 @@ function responder($tipo, $mensaje, $isAjax) {
     }
 }
 
+// ✅ FUNCIÓN: Generar código automático de materia
+function generarCodigoMateria($pdo) {
+    // Obtener el último código
+    $stmt = $pdo->query("SELECT codigo FROM materias WHERE codigo LIKE 'MAT-%' ORDER BY id DESC LIMIT 1");
+    $ultimo = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($ultimo) {
+        // Extraer el número del último código (MAT-001 -> 001 -> 1)
+        $numero = intval(substr($ultimo['codigo'], 4)); // "MAT-" tiene 4 caracteres
+        $nuevo_numero = $numero + 1;
+    } else {
+        $nuevo_numero = 1;
+    }
+    
+    // Formatear con ceros a la izquierda (001, 002, etc.)
+    return 'MAT-' . str_pad($nuevo_numero, 3, '0', STR_PAD_LEFT);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" || isset($_GET['accion'])) {
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
     if ($accion === 'agregar') {
-        $codigo = trim($_POST['codigo']);
+        // ✅ Generar código automáticamente
+        $codigo = generarCodigoMateria($pdo);
         $nombre = trim($_POST['nombre']);
         $descripcion = trim($_POST['descripcion'] ?? '');
         $secciones = $_POST['secciones'] ?? [];

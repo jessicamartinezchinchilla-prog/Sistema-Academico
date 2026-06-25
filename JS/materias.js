@@ -4,6 +4,15 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             if (!validarFormularioMateria(this)) return;
 
+            // ✅ PREVENIR DOBLE ENVÍO
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const textoOriginal = submitBtn ? submitBtn.innerHTML : 'Guardar';
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            }
+
             const formData = new FormData(this);
             
             try {
@@ -17,12 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (result.startsWith('ERROR:')) {
                     alert('⚠️ Error al procesar la solicitud');
+                    // ✅ Reactivar botón si hubo error
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = textoOriginal;
+                    }
                 } else if (result.startsWith('SUCCESS:')) {
                     alert('✅ Operación realizada con éxito');
                     window.location.reload();
                 }
             } catch (error) {
                 alert('Error de conexión');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = textoOriginal;
+                }
             }
         });
     });
@@ -38,25 +56,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function validarFormularioMateria(form) {
-    const codigo = form.querySelector('[name="codigo"]').value.trim();
     const nombre = form.querySelector('[name="nombre"]').value.trim();
     const secciones = form.querySelectorAll('input[name="secciones[]"]:checked');
-    // Ya no validamos profesores (es opcional)
     
-    if (!codigo || !nombre) {
-        alert('⚠️ Código y nombre son obligatorios');
+    // ✅ Ya no validamos el código (se genera automáticamente)
+    if (!nombre) {
+        alert('⚠️ El nombre es obligatorio');
         return false;
     }
     if (secciones.length === 0) {
         alert('⚠️ Selecciona al menos una sección');
         return false;
     }
-    // Eliminada la validación de profesores
     return true;
 }
 
+// ✅ MODIFICADA: Ahora carga el código automáticamente
 function abrirModalAgregar() {
     document.getElementById('formMateria').reset();
+    
+    // ✅ Obtener código automático del servidor
+    fetch('../actions/obtener_codigo_materia.php')
+        .then(response => response.text())
+        .then(codigo => {
+            const inputCodigo = document.getElementById('codigo_materia');
+            if (inputCodigo) {
+                inputCodigo.value = codigo;
+            }
+        })
+        .catch(error => console.error('Error obteniendo código:', error));
+    
     document.getElementById('modalMateria').showModal();
 }
 

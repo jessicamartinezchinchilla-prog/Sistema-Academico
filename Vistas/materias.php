@@ -174,7 +174,10 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
             <input type="hidden" name="accion" value="agregar">
             
             <label>Código de Materia:</label>
-            <input type="text" name="codigo" required placeholder="Ej: MAT001" maxlength="20">
+            <input type="text" id="codigo_materia" name="codigo" readonly placeholder="Se generará automáticamente" style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7;">
+            <p style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                <i class="fa-solid fa-info-circle"></i> El código se genera automáticamente (MAT-001, MAT-002, etc.)
+            </p>
 
             <label>Nombre de la Materia:</label>
             <input type="text" name="nombre" required placeholder="Ej: Matemáticas I">
@@ -230,7 +233,10 @@ $totalProfesores = $pdo->query("SELECT COUNT(*) FROM profesores")->fetchColumn()
             <input type="hidden" name="materia_id" id="edit_id">
 
             <label>Código:</label>
-            <input type="text" id="edit_codigo" name="codigo" required maxlength="20">
+            <input type="text" id="edit_codigo" name="codigo" readonly style="background: #f3f4f6; cursor: not-allowed; opacity: 0.7;">
+            <p style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                <i class="fa-solid fa-info-circle"></i> El código no se puede modificar
+            </p>
 
             <label>Nombre:</label>
             <input type="text" id="edit_nombre" name="nombre" required>
